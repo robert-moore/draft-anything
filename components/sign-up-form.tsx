@@ -41,7 +41,7 @@ export function SignUpForm({
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/new`
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent('/new')}`
         }
       })
       if (error) throw error

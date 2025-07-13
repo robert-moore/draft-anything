@@ -14,7 +14,7 @@ import { useAuthRedirect } from '@/lib/hooks/use-auth-redirect'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils/index'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import { BrandLogo } from './brand'
 
@@ -27,9 +27,11 @@ export function LoginForm({
   const [isLoading, setIsLoading] = useState(false)
   const [isEmailSent, setIsEmailSent] = useState(false)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirectTo') || '/new'
 
   // Client-side protection: redirect if already authenticated
-  useAuthRedirect('/new')
+  useAuthRedirect(redirectTo)
 
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,7 +43,7 @@ export function LoginForm({
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/new`
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`
         }
       })
       if (error) throw error

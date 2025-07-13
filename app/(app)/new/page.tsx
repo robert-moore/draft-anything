@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 export default function NewDraftPage() {
@@ -11,40 +12,65 @@ export default function NewDraftPage() {
   const [maxDrafters, setMaxDrafters] = useState(4)
   const [secPerRound, setSecPerRound] = useState(60)
   const [numRounds, setNumRounds] = useState(3)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log({
-      name,
-      maxDrafters,
-      secPerRound,
-      numRounds,
-      draftState: 'setting_up',
-      startTime: new Date().toISOString(),
-      createdAt: new Date().toISOString()
-    })
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/drafts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name,
+          maxDrafters,
+          secPerRound,
+          numRounds,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create draft')
+      }
+
+      const data = await response.json()
+      
+      // Redirect to the draft page (you might want to create this page later)
+      router.push(`/drafts/${data.draft.id}`)
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'An error occurred')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 px-8 py-16">
+    <div className="px-8 py-16">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-light text-white/90 mb-4 tracking-tight">
+          <h1 className="text-4xl md:text-5xl font-light text-foreground mb-4 tracking-tight">
             Create a New Draft
           </h1>
-          <p className="text-lg text-white/60">
+          <p className="text-lg text-muted-foreground">
             Add items and let people rank or draft them
           </p>
         </div>
 
-        <Card className="bg-white/[0.02] border-white/10 backdrop-blur-sm">
+        <Card>
           <CardHeader>
-            <CardTitle className="text-white/90">Draft Details</CardTitle>
+            <CardTitle>Draft Details</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-white/80">
+                <Label htmlFor="name">
                   Draft Name
                 </Label>
                 <Input
@@ -53,13 +79,12 @@ export default function NewDraftPage() {
                   value={name}
                   onChange={e => setName(e.target.value)}
                   required
-                  className="bg-white/5 border-white/20 text-white placeholder:text-white/40"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="maxDrafters" className="text-white/80">
+                  <Label htmlFor="maxDrafters">
                     Max Drafters
                   </Label>
                   <Input
@@ -70,12 +95,11 @@ export default function NewDraftPage() {
                     value={maxDrafters}
                     onChange={e => setMaxDrafters(Number(e.target.value))}
                     required
-                    className="bg-white/5 border-white/20 text-white placeholder:text-white/40"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="secPerRound" className="text-white/80">
+                  <Label htmlFor="secPerRound">
                     Seconds per Round
                   </Label>
                   <Input
@@ -86,12 +110,11 @@ export default function NewDraftPage() {
                     value={secPerRound}
                     onChange={e => setSecPerRound(Number(e.target.value))}
                     required
-                    className="bg-white/5 border-white/20 text-white placeholder:text-white/40"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="numRounds" className="text-white/80">
+                  <Label htmlFor="numRounds">
                     Number of Rounds
                   </Label>
                   <Input
@@ -102,23 +125,29 @@ export default function NewDraftPage() {
                     value={numRounds}
                     onChange={e => setNumRounds(Number(e.target.value))}
                     required
-                    className="bg-white/5 border-white/20 text-white placeholder:text-white/40"
                   />
                 </div>
               </div>
 
+              {error && (
+                <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                  <p className="text-sm text-destructive">{error}</p>
+                </div>
+              )}
+
               <div className="flex gap-4 pt-4">
                 <Button
                   type="submit"
-                  className="flex-1 bg-white/10 hover:bg-white/20 text-white border-white/20"
+                  className="flex-1"
                   disabled={
+                    isLoading ||
                     !name.trim() ||
                     maxDrafters < 2 ||
                     secPerRound < 5 ||
                     numRounds < 1
                   }
                 >
-                  Create Draft
+                  {isLoading ? 'Creating Draft...' : 'Create Draft'}
                 </Button>
               </div>
             </form>
