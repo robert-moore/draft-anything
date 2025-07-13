@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 export default function NewDraftPage() {
@@ -11,22 +12,47 @@ export default function NewDraftPage() {
   const [maxDrafters, setMaxDrafters] = useState(4)
   const [secPerRound, setSecPerRound] = useState(60)
   const [numRounds, setNumRounds] = useState(3)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log({
-      name,
-      maxDrafters,
-      secPerRound,
-      numRounds,
-      draftState: 'setting_up',
-      startTime: new Date().toISOString(),
-      createdAt: new Date().toISOString()
-    })
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/drafts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name,
+          maxDrafters,
+          secPerRound,
+          numRounds,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create draft')
+      }
+
+      const newDraft = await response.json()
+      
+      // Redirect to the draft page (you might want to create this page later)
+      router.push(`/drafts/${newDraft.id}`)
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'An error occurred')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 px-8 py-16">
+    <div className="px-8 py-16">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-light text-white/90 mb-4 tracking-tight">
@@ -107,18 +133,25 @@ export default function NewDraftPage() {
                 </div>
               </div>
 
+              {error && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                  <p className="text-sm text-red-400">{error}</p>
+                </div>
+              )}
+
               <div className="flex gap-4 pt-4">
                 <Button
                   type="submit"
                   className="flex-1 bg-white/10 hover:bg-white/20 text-white border-white/20"
                   disabled={
+                    isLoading ||
                     !name.trim() ||
                     maxDrafters < 2 ||
                     secPerRound < 5 ||
                     numRounds < 1
                   }
                 >
-                  Create Draft
+                  {isLoading ? 'Creating Draft...' : 'Create Draft'}
                 </Button>
               </div>
             </form>

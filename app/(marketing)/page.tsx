@@ -22,7 +22,7 @@ const Header = memo(() => (
         href="/auth/login"
         className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white font-medium transition-colors backdrop-blur-sm border border-white/20"
       >
-        Login
+        Sign In
       </Link>
     </div>
   </header>
@@ -43,9 +43,11 @@ const HeroSection = memo(() => (
       </p>
 
       <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-        <button className="px-8 py-3 bg-white/10 hover:bg-white/20 rounded-lg text-white font-medium transition-colors backdrop-blur-sm border border-white/20">
-          Start Drafting
-        </button>
+        <Link href="/auth/login">
+          <button className="px-8 py-3 bg-white/10 hover:bg-white/20 rounded-lg text-white font-medium transition-colors backdrop-blur-sm border border-white/20">
+            Start Drafting
+          </button>
+        </Link>
         <button className="px-8 py-3 bg-transparent hover:bg-white/5 rounded-lg text-white/70 font-medium transition-colors border border-white/20">
           See Examples
         </button>
@@ -224,9 +226,11 @@ const CTASection = memo(() => (
       </p>
 
       <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
-        <button className="px-8 py-3 bg-white/10 hover:bg-white/20 rounded-lg text-white font-medium transition-colors backdrop-blur-sm border border-white/20">
-          Get Started
-        </button>
+        <Link href="/auth/login">
+          <button className="px-8 py-3 bg-white/10 hover:bg-white/20 rounded-lg text-white font-medium transition-colors backdrop-blur-sm border border-white/20">
+            Get Started
+          </button>
+        </Link>
         <button className="px-8 py-3 bg-transparent hover:bg-white/5 rounded-lg text-white/70 font-medium transition-colors border border-white/20">
           Learn More
         </button>

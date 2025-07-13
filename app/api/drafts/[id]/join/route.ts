@@ -1,0 +1,139 @@
+import { db } from '@/lib/db'
+import { drafts, clients, draftClients } from '@/drizzle/schema'
+import { getCurrentUser } from '@/lib/auth/get-current-user'
+import { NextRequest, NextResponse } from 'next/server'
+import { eq, and, count } from 'drizzle-orm'
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // Check authentication
+    const user = await getCurrentUser()
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    const draftId = parseInt(params.id)
+    if (isNaN(draftId)) {
+      return NextResponse.json(
+        { error: 'Invalid draft ID' },
+        { status: 400 }
+      )
+    }
+
+    const body = await request.json()
+    const { name } = body
+
+    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'Name is required' },
+        { status: 400 }
+      )
+    }
+
+    // Check if draft exists and is in setting_up state
+    const [draft] = await db
+      .select()
+      .from(drafts)
+      .where(eq(drafts.id, draftId))
+
+    if (!draft) {
+      return NextResponse.json(
+        { error: 'Draft not found' },
+        { status: 404 }
+      )
+    }
+
+    if (draft.draftState !== 'setting_up') {
+      return NextResponse.json(
+        { error: 'Draft is not accepting new participants' },
+        { status: 400 }
+      )
+    }
+
+    // Check if draft is full
+    const [participantCount] = await db
+      .select({ count: count() })
+      .from(draftClients)
+      .where(eq(draftClients.draftId, draftId))
+
+    if (participantCount.count >= draft.maxDrafters) {
+      return NextResponse.json(
+        { error: 'Draft is full' },
+        { status: 400 }
+      )
+    }
+
+    // Check if user is already in this draft
+    const [existingParticipant] = await db
+      .select()
+      .from(draftClients)
+      .where(and(
+        eq(draftClients.draftId, draftId),
+        eq(draftClients.clientId, user.id)
+      ))
+
+    if (existingParticipant) {
+      return NextResponse.json(
+        { error: 'You are already in this draft' },
+        { status: 400 }
+      )
+    }
+
+    // Create or update client record
+    const now = new Date().toISOString()
+    
+    // First check if client exists
+    const [existingClient] = await db
+      .select()
+      .from(clients)
+      .where(eq(clients.id, user.id))
+
+    if (!existingClient) {
+      // Create new client
+      await db
+        .insert(clients)
+        .values({
+          id: user.id,
+          name: name.trim(),
+          createdAt: now
+        })
+    } else {
+      // Update client name
+      await db
+        .update(clients)
+        .set({ name: name.trim() })
+        .where(eq(clients.id, user.id))
+    }
+
+    // Add participant to draft
+    await db
+      .insert(draftClients)
+      .values({
+        draftId,
+        clientId: user.id,
+        position: participantCount.count + 1,
+        isReady: true,
+        createdAt: now
+      })
+
+    // Return the new participant data
+    return NextResponse.json({
+      id: user.id,
+      name: name.trim(),
+      position: participantCount.count + 1,
+      isReady: true
+    }, { status: 201 })
+  } catch (error) {
+    console.error('Error joining draft:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
