@@ -1,0 +1,413 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Apple-style organic background animations */
+@keyframes organicFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+  }
+  25% {
+    transform: translate3d(-15px, -25px, 0) rotate(1deg) scale(1.02);
+  }
+  50% {
+    transform: translate3d(10px, -15px, 0) rotate(-0.5deg) scale(0.98);
+  }
+  75% {
+    transform: translate3d(-5px, -35px, 0) rotate(0.8deg) scale(1.01);
+  }
+}
+
+@keyframes organicMorph {
+  0%,
+  100% {
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+  }
+  20% {
+    border-radius: 50% 50% 40% 60% / 55% 35% 65% 45%;
+  }
+  40% {
+    border-radius: 40% 60% 55% 45% / 40% 60% 50% 50%;
+  }
+  60% {
+    border-radius: 55% 45% 35% 65% / 45% 55% 35% 65%;
+  }
+  80% {
+    border-radius: 45% 55% 50% 50% / 60% 40% 55% 45%;
+  }
+}
+
+@keyframes dashFlow {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -16;
+  }
+}
+
+@keyframes lightBeam {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(96px);
+    opacity: 0;
+  }
+}
+
+@keyframes scroll-up {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.6s ease-out;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.6s ease-out;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+@layer base {
+  :root {
+    /* Main page background and default text color */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+
+    /* Card component background and text color */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+
+    /* Popover/dropdown background and text color */
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+
+    /* Primary button and main interactive element colors */
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+
+    /* Secondary button and less prominent interactive element colors */
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+
+    /* Muted/disabled element colors and subdued text */
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+
+    /* Accent colors for highlights and special elements */
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+
+    /* Destructive/error colors for dangerous actions */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Border colors for elements, input fields, and focus rings */
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+
+    /* Default border radius for rounded corners */
+    --radius: 0.5rem;
+
+    /* Chart colors for data visualization components */
+    --chart-1: oklch(0.81 0.17 75.35);
+    --chart-2: oklch(0.55 0.22 264.53);
+    --chart-3: oklch(0.72 0 0);
+    --chart-4: oklch(0.92 0 0);
+    --chart-5: oklch(0.56 0 0);
+
+    /* Custom blue accent colors for special UI elements */
+    --accent-blue: 210 100% 97%;
+    --accent-blue-foreground: 210 100% 50%;
+    --accent-blue-border: 210 100% 90%;
+
+    /* Sidebar component color scheme */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: oklch(0 0 0);
+    --sidebar-primary: oklch(0 0 0);
+    --sidebar-primary-foreground: oklch(1 0 0);
+    --sidebar-accent: oklch(0.94 0 0);
+    --sidebar-accent-foreground: oklch(0 0 0);
+    --sidebar-border: oklch(0.94 0 0);
+    --sidebar-ring: oklch(0 0 0);
+    --sidebar: oklch(0.99 0 0);
+
+    /* Font family definitions */
+    --font-sans: Geist, sans-serif;
+    --font-serif: Georgia, serif;
+    --font-mono: Geist Mono, monospace;
+
+    /* Shadow system properties */
+    --shadow-color: hsl(0 0% 0%);
+    --shadow-opacity: 0.18;
+    --shadow-blur: 2px;
+    --shadow-spread: 0px;
+    --shadow-offset-x: 0px;
+    --shadow-offset-y: 1px;
+
+    /* Typography and spacing */
+    --letter-spacing: 0em;
+    --spacing: 0.25rem;
+
+    /* Pre-defined shadow variants for consistent elevation */
+    --shadow-2xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.09);
+    --shadow-xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.09);
+    --shadow-sm: 0px 1px 2px 0px hsl(0 0% 0% / 0.18),
+      0px 1px 2px -1px hsl(0 0% 0% / 0.18);
+    --shadow: 0px 1px 2px 0px hsl(0 0% 0% / 0.18),
+      0px 1px 2px -1px hsl(0 0% 0% / 0.18);
+    --shadow-md: 0px 1px 2px 0px hsl(0 0% 0% / 0.18),
+      0px 2px 4px -1px hsl(0 0% 0% / 0.18);
+    --shadow-lg: 0px 1px 2px 0px hsl(0 0% 0% / 0.18),
+      0px 4px 6px -1px hsl(0 0% 0% / 0.18);
+    --shadow-xl: 0px 1px 2px 0px hsl(0 0% 0% / 0.18),
+      0px 8px 10px -1px hsl(0 0% 0% / 0.18);
+    --shadow-2xl: 0px 1px 2px 0px hsl(0 0% 0% / 0.45);
+
+    /* Base letter spacing for typography */
+    --tracking-normal: 0em;
+  }
+
+  .dark {
+    /* Dark theme: Main page background and default text color */
+    --background: oklch(0.1296 0.0274 261.69);
+    --foreground: 0 0% 98%;
+
+    /* Dark theme: Card component background and text color */
+    --card: 0 0% 3%;
+    --card-foreground: 0 0% 98%;
+
+    /* Dark theme: Popover/dropdown background and text color */
+    --popover: 0 0% 4%;
+    --popover-foreground: 0 0% 98%;
+
+    /* Dark theme: Primary button and main interactive element colors */
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+
+    /* Dark theme: Secondary button and less prominent interactive element colors */
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+
+    /* Dark theme: Muted/disabled element colors and subdued text */
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+
+    /* Dark theme: Accent colors for highlights and special elements */
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+
+    /* Dark theme: Destructive/error colors for dangerous actions */
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Dark theme: Border colors for elements, input fields, and focus rings */
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+
+    /* Dark theme: Chart colors for data visualization components */
+    --chart-1: oklch(0.81 0.17 75.35);
+    --chart-2: oklch(0.58 0.21 260.84);
+    --chart-3: oklch(0.56 0 0);
+    --chart-4: oklch(0.44 0 0);
+    --chart-5: oklch(0.92 0 0);
+
+    /* Dark theme: Custom blue accent colors for special UI elements */
+    --accent-blue: 210 100% 10%;
+    --accent-blue-foreground: 210 100% 80%;
+    --accent-blue-border: 210 100% 25%;
+
+    /* Dark theme: Sidebar component color scheme */
+    --sidebar-background: 0 0% 11%;
+    --sidebar-foreground: oklch(1 0 0);
+    --sidebar-primary: oklch(1 0 0);
+    --sidebar-primary-foreground: oklch(0 0 0);
+    --sidebar-accent: oklch(0.32 0 0);
+    --sidebar-accent-foreground: oklch(1 0 0);
+    --sidebar-border: oklch(0.32 0 0);
+    --sidebar-ring: oklch(0.72 0 0);
+    --sidebar: oklch(0.21 0 0);
+
+    /* Dark theme: Default border radius for rounded corners */
+    --radius: 0.5rem;
+
+    /* Dark theme: Font family definitions */
+    --font-sans: Geist, sans-serif;
+    --font-serif: Georgia, serif;
+    --font-mono: Geist Mono, monospace;
+
+    /* Dark theme: Shadow system properties */
+    --shadow-color: hsl(0 0% 0%);
+    --shadow-opacity: 0.18;
+    --shadow-blur: 2px;
+    --shadow-spread: 0px;
+    --shadow-offset-x: 0px;
+    --shadow-offset-y: 1px;
+
+    /* Dark theme: Typography and spacing */
+    --letter-spacing: 0em;
+    --spacing: 0.25rem;
+
+    /* Dark theme: Pre-defined shadow variants for consistent elevation */
+    --shadow-2xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.09);
+    --shadow-xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.09);
+    --shadow-sm: 0px 1px 2px 0px hsl(0 0% 0% / 0.18),
+      0px 1px 2px -1px hsl(0 0% 0% / 0.18);
+    --shadow: 0px 1px 2px 0px hsl(0 0% 0% / 0.18),
+      0px 1px 2px -1px hsl(0 0% 0% / 0.18);
+    --shadow-md: 0px 1px 2px 0px hsl(0 0% 0% / 0.18),
+      0px 2px 4px -1px hsl(0 0% 0% / 0.18);
+    --shadow-lg: 0px 1px 2px 0px hsl(0 0% 0% / 0.18),
+      0px 4px 6px -1px hsl(0 0% 0% / 0.18);
+    --shadow-xl: 0px 1px 2px 0px hsl(0 0% 0% / 0.18),
+      0px 8px 10px -1px hsl(0 0% 0% / 0.18);
+    --shadow-2xl: 0px 1px 2px 0px hsl(0 0% 0% / 0.45);
+  }
+  .theme {
+    /* Theme-specific font family definitions */
+    --font-sans: Geist, sans-serif;
+    --font-mono: Geist Mono, monospace;
+    --font-serif: Georgia, serif;
+
+    /* Theme-specific border radius */
+    --radius: 0.5rem;
+
+    /* Letter spacing variants for typography hierarchy */
+    --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
+    --tracking-tight: calc(var(--tracking-normal) - 0.025em);
+    --tracking-wide: calc(var(--tracking-normal) + 0.025em);
+    --tracking-wider: calc(var(--tracking-normal) + 0.05em);
+    --tracking-widest: calc(var(--tracking-normal) + 0.1em);
+  }
+  body {
+    letter-spacing: var(--tracking-normal);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+}
+
+/* Linear/Resend-inspired styles */
+@layer utilities {
+  /* Subtle borders */
+  .border-subtle {
+    @apply border-white/[0.08];
+  }
+
+  /* Glass morphism effects */
+  .glass-panel {
+    @apply bg-white/[0.02] backdrop-blur-sm;
+  }
+
+  /* Text styles */
+  .text-primary {
+    @apply text-white/90;
+  }
+
+  .text-secondary {
+    @apply text-white/60;
+  }
+
+  .text-tertiary {
+    @apply text-white/40;
+  }
+
+  /* Gradient borders */
+  .gradient-border {
+    @apply relative;
+  }
+
+  .gradient-border::before {
+    content: '';
+    @apply absolute -inset-[1px] rounded-[inherit] bg-gradient-to-br from-white/[0.15] via-white/[0.05] to-transparent;
+  }
+
+  /* Focus states */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-1 focus:ring-white/[0.15] focus:border-white/[0.15];
+  }
+
+  /* Hover transitions */
+  .hover-transition {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  /* Card hover effects */
+  .card-hover {
+    @apply hover:bg-white/[0.03] hover:border-white/[0.12] transition-all duration-200;
+  }
+}
