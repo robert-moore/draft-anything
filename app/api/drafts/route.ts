@@ -1,4 +1,4 @@
-import { drafts } from '@/drizzle/schema'
+import { draftsInDa } from '@/drizzle/schema'
 import { db } from '@/lib/db'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -6,9 +6,9 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
 
-    const { name, draftState, maxDrafters, secPerRound, numRounds } = body
+    const { adminUserId, name, maxDrafters, secPerRound, numRounds } = body
 
-    if (!name || !draftState || !maxDrafters || !secPerRound || !numRounds) {
+    if (!adminUserId || !name || !maxDrafters || !secPerRound || !numRounds) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -16,10 +16,11 @@ export async function POST(req: NextRequest) {
     }
 
     const [newDraft] = await db
-      .insert(drafts)
+      .insert(draftsInDa)
       .values({
+        adminUserId,
         name,
-        draftState,
+        draftState: 'setting_up',
         maxDrafters,
         secPerRound,
         numRounds,
