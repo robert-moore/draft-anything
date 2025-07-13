@@ -23,53 +23,31 @@ export function LoginForm({
   ...props
 }: React.ComponentPropsWithoutRef<'div'>) {
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isEmailSent, setIsEmailSent] = useState(false)
   const router = useRouter()
 
   // Client-side protection: redirect if already authenticated
   useAuthRedirect('/new')
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault()
     const supabase = createClient()
     setIsLoading(true)
     setError(null)
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithOtp({
         email,
-        password
-      })
-      if (error) throw error
-      // Redirect to app and refresh to ensure server components get updated session
-      router.push('/new')
-      router.refresh()
-    } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'An error occurred')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleSocialLogin = async () => {
-    const supabase = createClient()
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
         options: {
-          redirectTo: `${location.origin}/auth/oauth?next=/app`
+          emailRedirectTo: `${window.location.origin}/new`
         }
       })
       if (error) throw error
+      setIsEmailSent(true)
     } catch (error: unknown) {
-      setError(
-        error instanceof Error ? error.message : 'An OAuth error occurred'
-      )
+      setError(error instanceof Error ? error.message : 'An error occurred')
     } finally {
       setIsLoading(false)
     }
@@ -86,30 +64,34 @@ export function LoginForm({
             <BrandLogo variant="logo" size="2xl" />
             Welcome back
           </CardTitle>
-          <CardDescription>Sign in to your account</CardDescription>
+          <CardDescription>
+            {isEmailSent 
+              ? 'Check your email for the magic link!' 
+              : 'Sign in to your account with a magic link'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col gap-4">
-            <Button
-              variant="outline"
-              type="button"
-              className="w-full"
-              onClick={handleSocialLogin}
-              disabled={isLoading}
-            >
-              Sign In with Google
-            </Button>
-
-            <div className="relative my-2">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-muted px-2 text-muted-foreground">Or</span>
-              </div>
+          {isEmailSent ? (
+            <div className="text-center space-y-4">
+              <p className="text-sm text-muted-foreground">
+                We&apos;ve sent a magic link to <strong>{email}</strong>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Click the link in your email to sign in. You can close this window.
+              </p>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setIsEmailSent(false)
+                  setEmail('')
+                }}
+              >
+                Send another link
+              </Button>
             </div>
-
-            <form onSubmit={handleLogin} className="flex flex-col gap-4">
+          ) : (
+            <form onSubmit={handleMagicLink} className="flex flex-col gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -121,37 +103,20 @@ export function LoginForm({
                   onChange={e => setEmail(e.target.value)}
                 />
               </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                  <Link
-                    href="/auth/forgot-password"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="********"
-                  required
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                />
-              </div>
               {error && <p className="text-sm text-red-500">{error}</p>}
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Logging in...' : 'Sign In'}
+                {isLoading ? 'Sending magic link...' : 'Send magic link'}
               </Button>
             </form>
-          </div>
-          <div className="mt-6 text-center text-sm">
-            Don&apos;t have an account?{' '}
-            <Link href="/auth/sign-up" className="underline underline-offset-4">
-              Sign Up
-            </Link>
-          </div>
+          )}
+          {!isEmailSent && (
+            <div className="mt-6 text-center text-sm">
+              Don&apos;t have an account?{' '}
+              <Link href="/auth/sign-up" className="underline underline-offset-4">
+                Sign Up
+              </Link>
+            </div>
+          )}
         </CardContent>
       </Card>
       <div className="text-center text-xs text-muted-foreground">

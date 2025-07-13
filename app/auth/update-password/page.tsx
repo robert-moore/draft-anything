@@ -1,5 +1,6 @@
-import { UpdatePasswordForm } from '@/components/update-password-form'
+import { redirect } from 'next/navigation'
 
 export default function Page() {
-  return <UpdatePasswordForm />
+  // Since we use magic links, redirect to login page
+  redirect('/auth/login')
 }
