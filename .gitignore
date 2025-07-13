@@ -43,3 +43,5 @@ next-env.d.ts
 docs
 _docs
 example.json
+
+CLAUDE.md

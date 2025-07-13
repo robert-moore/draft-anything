@@ -1,7 +1,7 @@
 'use client'
 
-import Image from 'next/image'
 import { cn } from '@/lib/utils'
+import Image from 'next/image'
 
 export interface FaviconProps {
   size?: number
@@ -17,7 +17,7 @@ export function Favicon({
   return (
     <Image
       src="/brand/favicon.png"
-      alt="Derive favicon"
+      alt="Draft Anything favicon"
       width={size}
       height={size}
       className={cn('object-contain', className)}

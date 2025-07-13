@@ -1,7 +1,7 @@
 'use client'
 
 import { AnimatedWrapper } from '@/components/auth/animated-wrapper'
-import { DeriveLogo } from '@/components/brand'
+import { BrandLogo } from '@/components/brand'
 import { AnimatedBackdrop } from '@/components/ui/animated-backdrop'
 import Link from 'next/link'
 
@@ -20,9 +20,9 @@ export default function AuthLayout({
               href="/"
               className="flex items-center space-x-3 hover:opacity-70 transition-opacity duration-200"
             >
-              <DeriveLogo variant="logo" size="md" />
+              <BrandLogo variant="logo" size="md" />
               <span className="text-base font-medium tracking-tight text-foreground/90">
-                Derive
+                Draft Anything
               </span>
             </Link>
           </div>

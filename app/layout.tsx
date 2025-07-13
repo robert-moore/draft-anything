@@ -11,11 +11,11 @@ const fontSans = FontSans({
   variable: '--font-sans'
 })
 
-const title = 'Derive'
-const description = 'Derive is an AI-First Learning Platform'
+const title = 'Draft Anything'
+const description = 'Draft anything with friends.'
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://derive.to'),
+  metadataBase: new URL('https://draftanything.io'),
   title,
   description,
   icons: {

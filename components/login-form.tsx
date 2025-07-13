@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils/index'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { DeriveLogo } from './brand'
+import { BrandLogo } from './brand'
 
 export function LoginForm({
   className,
@@ -83,7 +83,7 @@ export function LoginForm({
       <Card className="w-full">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl flex flex-col items-center justify-center gap-4">
-            <DeriveLogo variant="logo" size="2xl" />
+            <BrandLogo variant="logo" size="2xl" />
             Welcome back
           </CardTitle>
           <CardDescription>Sign in to your account</CardDescription>

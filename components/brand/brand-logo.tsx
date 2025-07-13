@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
 
-export interface DeriveLogoProps {
+export interface BrandLogoProps {
   variant?: 'logo' | 'wordmark' | 'icon'
   theme?: 'light' | 'dark' | 'auto'
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'
@@ -53,13 +53,13 @@ const getDimensions = (variant: string, size: string) => {
   }
 }
 
-export function DeriveLogo({
+export function BrandLogo({
   variant = 'logo',
   theme = 'auto',
   size = 'md',
   className,
   priority = false
-}: DeriveLogoProps) {
+}: BrandLogoProps) {
   const { resolvedTheme } = useTheme()
 
   // Determine which logo to show based on theme
@@ -90,12 +90,12 @@ export function DeriveLogo({
   const getAltText = () => {
     switch (variant) {
       case 'icon':
-        return 'Derive icon'
+        return 'Draft Anything icon'
       case 'wordmark':
-        return 'Derive wordmark'
+        return 'Draft Anything wordmark'
       case 'logo':
       default:
-        return 'Derive logo'
+        return 'Draft Anything logo'
     }
   }
 

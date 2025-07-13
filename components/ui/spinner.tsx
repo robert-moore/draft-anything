@@ -1,7 +1,7 @@
 // Based on: https://github.com/vercel/ai/blob/main/examples/next-ai-rsc/components/llm-stocks/spinner.tsx
 
 import { cn } from '@/lib/utils'
-import { DeriveLogo } from '../brand'
+import { BrandLogo } from '../brand'
 
 interface SpinnerProps extends React.SVGProps<SVGSVGElement> {}
 
@@ -23,6 +23,6 @@ export const Spinner = ({ className, ...props }: SpinnerProps) => (
 
 export const LogoSpinner = () => (
   <div className="p-4 border border-background">
-    <DeriveLogo variant="logo" size="md" />
+    <BrandLogo variant="logo" size="md" />
   </div>
 )
