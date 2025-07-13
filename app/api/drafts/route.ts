@@ -1,4 +1,4 @@
-import { drafts } from '@/drizzle/schema'
+import { draftsInDa } from '@/drizzle/schema'
 import { db } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { NextRequest, NextResponse } from 'next/server'
@@ -26,14 +26,14 @@ export async function POST(req: NextRequest) {
     }
 
     const [newDraft] = await db
-      .insert(drafts)
+      .insert(draftsInDa)
       .values({
         name,
+        adminUserId: user.id,
         draftState: draftState || 'setting_up',
         maxDrafters,
         secPerRound,
         numRounds,
-        startTime: new Date().toISOString(),
         createdAt: new Date().toISOString()
       })
       .returning()
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Get all drafts (you might want to add pagination or filtering later)
-    const allDrafts = await db.select().from(drafts)
+    const allDrafts = await db.select().from(draftsInDa)
 
     return NextResponse.json(allDrafts)
   } catch (err) {
