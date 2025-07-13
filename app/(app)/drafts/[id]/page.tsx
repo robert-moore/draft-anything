@@ -145,11 +145,11 @@ export default function DraftPage() {
 
   const getStateColor = (state: Draft['draftState']) => {
     switch (state) {
-      case 'setting_up': return 'bg-yellow-500/20 text-yellow-400'
-      case 'active': return 'bg-green-500/20 text-green-400'
-      case 'completed': return 'bg-blue-500/20 text-blue-400'
-      case 'paused': return 'bg-orange-500/20 text-orange-400'
-      default: return 'bg-gray-500/20 text-gray-400'
+      case 'setting_up': return 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400'
+      case 'active': return 'bg-green-500/20 text-green-600 dark:text-green-400'
+      case 'completed': return 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
+      case 'paused': return 'bg-orange-500/20 text-orange-600 dark:text-orange-400'
+      default: return 'bg-muted text-muted-foreground'
     }
   }
 
@@ -200,16 +200,16 @@ export default function DraftPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
-        <div className="text-white/70">Loading draft...</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-muted-foreground">Loading draft...</div>
       </div>
     )
   }
 
   if (error || !draft) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
-        <div className="text-red-400">{error || 'Draft not found'}</div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-destructive">{error || 'Draft not found'}</div>
       </div>
     )
   }
@@ -219,12 +219,12 @@ export default function DraftPage() {
       <div className="max-w-6xl mx-auto space-y-6">
         
         {/* Header */}
-        <Card className="bg-white/[0.02] border-white/10 backdrop-blur-sm">
+        <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-2xl text-white/90">{draft.name}</CardTitle>
-                <div className="flex items-center gap-4 mt-2 text-sm text-white/60">
+                <CardTitle className="text-2xl">{draft.name}</CardTitle>
+                <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <Users className="w-4 h-4" />
                     {participants.length}/{draft.maxDrafters} players
@@ -243,7 +243,6 @@ export default function DraftPage() {
                   variant="outline"
                   size="sm"
                   onClick={handleShareDraft}
-                  className="bg-white/5 border-white/20 text-white/70 hover:bg-white/10"
                 >
                   <Share2 className="w-4 h-4 mr-2" />
                   Share
@@ -263,9 +262,9 @@ export default function DraftPage() {
             
             {/* Join Draft */}
             {!isJoined && draft.draftState === 'setting_up' && (
-              <Card className="bg-white/[0.02] border-white/10 backdrop-blur-sm">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-white/90">Join Draft</CardTitle>
+                  <CardTitle>Join Draft</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex gap-3">
@@ -273,13 +272,11 @@ export default function DraftPage() {
                       placeholder="Enter your name"
                       value={playerName}
                       onChange={e => setPlayerName(e.target.value)}
-                      className="bg-white/5 border-white/20 text-white placeholder:text-white/40"
                       onKeyDown={e => e.key === 'Enter' && handleJoinDraft()}
                     />
                     <Button 
                       onClick={handleJoinDraft}
                       disabled={!playerName.trim()}
-                      className="bg-white/10 hover:bg-white/20 text-white border-white/20"
                     >
                       Join
                     </Button>
@@ -290,15 +287,16 @@ export default function DraftPage() {
 
             {/* Invite Others */}
             {isJoined && draft.draftState === 'setting_up' && (
-              <Card className="bg-white/[0.02] border-white/10 backdrop-blur-sm">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-white/90">Invite Others</CardTitle>
+                  <CardTitle>Invite Others</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {!showInviteLink ? (
                     <Button 
                       onClick={handleGetInviteLink}
-                      className="w-full bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border-blue-500/30"
+                      className="w-full"
+                      variant="outline"
                     >
                       <Share2 className="w-4 h-4 mr-2" />
                       Get Invite Link
@@ -309,20 +307,19 @@ export default function DraftPage() {
                         <Input
                           value={inviteLink}
                           readOnly
-                          className="bg-white/5 border-white/20 text-white"
                         />
                         <Button
                           onClick={handleCopyInviteLink}
                           variant="outline"
                           size="icon"
-                          className="bg-white/5 border-white/20 text-white/70 hover:bg-white/10"
                         >
                           <Copy className="w-4 h-4" />
                         </Button>
                       </div>
                       <Button 
                         onClick={handleShareDraft}
-                        className="w-full bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border-blue-500/30"
+                        className="w-full"
+                        variant="outline"
                       >
                         <Share2 className="w-4 h-4 mr-2" />
                         Share Link
@@ -335,11 +332,11 @@ export default function DraftPage() {
 
             {/* Start Draft */}
             {isJoined && draft.draftState === 'setting_up' && participants.length >= 2 && (
-              <Card className="bg-white/[0.02] border-white/10 backdrop-blur-sm">
+              <Card>
                 <CardContent className="pt-6">
                   <Button 
                     onClick={handleStartDraft}
-                    className="w-full bg-green-500/20 hover:bg-green-500/30 text-green-400 border-green-500/30"
+                    className="w-full"
                   >
                     <Play className="w-4 h-4 mr-2" />
                     Start Draft
@@ -350,9 +347,9 @@ export default function DraftPage() {
 
             {/* Current Pick */}
             {draft.draftState === 'active' && isJoined && (
-              <Card className="bg-white/[0.02] border-white/10 backdrop-blur-sm">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="text-white/90">Make Your Pick</CardTitle>
+                  <CardTitle>Make Your Pick</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -360,13 +357,12 @@ export default function DraftPage() {
                       placeholder="What are you drafting? (e.g., Pizza Hut, The Godfather, etc.)"
                       value={currentPick}
                       onChange={e => setCurrentPick(e.target.value)}
-                      className="bg-white/5 border-white/20 text-white placeholder:text-white/40"
                       onKeyDown={e => e.key === 'Enter' && handleMakePick()}
                     />
                     <Button 
                       onClick={handleMakePick}
                       disabled={!currentPick.trim()}
-                      className="w-full bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border-blue-500/30"
+                      className="w-full"
                     >
                       Submit Pick
                     </Button>
@@ -376,13 +372,13 @@ export default function DraftPage() {
             )}
 
             {/* Draft Results */}
-            <Card className="bg-white/[0.02] border-white/10 backdrop-blur-sm">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-white/90">Draft Results</CardTitle>
+                <CardTitle>Draft Results</CardTitle>
               </CardHeader>
               <CardContent>
                 {picks.length === 0 ? (
-                  <div className="text-center py-8 text-white/40">
+                  <div className="text-center py-8 text-muted-foreground">
                     No picks yet. {draft.draftState === 'setting_up' ? 'Start the draft to begin!' : 'Be the first to pick!'}
                   </div>
                 ) : (
@@ -390,14 +386,14 @@ export default function DraftPage() {
                     {picks.map((pick, index) => (
                       <div 
                         key={index}
-                        className="flex items-center gap-3 p-3 bg-white/[0.02] rounded-lg border border-white/10"
+                        className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border"
                       >
-                        <div className="flex-shrink-0 w-8 h-8 bg-white/10 rounded-full flex items-center justify-center text-sm text-white/70">
+                        <div className="flex-shrink-0 w-8 h-8 bg-muted rounded-full flex items-center justify-center text-sm text-muted-foreground">
                           #{pick.pickNumber}
                         </div>
                         <div className="flex-1">
-                          <div className="text-white/90">{pick.payload}</div>
-                          <div className="text-xs text-white/50">{pick.clientName}</div>
+                          <div className="text-foreground">{pick.payload}</div>
+                          <div className="text-xs text-muted-foreground">{pick.clientName}</div>
                         </div>
                       </div>
                     ))}
@@ -409,13 +405,13 @@ export default function DraftPage() {
 
           {/* Participants Sidebar */}
           <div>
-            <Card className="bg-white/[0.02] border-white/10 backdrop-blur-sm">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-white/90">Participants</CardTitle>
+                <CardTitle>Participants</CardTitle>
               </CardHeader>
               <CardContent>
                 {participants.length === 0 ? (
-                  <div className="text-center py-4 text-white/40">
+                  <div className="text-center py-4 text-muted-foreground">
                     No participants yet
                   </div>
                 ) : (
@@ -423,21 +419,21 @@ export default function DraftPage() {
                     {participants.map((participant, index) => (
                       <div 
                         key={participant.id}
-                        className="flex items-center gap-3 p-2 rounded-lg bg-white/[0.02]"
+                        className="flex items-center gap-3 p-2 rounded-lg bg-muted/50"
                       >
-                        <Avatar className="w-8 h-8 bg-white/10">
-                          <AvatarFallback className="text-white/70 text-sm">
+                        <Avatar className="w-8 h-8">
+                          <AvatarFallback className="text-sm">
                             {participant.name.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1">
-                          <div className="text-white/90 text-sm">{participant.name}</div>
+                          <div className="text-foreground text-sm">{participant.name}</div>
                           {participant.position && (
-                            <div className="text-xs text-white/50">Position {participant.position}</div>
+                            <div className="text-xs text-muted-foreground">Position {participant.position}</div>
                           )}
                         </div>
                         {participant.isReady && (
-                          <Badge className="bg-green-500/20 text-green-400 text-xs">Ready</Badge>
+                          <Badge className="bg-green-500/20 text-green-600 dark:text-green-400 text-xs">Ready</Badge>
                         )}
                       </div>
                     ))}

@@ -8,6 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { Logo } from '@/components/brand/logo'
 import { CurrentUserAvatar } from '@/components/current-user-avatar'
 import { createClient } from '@/lib/supabase/client'
@@ -51,13 +52,16 @@ export function AppHeader() {
 
   if (isLoading) {
     return (
-      <header className="border-b border-white/10 bg-gray-900/50 backdrop-blur-sm">
+      <header className="border-b bg-background/80 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <Logo className="h-8 w-auto text-white" />
+              <Logo className="h-8 w-auto" />
             </div>
-            <div className="w-8 h-8 bg-white/10 rounded-full animate-pulse" />
+            <div className="flex items-center gap-4">
+              <ThemeToggle />
+              <div className="w-8 h-8 bg-muted rounded-full animate-pulse" />
+            </div>
           </div>
         </div>
       </header>
@@ -66,15 +70,16 @@ export function AppHeader() {
 
   if (!user) {
     return (
-      <header className="border-b border-white/10 bg-gray-900/50 backdrop-blur-sm">
+      <header className="border-b bg-background/80 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center">
-              <Logo className="h-8 w-auto text-white" />
+              <Logo className="h-8 w-auto" />
             </Link>
             <div className="flex items-center gap-4">
+              <ThemeToggle />
               <Link href="/auth/login">
-                <Button variant="outline" className="bg-white/5 border-white/20 text-white hover:bg-white/10">
+                <Button variant="outline">
                   Sign In
                 </Button>
               </Link>
@@ -86,16 +91,17 @@ export function AppHeader() {
   }
 
   return (
-    <header className="border-b border-white/10 bg-gray-900/50 backdrop-blur-sm">
+    <header className="border-b bg-background/80 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link href="/new" className="flex items-center">
-            <Logo className="h-8 w-auto text-white" />
+            <Logo className="h-8 w-auto" />
           </Link>
           
           <div className="flex items-center gap-4">
+            <ThemeToggle />
             <Link href="/new">
-              <Button className="bg-white/10 hover:bg-white/20 text-white border-white/20">
+              <Button>
                 <Plus className="w-4 h-4 mr-2" />
                 New Draft
               </Button>
@@ -107,17 +113,17 @@ export function AppHeader() {
                   <CurrentUserAvatar />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56 bg-gray-800 border-gray-700" align="end">
+              <DropdownMenuContent className="w-56" align="end">
                 <div className="flex items-center justify-start gap-2 p-2">
                   <div className="flex flex-col space-y-1 leading-none">
-                    <p className="w-[200px] truncate text-sm text-gray-400">
+                    <p className="w-[200px] truncate text-sm text-muted-foreground">
                       {user.email}
                     </p>
                   </div>
                 </div>
-                <DropdownMenuSeparator className="bg-gray-700" />
+                <DropdownMenuSeparator />
                 <DropdownMenuItem 
-                  className="text-white hover:bg-gray-700 cursor-pointer"
+                  className="cursor-pointer"
                   onClick={handleSignOut}
                 >
                   <LogOut className="mr-2 h-4 w-4" />

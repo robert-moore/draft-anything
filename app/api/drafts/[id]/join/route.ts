@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { drafts, clients, draftClients } from '@/drizzle/schema'
+import { draftsInDa, profilesInDa, draftUsersInDa } from '@/drizzle/schema'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { NextRequest, NextResponse } from 'next/server'
 import { eq, and, count } from 'drizzle-orm'
@@ -39,8 +39,8 @@ export async function POST(
     // Check if draft exists and is in setting_up state
     const [draft] = await db
       .select()
-      .from(drafts)
-      .where(eq(drafts.id, draftId))
+      .from(draftsInDa)
+      .where(eq(draftsInDa.id, draftId))
 
     if (!draft) {
       return NextResponse.json(
@@ -59,8 +59,8 @@ export async function POST(
     // Check if draft is full
     const [participantCount] = await db
       .select({ count: count() })
-      .from(draftClients)
-      .where(eq(draftClients.draftId, draftId))
+      .from(draftUsersInDa)
+      .where(eq(draftUsersInDa.draftId, draftId))
 
     if (participantCount.count >= draft.maxDrafters) {
       return NextResponse.json(
@@ -72,10 +72,10 @@ export async function POST(
     // Check if user is already in this draft
     const [existingParticipant] = await db
       .select()
-      .from(draftClients)
+      .from(draftUsersInDa)
       .where(and(
-        eq(draftClients.draftId, draftId),
-        eq(draftClients.clientId, user.id)
+        eq(draftUsersInDa.draftId, draftId),
+        eq(draftUsersInDa.userId, user.id)
       ))
 
     if (existingParticipant) {
@@ -85,38 +85,38 @@ export async function POST(
       )
     }
 
-    // Create or update client record
+    // Create or update profile record
     const now = new Date().toISOString()
     
-    // First check if client exists
-    const [existingClient] = await db
+    // First check if profile exists
+    const [existingProfile] = await db
       .select()
-      .from(clients)
-      .where(eq(clients.id, user.id))
+      .from(profilesInDa)
+      .where(eq(profilesInDa.id, user.id))
 
-    if (!existingClient) {
-      // Create new client
+    if (!existingProfile) {
+      // Create new profile
       await db
-        .insert(clients)
+        .insert(profilesInDa)
         .values({
           id: user.id,
           name: name.trim(),
           createdAt: now
         })
     } else {
-      // Update client name
+      // Update profile name
       await db
-        .update(clients)
+        .update(profilesInDa)
         .set({ name: name.trim() })
-        .where(eq(clients.id, user.id))
+        .where(eq(profilesInDa.id, user.id))
     }
 
     // Add participant to draft
     await db
-      .insert(draftClients)
+      .insert(draftUsersInDa)
       .values({
         draftId,
-        clientId: user.id,
+        userId: user.id,
         position: participantCount.count + 1,
         isReady: true,
         createdAt: now

@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { drafts, draftClients } from '@/drizzle/schema'
+import { draftsInDa, draftUsersInDa } from '@/drizzle/schema'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { NextRequest, NextResponse } from 'next/server'
 import { eq, count } from 'drizzle-orm'
@@ -29,8 +29,8 @@ export async function POST(
     // Check if draft exists and is in setting_up state
     const [draft] = await db
       .select()
-      .from(drafts)
-      .where(eq(drafts.id, draftId))
+      .from(draftsInDa)
+      .where(eq(draftsInDa.id, draftId))
 
     if (!draft) {
       return NextResponse.json(
@@ -49,8 +49,8 @@ export async function POST(
     // Check if we have enough participants
     const [participantCount] = await db
       .select({ count: count() })
-      .from(draftClients)
-      .where(eq(draftClients.draftId, draftId))
+      .from(draftUsersInDa)
+      .where(eq(draftUsersInDa.draftId, draftId))
 
     if (participantCount.count < 2) {
       return NextResponse.json(
@@ -60,14 +60,12 @@ export async function POST(
     }
 
     // Update draft state to active
-    const now = new Date().toISOString()
     await db
-      .update(drafts)
+      .update(draftsInDa)
       .set({ 
-        draftState: 'active',
-        startTime: now
+        draftState: 'active'
       })
-      .where(eq(drafts.id, draftId))
+      .where(eq(draftsInDa.id, draftId))
 
     return NextResponse.json({ 
       message: 'Draft started successfully',

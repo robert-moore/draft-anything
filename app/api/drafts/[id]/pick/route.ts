@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { drafts, clients, draftClients, draftSelectionsInDa } from '@/drizzle/schema'
+import { draftsInDa, profilesInDa, draftUsersInDa, draftSelectionsInDa } from '@/drizzle/schema'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { NextRequest, NextResponse } from 'next/server'
 import { eq, and, count, max } from 'drizzle-orm'
@@ -39,8 +39,8 @@ export async function POST(
     // Check if draft exists and is active
     const [draft] = await db
       .select()
-      .from(drafts)
-      .where(eq(drafts.id, draftId))
+      .from(draftsInDa)
+      .where(eq(draftsInDa.id, draftId))
 
     if (!draft) {
       return NextResponse.json(
@@ -59,10 +59,10 @@ export async function POST(
     // Check if user is in this draft
     const [participant] = await db
       .select()
-      .from(draftClients)
+      .from(draftUsersInDa)
       .where(and(
-        eq(draftClients.draftId, draftId),
-        eq(draftClients.clientId, user.id)
+        eq(draftUsersInDa.draftId, draftId),
+        eq(draftUsersInDa.userId, user.id)
       ))
 
     if (!participant) {
@@ -80,11 +80,11 @@ export async function POST(
 
     const nextPickNumber = (maxPickResult.maxPick || 0) + 1
 
-    // Get client name for response
-    const [client] = await db
-      .select({ name: clients.name })
-      .from(clients)
-      .where(eq(clients.id, user.id))
+    // Get profile name for response
+    const [profile] = await db
+      .select({ name: profilesInDa.name })
+      .from(profilesInDa)
+      .where(eq(profilesInDa.id, user.id))
 
     // Create the pick
     const now = new Date().toISOString()
@@ -92,7 +92,7 @@ export async function POST(
       .insert(draftSelectionsInDa)
       .values({
         draftId,
-        clientId: user.id,
+        userId: user.id,
         pickNumber: nextPickNumber,
         payload: payload.trim(),
         createdAt: now
@@ -101,8 +101,9 @@ export async function POST(
     // Return the new pick
     return NextResponse.json({
       pickNumber: nextPickNumber,
-      clientId: user.id,
-      clientName: client?.name || 'Unknown',
+      userId: user.id,
+      clientId: user.id, // For backward compatibility
+      clientName: profile?.name || 'Unknown',
       payload: payload.trim(),
       createdAt: now
     }, { status: 201 })

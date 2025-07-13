@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { drafts, clients, draftClients, draftSelectionsInDa } from '@/drizzle/schema'
+import { draftsInDa, profilesInDa, draftUsersInDa, draftSelectionsInDa } from '@/drizzle/schema'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { NextRequest, NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
@@ -29,8 +29,8 @@ export async function GET(
     // Get draft details
     const [draft] = await db
       .select()
-      .from(drafts)
-      .where(eq(drafts.id, draftId))
+      .from(draftsInDa)
+      .where(eq(draftsInDa.id, draftId))
 
     if (!draft) {
       return NextResponse.json(
@@ -42,39 +42,40 @@ export async function GET(
     // Get participants
     const participantsQuery = await db
       .select({
-        id: clients.id,
-        name: clients.name,
-        position: draftClients.position,
-        isReady: draftClients.isReady,
-        createdAt: draftClients.createdAt
+        id: profilesInDa.id,
+        name: profilesInDa.name,
+        position: draftUsersInDa.position,
+        isReady: draftUsersInDa.isReady,
+        createdAt: draftUsersInDa.createdAt
       })
-      .from(draftClients)
-      .innerJoin(clients, eq(draftClients.clientId, clients.id))
-      .where(eq(draftClients.draftId, draftId))
+      .from(draftUsersInDa)
+      .innerJoin(profilesInDa, eq(draftUsersInDa.userId, profilesInDa.id))
+      .where(eq(draftUsersInDa.draftId, draftId))
 
     // Get draft picks
     const picksQuery = await db
       .select({
         pickNumber: draftSelectionsInDa.pickNumber,
-        clientId: draftSelectionsInDa.clientId,
+        userId: draftSelectionsInDa.userId,
         payload: draftSelectionsInDa.payload,
         createdAt: draftSelectionsInDa.createdAt
       })
       .from(draftSelectionsInDa)
-      .innerJoin(clients, eq(draftSelectionsInDa.clientId, clients.id))
+      .innerJoin(profilesInDa, eq(draftSelectionsInDa.userId, profilesInDa.id))
       .where(eq(draftSelectionsInDa.draftId, draftId))
 
-    // Add client names to picks
+    // Add user names to picks
     const picks = await Promise.all(
       picksQuery.map(async (pick) => {
-        const [client] = await db
-          .select({ name: clients.name })
-          .from(clients)
-          .where(eq(clients.id, pick.clientId))
+        const [profile] = await db
+          .select({ name: profilesInDa.name })
+          .from(profilesInDa)
+          .where(eq(profilesInDa.id, pick.userId))
         
         return {
           ...pick,
-          clientName: client?.name || 'Unknown'
+          clientId: pick.userId, // For backward compatibility
+          clientName: profile?.name || 'Unknown'
         }
       })
     )

@@ -13,16 +13,7 @@ export async function middleware(request: NextRequest) {
   // Construct the base URL - ensure protocol has :// format
   const baseUrl = `${protocol}${protocol.endsWith(':') ? '//' : '://'}${host}`
 
-  // Block access to /app and /auth routes in production
-  const isProduction = process.env.NODE_ENV === 'production'
   const pathname = request.nextUrl.pathname
-
-  if (
-    isProduction &&
-    (pathname.startsWith('/new') || pathname.startsWith('/auth'))
-  ) {
-    return NextResponse.redirect(new URL('/', request.url))
-  }
 
   // Create a response
   let response: NextResponse

@@ -1,5 +1,5 @@
 import { db } from '@/lib/db'
-import { drafts } from '@/drizzle/schema'
+import { draftsInDa } from '@/drizzle/schema'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { NextRequest, NextResponse } from 'next/server'
 import { eq } from 'drizzle-orm'
@@ -30,8 +30,8 @@ export async function POST(
     // Check if draft exists
     const [draft] = await db
       .select()
-      .from(drafts)
-      .where(eq(drafts.id, draftId))
+      .from(draftsInDa)
+      .where(eq(draftsInDa.id, draftId))
 
     if (!draft) {
       return NextResponse.json(
