@@ -27,7 +27,6 @@ export const drafts = da.table('drafts', {
   maxDrafters: smallint('max_drafters').notNull(),
   secPerRound: numeric('sec_per_round').notNull(),
   numRounds: smallint('num_rounds').notNull(),
-  startTime: timestamp('start_time', { mode: 'string' }).notNull(),
   createdAt: timestamp('created_at', { mode: 'string' }).notNull()
 })
 
