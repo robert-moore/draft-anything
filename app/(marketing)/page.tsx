@@ -3,9 +3,34 @@
 import { GlowCard } from '@/components/ui/glow-card'
 import { Shuffle, Star, Users, Zap } from 'lucide-react'
 import { memo, useState } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+
+const Header = memo(() => (
+  <header className="fixed top-0 left-0 right-0 z-50 px-8 py-6 backdrop-blur-sm bg-gray-900/50 border-b border-white/[0.08]">
+    <div className="max-w-6xl mx-auto flex items-center justify-between">
+      <Link href="/" className="flex items-center">
+        <Image
+          src="/brand/wordmark-light.svg"
+          alt="Draft Anything"
+          width={160}
+          height={40}
+          className="h-8 w-auto"
+        />
+      </Link>
+      <Link
+        href="/auth/login"
+        className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white font-medium transition-colors backdrop-blur-sm border border-white/20"
+      >
+        Login
+      </Link>
+    </div>
+  </header>
+))
+Header.displayName = 'Header'
 
 const HeroSection = memo(() => (
-  <section className="relative z-10 px-8 pt-32 pb-24 md:pt-40 lg:pt-48">
+  <section className="relative z-10 px-8 pt-40 pb-24 md:pt-48 lg:pt-56">
     <div className="max-w-4xl mx-auto text-center">
       <h1 className="text-5xl md:text-6xl lg:text-7xl font-light leading-[0.95] tracking-tight text-white/90 mb-8">
         Draft
@@ -231,6 +256,7 @@ CTASection.displayName = 'CTASection'
 export default function DraftAnythingLanding() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+      <Header />
       <HeroSection />
       <ExamplesSection />
       <HowItWorksSection />
