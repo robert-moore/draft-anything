@@ -7,7 +7,10 @@ interface BrutalistCardProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const BrutalistCard = forwardRef<HTMLDivElement, BrutalistCardProps>(
-  ({ className, variant = 'default', border = 'single', children, ...props }, ref) => {
+  (
+    { className, variant = 'default', border = 'single', children, ...props },
+    ref
+  ) => {
     const getBorderStyle = () => {
       switch (border) {
         case 'double':
@@ -37,21 +40,24 @@ const BrutalistCard = forwardRef<HTMLDivElement, BrutalistCardProps>(
           // Variant styles
           {
             // Default clean brutalist
-            'shadow-[3px_3px_0px_0px_hsl(var(--border))]': variant === 'default',
+            'shadow-[3px_3px_0px_0px_hsl(var(--border))]':
+              variant === 'default',
             // Terminal style - uses theme colors
-            'bg-background text-primary border-primary font-mono shadow-[0_0_10px_0px_hsl(var(--primary)/0.3)]': variant === 'terminal',
+            'bg-background text-primary border-primary font-mono shadow-[0_0_10px_0px_hsl(var(--primary)/0.3)]':
+              variant === 'terminal',
             // Grid pattern
-            'bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:24px_24px]': variant === 'grid',
+            'bg-[linear-gradient(to_right,hsl(var(--border))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border))_1px,transparent_1px)] bg-[size:24px_24px]':
+              variant === 'grid',
             // Data table style
             'border-collapse': variant === 'data',
             // Alert style
-            'border-primary bg-primary/5 shadow-[4px_4px_0px_0px_hsl(var(--primary))]': variant === 'alert',
+            'border-primary bg-primary/5 dark:bg-white/5 shadow-[4px_4px_0px_0px_hsl(var(--primary))]':
+              variant === 'alert'
           },
           className
         )}
         {...props}
       >
-        
         {children}
       </div>
     )

@@ -1,12 +1,21 @@
 'use client'
 
 import { BrandLogo } from '@/components/brand/brand-logo'
-import { BrutalistCard } from '@/components/ui/brutalist-card'
 import { BrutalistButton } from '@/components/ui/brutalist-button'
-import { VisualFocus } from '@/components/ui/visual-focus'
+import { BrutalistCard } from '@/components/ui/brutalist-card'
 import { RhythmSpacer } from '@/components/ui/rhythm-spacer'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
-import { Heart, Play, Star, Trophy, Users, Zap, ArrowRight, Sparkles } from 'lucide-react'
+import { VisualFocus } from '@/components/ui/visual-focus'
+import {
+  ArrowRight,
+  Heart,
+  Play,
+  Sparkles,
+  Star,
+  Trophy,
+  Users,
+  Zap
+} from 'lucide-react'
 import Link from 'next/link'
 import { memo, useState } from 'react'
 
@@ -33,23 +42,29 @@ const HeroSection = memo(() => (
   <section className="relative px-6 pt-24 pb-12 md:pt-32 lg:pt-40">
     <div className="max-w-6xl mx-auto">
       {/* Hero Focus Block - Eye-catching primary content */}
-      <VisualFocus priority="primary" className="text-center mb-16 relative overflow-hidden">
+      <VisualFocus
+        priority="primary"
+        className="text-center mb-16 py-10 lg:py-16 relative overflow-hidden"
+      >
         {/* Subtle grid background for texture */}
         <div className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(to_right,hsl(var(--foreground))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--foreground))_1px,transparent_1px)] bg-[size:40px_40px]" />
-        
+
         <div className="relative z-10">
           <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold tracking-tighter mb-8 leading-none">
-            Draft <span className="text-primary relative">
+            Draft{' '}
+            <span className="text-primary relative">
               Anything
               {/* Subtle underline accent */}
               <div className="absolute bottom-2 left-0 right-0 h-1 bg-primary/20" />
             </span>
           </h1>
-          
+
           <p className="text-2xl md:text-3xl text-muted-foreground leading-relaxed max-w-4xl mx-auto mb-12">
             Create rankings and settle debates with friends.
             <br />
-            <span className="text-lg md:text-xl opacity-80">Simple, fast, and surprisingly addictive.</span>
+            <span className="text-lg md:text-xl opacity-80">
+              Simple, fast, and surprisingly addictive.
+            </span>
           </p>
 
           {/* Primary CTA - Maximum visual weight */}
@@ -58,7 +73,9 @@ const HeroSection = memo(() => (
               <BrutalistButton
                 variant="primary"
                 className="px-12 py-4 text-xl font-semibold group"
-                icon={<Play className="w-6 h-6 transition-transform group-hover:translate-x-1" />}
+                icon={
+                  <Play className="w-6 h-6 transition-transform group-hover:translate-x-1" />
+                }
               >
                 Start Drafting
               </BrutalistButton>
@@ -78,17 +95,23 @@ const HeroSection = memo(() => (
         <VisualFocus priority="tertiary" className="text-center py-8">
           <Users className="w-8 h-8 text-primary mx-auto mb-3" />
           <span className="font-semibold text-lg">Made for friends</span>
-          <p className="text-sm text-muted-foreground mt-1">Bring people together</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Bring people together
+          </p>
         </VisualFocus>
         <VisualFocus priority="tertiary" className="text-center py-8">
           <Zap className="w-8 h-8 text-primary mx-auto mb-3" />
           <span className="font-semibold text-lg">Super simple</span>
-          <p className="text-sm text-muted-foreground mt-1">No learning curve</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            No learning curve
+          </p>
         </VisualFocus>
         <VisualFocus priority="tertiary" className="text-center py-8">
           <Trophy className="w-8 h-8 text-primary mx-auto mb-3" />
           <span className="font-semibold text-lg">Endless fun</span>
-          <p className="text-sm text-muted-foreground mt-1">Hours of entertainment</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Hours of entertainment
+          </p>
         </VisualFocus>
       </div>
     </div>
@@ -105,7 +128,7 @@ const ExamplesSection = memo(() => {
       description: 'Where should we eat tonight?',
       items: [
         'Pizza Palace',
-        'Burger Haven', 
+        'Burger Haven',
         'Sushi Central',
         'Taco Town',
         'Pasta Paradise'
@@ -120,7 +143,7 @@ const ExamplesSection = memo(() => {
       items: [
         'Avengers: Endgame',
         'Iron Man',
-        'Black Panther', 
+        'Black Panther',
         'Spider-Man',
         'Thor: Ragnarok'
       ],
@@ -151,7 +174,8 @@ const ExamplesSection = memo(() => {
             </span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            From movie nights to menu choices, create rankings that actually matter to you and your friends
+            From movie nights to menu choices, create rankings that actually
+            matter to you and your friends
           </p>
         </div>
 
@@ -177,7 +201,7 @@ const ExamplesSection = memo(() => {
                   </p>
                 </div>
               </div>
-              
+
               <div className="space-y-3">
                 {example.items.slice(0, 3).map((item, i) => (
                   <div key={i} className="flex items-center gap-3 text-sm">
@@ -191,7 +215,7 @@ const ExamplesSection = memo(() => {
                   </div>
                 ))}
               </div>
-              
+
               {selectedExample !== index && (
                 <div className="mt-4 text-xs text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                   Click to view full ranking →
@@ -202,10 +226,16 @@ const ExamplesSection = memo(() => {
         </div>
 
         {/* Featured example - maximum visual prominence */}
-        <VisualFocus priority="primary" direction="horizontal" className="max-w-4xl mx-auto">
+        <VisualFocus
+          priority="primary"
+          direction="horizontal"
+          className="max-w-4xl mx-auto"
+        >
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-4 mb-4">
-              <div className={`${examples[selectedExample].color} transition-transform duration-300 ease-out hover:scale-110`}>
+              <div
+                className={`${examples[selectedExample].color} transition-transform duration-300 ease-out hover:scale-110`}
+              >
                 {examples[selectedExample].icon}
               </div>
               <h3 className="text-3xl font-bold transition-colors duration-300">
@@ -216,9 +246,9 @@ const ExamplesSection = memo(() => {
               {examples[selectedExample].description}
             </p>
           </div>
-          
+
           <RhythmSpacer size="sm" variant="dots" />
-          
+
           <div className="grid gap-4">
             {examples[selectedExample].items.map((item, index) => (
               <div
@@ -299,10 +329,13 @@ const CTASection = memo(() => (
   <section className="relative px-6 py-32">
     <div className="max-w-5xl mx-auto">
       {/* Final conversion focus - maximum impact */}
-      <VisualFocus priority="primary" className="text-center relative overflow-hidden">
+      <VisualFocus
+        priority="primary"
+        className="text-center relative overflow-hidden py-10 lg:py-16"
+      >
         {/* Subtle background pattern for texture */}
         <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary))_1px,transparent_1px)] bg-[size:30px_30px]" />
-        
+
         <div className="relative z-10">
           <h2 className="text-5xl md:text-6xl font-bold tracking-tight mb-8 leading-tight">
             Ready to start{' '}
@@ -311,10 +344,10 @@ const CTASection = memo(() => (
               <div className="absolute bottom-0 left-0 right-0 h-2 bg-primary/20 -rotate-1" />
             </span>
           </h2>
-          
+
           <p className="text-2xl text-muted-foreground max-w-3xl mx-auto mb-12 leading-relaxed">
-            Join thousands of friends creating epic rankings and settling debates
-            for everything under the sun.
+            Join thousands of friends creating epic rankings and settling
+            debates for everything under the sun.
           </p>
 
           {/* Primary conversion action */}
@@ -323,7 +356,9 @@ const CTASection = memo(() => (
               <BrutalistButton
                 variant="primary"
                 className="px-12 py-5 text-xl font-semibold group"
-                icon={<Heart className="w-6 h-6 transition-transform group-hover:scale-110" />}
+                icon={
+                  <Heart className="w-6 h-6 transition-transform group-hover:scale-110" />
+                }
               >
                 Get Started Free
               </BrutalistButton>
@@ -337,35 +372,44 @@ const CTASection = memo(() => (
           <RhythmSpacer size="md" variant="dots" />
 
           {/* Trust signals - organized for easy scanning */}
-          <VisualFocus priority="tertiary" className="max-w-3xl mx-auto bg-gradient-to-r from-primary/5 to-purple-500/5">
+          <VisualFocus
+            priority="tertiary"
+            className="max-w-3xl mx-auto bg-gradient-to-r from-primary/5 to-purple-500/5"
+          >
             <h3 className="text-2xl font-bold mb-6">Join the fun today!</h3>
             <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
               No credit card required. Start drafting in under 30 seconds.
             </p>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="flex flex-col items-center gap-3">
                 <div className="w-12 h-12 border-2 border-green-500 bg-green-500/10 flex items-center justify-center">
                   <div className="w-3 h-3 bg-green-500" />
                 </div>
                 <span className="font-semibold">Free forever</span>
-                <span className="text-sm text-muted-foreground text-center">No hidden costs or premium tiers</span>
+                <span className="text-sm text-muted-foreground text-center">
+                  No hidden costs or premium tiers
+                </span>
               </div>
-              
+
               <div className="flex flex-col items-center gap-3">
                 <div className="w-12 h-12 border-2 border-blue-500 bg-blue-500/10 flex items-center justify-center">
                   <div className="w-3 h-3 bg-blue-500" />
                 </div>
                 <span className="font-semibold">No setup required</span>
-                <span className="text-sm text-muted-foreground text-center">Create and share instantly</span>
+                <span className="text-sm text-muted-foreground text-center">
+                  Create and share instantly
+                </span>
               </div>
-              
+
               <div className="flex flex-col items-center gap-3">
                 <div className="w-12 h-12 border-2 border-purple-500 bg-purple-500/10 flex items-center justify-center">
                   <div className="w-3 h-3 bg-purple-500" />
                 </div>
                 <span className="font-semibold">Instant results</span>
-                <span className="text-sm text-muted-foreground text-center">See rankings update in real-time</span>
+                <span className="text-sm text-muted-foreground text-center">
+                  See rankings update in real-time
+                </span>
               </div>
             </div>
           </VisualFocus>

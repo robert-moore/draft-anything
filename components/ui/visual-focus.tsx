@@ -7,11 +7,20 @@ interface VisualFocusProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const VisualFocus = forwardRef<HTMLDivElement, VisualFocusProps>(
-  ({ className, priority = 'primary', direction = 'corner', children, ...props }, ref) => {
+  (
+    {
+      className,
+      priority = 'primary',
+      direction = 'corner',
+      children,
+      ...props
+    },
+    ref
+  ) => {
     const getPriorityStyles = () => {
       switch (priority) {
         case 'primary':
-          return 'border-primary bg-primary/5 shadow-[4px_4px_0px_0px_hsl(var(--primary))]'
+          return 'border-primary bg-primary/5 dark:bg-white/5 shadow-[4px_4px_0px_0px_hsl(var(--primary))]'
         case 'secondary':
           return 'border-border bg-background shadow-[2px_2px_0px_0px_hsl(var(--border))]'
         case 'tertiary':
@@ -32,9 +41,7 @@ const VisualFocus = forwardRef<HTMLDivElement, VisualFocusProps>(
             <div className="absolute top-0 left-2 right-2 h-1 bg-primary" />
           )
         case 'corner':
-          return (
-            <div className="absolute top-0 right-0 w-4 h-4 bg-primary" />
-          )
+          return <div className="absolute top-0 right-0 w-4 h-4 bg-primary" />
         default:
           return null
       }
