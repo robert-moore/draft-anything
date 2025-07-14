@@ -30,10 +30,13 @@ CREATE TABLE IF NOT EXISTS da.drafts (
 CREATE TABLE IF NOT EXISTS da.draft_users (
     draft_id INTEGER, -- REFERENCES da.drafts (id),
     user_id UUID REFERENCES da.profiles (id),
+    draft_username TEXT NOT NULL,
     position SMALLINT,
     is_ready BOOLEAN NOT NULL,
     created_at TIMESTAMP NOT NULL
 );
+
+ALTER TABLE da.draft_users ADD PRIMARY KEY (draft_id, user_id);
 
 CREATE TABLE IF NOT EXISTS da.draft_selections (
     draft_id INTEGER, -- REFERENCES da.drafts (id),
@@ -42,3 +45,5 @@ CREATE TABLE IF NOT EXISTS da.draft_selections (
     created_at TIMESTAMP NOT NULL,
     payload TEXT NOT NULL
 );
+
+ALTER TABLE da.draft_selections ADD PRIMARY KEY (draft_id, user_id, pick_number);

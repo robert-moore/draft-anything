@@ -105,6 +105,7 @@ export async function POST(
     await db.insert(draftUsersInDa).values({
       draftId,
       userId: user.id,
+      draftUsername: name.trim(),
       position: participantCount.count + 1,
       isReady: true,
       createdAt: now

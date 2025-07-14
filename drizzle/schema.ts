@@ -61,6 +61,7 @@ export const draftUsersInDa = da.table(
   {
     draftId: integer('draft_id'),
     userId: uuid('user_id'),
+    draftUsername: text('draft_username').notNull(),
     position: smallint(),
     isReady: boolean('is_ready').notNull(),
     createdAt: timestamp('created_at', { mode: 'string' }).notNull()

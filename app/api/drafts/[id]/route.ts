@@ -1,12 +1,17 @@
-import { db } from '@/lib/db'
-import { draftsInDa, profilesInDa, draftUsersInDa, draftSelectionsInDa } from '@/drizzle/schema'
+import {
+  draftSelectionsInDa,
+  draftsInDa,
+  draftUsersInDa,
+  profilesInDa
+} from '@/drizzle/schema'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
-import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
 import { eq } from 'drizzle-orm'
+import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -18,12 +23,11 @@ export async function GET(
       )
     }
 
-    const draftId = parseInt(params.id)
+    // Await params before accessing properties
+    const { id } = await params
+    const draftId = parseInt(id)
     if (isNaN(draftId)) {
-      return NextResponse.json(
-        { error: 'Invalid draft ID' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid draft ID' }, { status: 400 })
     }
 
     // Get draft details
@@ -33,10 +37,7 @@ export async function GET(
       .where(eq(draftsInDa.id, draftId))
 
     if (!draft) {
-      return NextResponse.json(
-        { error: 'Draft not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Draft not found' }, { status: 404 })
     }
 
     // Get participants
@@ -66,12 +67,12 @@ export async function GET(
 
     // Add user names to picks
     const picks = await Promise.all(
-      picksQuery.map(async (pick) => {
+      picksQuery.map(async pick => {
         const [profile] = await db
           .select({ name: profilesInDa.name })
           .from(profilesInDa)
           .where(eq(profilesInDa.id, pick.userId))
-        
+
         return {
           ...pick,
           clientId: pick.userId, // For backward compatibility
