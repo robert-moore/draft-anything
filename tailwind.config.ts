@@ -149,6 +149,56 @@ const config = {
   				'100%': {
   					transform: 'translateY(-50%)'
   				}
+  			},
+  			'fade-in-up': {
+  				'0%': {
+  					opacity: '0',
+  					transform: 'translateY(10px)'
+  				},
+  				'100%': {
+  					opacity: '1',
+  					transform: 'translateY(0)'
+  				}
+  			},
+  			'fade-in-down': {
+  				'0%': {
+  					opacity: '0',
+  					transform: 'translateY(-10px)'
+  				},
+  				'100%': {
+  					opacity: '1',
+  					transform: 'translateY(0)'
+  				}
+  			},
+  			'fade-in-left': {
+  				'0%': {
+  					opacity: '0',
+  					transform: 'translateX(-10px)'
+  				},
+  				'100%': {
+  					opacity: '1',
+  					transform: 'translateX(0)'
+  				}
+  			},
+  			'fade-in-right': {
+  				'0%': {
+  					opacity: '0',
+  					transform: 'translateX(10px)'
+  				},
+  				'100%': {
+  					opacity: '1',
+  					transform: 'translateX(0)'
+  				}
+  			},
+  			'scale-in': {
+  				'0%': {
+  					opacity: '0',
+  					transform: 'scale(0.95)'
+  				},
+  				'100%': {
+  					opacity: '1',
+  					transform: 'scale(1)'
+  				}
   			}
   		},
   		animation: {
@@ -158,7 +208,12 @@ const config = {
   			'collapse-up': 'collapse-up 0.1s ease-in-out',
   			'slide-in-right': 'slide-in-right 0.2s ease-out',
   			'slide-out-right': 'slide-out-right 0.2s ease-out',
-  			'scroll-up': 'scroll-up 20s linear infinite'
+  			'scroll-up': 'scroll-up 20s linear infinite',
+  			'fade-in-up': 'fade-in-up 0.6s ease-out',
+  			'fade-in-down': 'fade-in-down 0.6s ease-out',
+  			'fade-in-left': 'fade-in-left 0.6s ease-out',
+  			'fade-in-right': 'fade-in-right 0.6s ease-out',
+  			'scale-in': 'scale-in 0.6s ease-out'
   		},
   		fontFamily: {
   			sans: [

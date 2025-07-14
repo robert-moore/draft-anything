@@ -1,39 +1,19 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Clock, Users, Play, Pause, Share2, Copy } from 'lucide-react'
+import { BrutalSection } from '@/components/ui/brutal-section'
+import { BrutalButton } from '@/components/ui/brutal-button'
+import { BrutalInput } from '@/components/ui/brutal-input'
+import { BrutalListItem } from '@/components/ui/brutal-list-item'
+import { NumberBox } from '@/components/ui/number-box'
+import { GeometricBackground } from '@/components/ui/geometric-background'
+import { DraftMetadata } from '@/components/draft/draft-metadata'
+import { ViewModeTabs } from '@/components/draft/view-mode-tabs'
+import { DraftPickGrid } from '@/components/draft/draft-pick-grid'
+import { AlertCircle } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
+import type { Draft, Participant, DraftPick } from '@/types/draft'
 
-interface Draft {
-  id: number
-  name: string
-  draftState: 'setting_up' | 'active' | 'completed' | 'errored' | 'paused' | 'canceled'
-  maxDrafters: number
-  secPerRound: string
-  numRounds: number
-  startTime: string
-  createdAt: string
-}
-
-interface Participant {
-  id: string
-  name: string
-  position: number | null
-  isReady: boolean
-}
-
-interface DraftPick {
-  pickNumber: number
-  clientId: string
-  clientName: string
-  payload: string
-  createdAt: string
-}
 
 export default function DraftPage() {
   const params = useParams()
@@ -52,6 +32,7 @@ export default function DraftPage() {
   const [error, setError] = useState<string | null>(null)
   const [showInviteLink, setShowInviteLink] = useState(false)
   const [inviteLink, setInviteLink] = useState('')
+  const [viewMode, setViewMode] = useState<'selections' | 'by-round' | 'by-drafter'>('selections')
 
   // Load draft data and check if already joined
   useEffect(() => {
@@ -60,7 +41,6 @@ export default function DraftPage() {
         const response = await fetch(`/api/drafts/${draftId}`)
         if (!response.ok) {
           if (response.status === 401) {
-            // Redirect to login with return URL
             window.location.href = `/auth/login?redirectTo=/drafts/${draftId}`
             return
           }
@@ -72,7 +52,6 @@ export default function DraftPage() {
         setPicks(data.picks || [])
         setCurrentUser(data.currentUser)
         
-        // Check if user is already joined
         if (data.currentUser && data.participants?.some((p: Participant) => p.id === data.currentUser.id)) {
           setIsJoined(true)
         }
@@ -143,36 +122,47 @@ export default function DraftPage() {
     }
   }
 
-  const getStateColor = (state: Draft['draftState']) => {
+  const getStateInfo = (state: Draft['draftState']) => {
     switch (state) {
-      case 'setting_up': return 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400'
-      case 'active': return 'bg-green-500/20 text-green-600 dark:text-green-400'
-      case 'completed': return 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
-      case 'paused': return 'bg-orange-500/20 text-orange-600 dark:text-orange-400'
-      default: return 'bg-muted text-muted-foreground'
-    }
-  }
-
-  const handleGetInviteLink = async () => {
-    try {
-      const response = await fetch(`/api/drafts/${draftId}/invite`, {
-        method: 'POST'
-      })
-      
-      if (!response.ok) throw new Error('Failed to create invite link')
-      
-      const data = await response.json()
-      setInviteLink(data.inviteLink)
-      setShowInviteLink(true)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create invite link')
+      case 'setting_up': return { 
+        label: 'SETUP', 
+        variant: 'default' as const
+      }
+      case 'active': return { 
+        label: 'LIVE', 
+        variant: 'filled' as const
+      }
+      case 'completed': return { 
+        label: 'DONE', 
+        variant: 'default' as const
+      }
+      case 'paused': return { 
+        label: 'PAUSED', 
+        variant: 'default' as const
+      }
+      default: return { 
+        label: 'ERROR', 
+        variant: 'default' as const
+      }
     }
   }
 
   const handleShareDraft = async () => {
     if (!inviteLink) {
-      await handleGetInviteLink()
-      return
+      try {
+        const response = await fetch(`/api/drafts/${draftId}/invite`, {
+          method: 'POST'
+        })
+        
+        if (!response.ok) throw new Error('Failed to create invite link')
+        
+        const data = await response.json()
+        setInviteLink(data.inviteLink)
+        setShowInviteLink(true)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to create invite link')
+        return
+      }
     }
     
     if (navigator.share) {
@@ -183,266 +173,399 @@ export default function DraftPage() {
           url: inviteLink
         })
       } catch (err) {
-        // Fallback to clipboard
         navigator.clipboard.writeText(inviteLink)
       }
     } else {
-      // Fallback to clipboard
       navigator.clipboard.writeText(inviteLink)
-      // You could show a toast here
     }
-  }
-
-  const handleCopyInviteLink = () => {
-    navigator.clipboard.writeText(inviteLink)
-    // You could show a toast here
   }
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-muted-foreground">Loading draft...</div>
+      <div className="min-h-screen bg-white dark:bg-background">
+        <div className="border-t-4 border-black dark:border-white bg-white dark:bg-black">
+          <div className="flex items-center justify-center py-32">
+            <BrutalSection 
+              variant="bordered"
+              className="w-96 text-center"
+              background="diagonal"
+            >
+              <div className="p-8">
+                <div className="font-mono text-lg font-bold mb-4 text-black dark:text-white">
+                  Loading draft data...
+                </div>
+                <div className="text-sm opacity-70">
+                  {'[' + '█'.repeat(10) + '▒'.repeat(20) + '] 33%'}
+                </div>
+              </div>
+            </BrutalSection>
+          </div>
+        </div>
       </div>
     )
   }
 
   if (error || !draft) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-destructive">{error || 'Draft not found'}</div>
+      <div className="min-h-screen bg-white dark:bg-background">
+        <div className="border-t-4 border-black dark:border-white bg-white dark:bg-black">
+          <div className="flex items-center justify-center py-32">
+            <BrutalSection variant="bordered" className="w-96 text-center">
+              <div className="p-8">
+                <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+                <div className="font-mono text-lg font-bold text-black dark:text-white">
+                  {error || 'Draft not found'}
+                </div>
+              </div>
+            </BrutalSection>
+          </div>
+        </div>
       </div>
     )
   }
 
+  const stateInfo = getStateInfo(draft.draftState)
+
+  // Get current round and pick info
+  const getCurrentRoundInfo = () => {
+    const totalPicks = picks.length
+    const picksPerRound = participants.length
+    const currentRound = Math.floor(totalPicks / picksPerRound) + 1
+    const pickInRound = (totalPicks % picksPerRound) + 1
+    
+    return { currentRound, pickInRound, totalPicks }
+  }
+
+  const { currentRound, pickInRound } = getCurrentRoundInfo()
+
+  // Organize picks by rounds
+  const getPicksByRounds = () => {
+    const rounds: DraftPick[][] = []
+    const picksPerRound = participants.length
+    
+    for (let i = 0; i < picks.length; i += picksPerRound) {
+      rounds.push(picks.slice(i, i + picksPerRound))
+    }
+    
+    return rounds
+  }
+
+  // Organize picks by drafter
+  const getPicksByDrafter = () => {
+    const drafterMap = new Map<string, DraftPick[]>()
+    
+    picks.forEach(pick => {
+      if (!drafterMap.has(pick.clientName)) {
+        drafterMap.set(pick.clientName, [])
+      }
+      drafterMap.get(pick.clientName)!.push(pick)
+    })
+    
+    return Array.from(drafterMap.entries())
+      .map(([name, picks]) => ({
+        name,
+        picks: picks.sort((a, b) => a.pickNumber - b.pickNumber)
+      }))
+      .sort((a, b) => a.picks[0]?.pickNumber - b.picks[0]?.pickNumber)
+  }
+
+  const roundsData = getPicksByRounds()
+  const drafterData = getPicksByDrafter()
+
   return (
-    <div className="px-4 py-8">
-      <div className="max-w-6xl mx-auto space-y-6">
-        
-        {/* Header */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-2xl">{draft.name}</CardTitle>
-                <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4" />
-                    {participants.length}/{draft.maxDrafters} players
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    {draft.secPerRound}s per pick
-                  </div>
-                  <div>
-                    {draft.numRounds} rounds
-                  </div>
+    <div className="min-h-screen bg-white dark:bg-background">
+      {/* Draft Header - Primary Visual Anchor */}
+      <div className="border-t-4 border-black dark:border-white bg-white dark:bg-black">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="flex items-center gap-4 mb-4">
+            <h1 className="text-4xl font-black tracking-tight text-black dark:text-white">
+              {draft.name}
+            </h1>
+            <NumberBox 
+              number={stateInfo.label} 
+              size="sm"
+              variant={stateInfo.variant}
+              className="px-4"
+            />
+          </div>
+          <DraftMetadata
+            players={{ current: participants.length, max: draft.maxDrafters }}
+            timer={parseInt(draft.secPerRound)}
+            round={{ current: currentRound, total: draft.numRounds }}
+            pick={{ current: pickInRound, perRound: participants.length }}
+          />
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto flex border-t-2 border-black dark:border-white">
+        {/* Main Content */}
+        <main className="flex-1 px-6 pt-6 bg-white dark:bg-background">
+          {/* Join Draft */}
+          {!isJoined && draft.draftState === 'setting_up' && (
+            <div className="py-8">
+              <div className="max-w-xl mx-auto">
+                <h2 className="text-2xl font-bold mb-6 text-center text-black dark:text-white">Join Draft</h2>
+                <div className="flex gap-4">
+                  <BrutalInput
+                    placeholder="Your name"
+                    value={playerName}
+                    onChange={e => setPlayerName(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleJoinDraft()}
+                    variant="boxed"
+                    className="flex-1"
+                    autoFocus
+                  />
+                  <BrutalButton 
+                    onClick={handleJoinDraft}
+                    disabled={!playerName.trim()}
+                    variant="filled"
+                  >
+                    Join
+                  </BrutalButton>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleShareDraft}
-                >
-                  <Share2 className="w-4 h-4 mr-2" />
-                  Share
-                </Button>
-                <Badge className={getStateColor(draft.draftState)}>
-                  {draft.draftState.replace('_', ' ')}
-                </Badge>
+            </div>
+          )}
+
+          {/* Start Draft */}
+          {isJoined && draft.draftState === 'setting_up' && participants.length >= 2 && (
+            <div className="py-8">
+              <BrutalButton 
+                onClick={handleStartDraft}
+                variant="filled"
+                className="w-full max-w-md mx-auto block"
+                size="lg"
+              >
+                Start Draft ({participants.length} players)
+              </BrutalButton>
+            </div>
+          )}
+
+          {/* Current Pick - Primary Focus Area */}
+          {(draft.draftState === 'active' || (draft.draftState === 'completed' && picks.length > 0)) && (
+            <div className="py-8">
+              <div className="max-w-2xl mx-auto">
+                {isJoined && currentUser && participants[(picks.length % participants.length)]?.id === currentUser.id ? (
+                  <div className="bg-white dark:bg-black border-2 border-black dark:border-white p-8 relative overflow-hidden">
+                    <GeometricBackground variant="diagonal" opacity={0.05} />
+                    <div className="relative z-10">
+                      <div className="text-center mb-6">
+                        <h2 className="text-2xl font-bold text-black dark:text-white">Round {currentRound} - Pick {pickInRound}</h2>
+                        <p className="text-sm text-muted-foreground mt-1">It's your turn to pick</p>
+                      </div>
+                      <div className="space-y-4">
+                        <BrutalInput
+                          placeholder="Enter your pick..."
+                          value={currentPick}
+                          onChange={e => setCurrentPick(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && handleMakePick()}
+                          variant="boxed"
+                          className="w-full bg-white dark:bg-black text-black dark:text-white text-lg py-3"
+                          autoFocus
+                        />
+                        <BrutalButton 
+                          onClick={handleMakePick}
+                          disabled={!currentPick.trim()}
+                          variant="filled"
+                          className="w-full py-3 text-lg"
+                        >
+                          Submit Pick
+                        </BrutalButton>
+                      </div>
+                    </div>
+                  </div>
+                ) : draft.draftState === 'completed' ? (
+                  <div className="border-2 border-black dark:border-white bg-white dark:bg-black p-12 text-center">
+                    <p className="text-2xl font-bold mb-2 text-black dark:text-white">Draft Complete!</p>
+                    <p className="text-muted-foreground">All {picks.length} picks have been made</p>
+                  </div>
+                ) : (
+                  <div className="border-2 border-black dark:border-white border-dashed p-12 text-center">
+                    <p className="text-lg text-muted-foreground mb-2">Draft in Progress</p>
+                    <p className="text-sm text-muted-foreground">Waiting for {participants[(picks.length % participants.length)]?.name || 'next player'} to pick...</p>
+                  </div>
+                )}
               </div>
             </div>
-          </CardHeader>
-        </Card>
+          )}
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          
-          {/* Main Draft Area */}
-          <div className="lg:col-span-2 space-y-6">
-            
-            {/* Join Draft */}
-            {!isJoined && draft.draftState === 'setting_up' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Join Draft</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-3">
-                    <Input
-                      placeholder="Enter your name"
-                      value={playerName}
-                      onChange={e => setPlayerName(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && handleJoinDraft()}
-                    />
-                    <Button 
-                      onClick={handleJoinDraft}
-                      disabled={!playerName.trim()}
-                    >
-                      Join
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Invite Others */}
-            {isJoined && draft.draftState === 'setting_up' && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Invite Others</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {!showInviteLink ? (
-                    <Button 
-                      onClick={handleGetInviteLink}
-                      className="w-full"
-                      variant="outline"
-                    >
-                      <Share2 className="w-4 h-4 mr-2" />
-                      Get Invite Link
-                    </Button>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="flex gap-2">
-                        <Input
-                          value={inviteLink}
-                          readOnly
-                        />
-                        <Button
-                          onClick={handleCopyInviteLink}
-                          variant="outline"
-                          size="icon"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </Button>
+          {/* Draft Board */}
+          <div className="pt-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-black dark:text-white">Draft Board</h2>
+              <ViewModeTabs viewMode={viewMode} onChange={setViewMode} />
+            </div>
+            {picks.length === 0 ? (
+              <div className="border-2 border-black dark:border-white border-dashed p-16 text-center">
+                <p className="text-lg text-muted-foreground mb-2">
+                  {draft.draftState === 'setting_up' 
+                    ? 'Draft Not Started' 
+                    : 'No Picks Yet'}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {draft.draftState === 'setting_up' 
+                    ? `Waiting for ${participants.length < 2 ? 'more players' : 'host to start'}` 
+                    : 'The first pick will appear here'}
+                </p>
+              </div>
+            ) : (
+              <div className="max-w-4xl">
+                {/* Selections View */}
+                {viewMode === 'selections' && (
+                  <div className="space-y-8">
+                    {roundsData.map((round, roundIndex) => (
+                      <div key={roundIndex}>
+                        <h3 className="font-bold text-sm mb-3 text-black dark:text-white">
+                          Round {roundIndex + 1}
+                        </h3>
+                        <div className="space-y-2">
+                          {round.map((pick) => (
+                            <BrutalListItem
+                              key={pick.pickNumber}
+                              number={pick.pickNumber}
+                              variant="default"
+                            >
+                              <div className="flex-1">
+                                <div className="font-medium text-black dark:text-white">{pick.payload}</div>
+                                <div className="text-xs text-muted-foreground">by {pick.clientName}</div>
+                              </div>
+                            </BrutalListItem>
+                          ))}
+                        </div>
                       </div>
-                      <Button 
-                        onClick={handleShareDraft}
-                        className="w-full"
-                        variant="outline"
-                      >
-                        <Share2 className="w-4 h-4 mr-2" />
-                        Share Link
-                      </Button>
+                    ))}
+                  </div>
+                )}
+
+                {/* By Round View */}
+                {viewMode === 'by-round' && (
+                  <div className="space-y-8">
+                    {Array.from({ length: draft.numRounds }).map((_, roundIndex) => (
+                      <div key={roundIndex}>
+                        <h3 className="font-bold text-sm mb-3 text-black dark:text-white">
+                          Round {roundIndex + 1}
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                          {Array.from({ length: participants.length }).map((_, pickIndex) => {
+                            const pickNumber = roundIndex * participants.length + pickIndex + 1
+                            const pick = picks.find(p => p.pickNumber === pickNumber)
+                            return (
+                              <DraftPickGrid
+                                key={pickIndex}
+                                pickNumber={pickNumber}
+                                pick={pick}
+                              />
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* By Drafter View */}
+                {viewMode === 'by-drafter' && (
+                  <div className="space-y-8">
+                    {drafterData.map((drafter) => (
+                      <div key={drafter.name}>
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-bold text-sm text-black dark:text-white">{drafter.name}</h3>
+                          <span className="text-xs text-muted-foreground">
+                            {drafter.picks.length} pick{drafter.picks.length !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                        <div className="space-y-2">
+                          {drafter.picks.map((pick) => {
+                            const roundNum = Math.ceil(pick.pickNumber / participants.length)
+                            return (
+                              <BrutalListItem
+                                key={pick.pickNumber}
+                                number={pick.pickNumber}
+                                variant="minimal"
+                              >
+                                <div className="flex-1">
+                                  <div className="font-medium text-black dark:text-white">{pick.payload}</div>
+                                  <div className="text-xs text-muted-foreground">Round {roundNum}</div>
+                                </div>
+                              </BrutalListItem>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </main>
+
+        {/* Sidebar */}
+        <aside className="w-80 border-l-2 border-black dark:border-white bg-white dark:bg-black">
+          {/* Players */}
+          <BrutalSection 
+            title={`Players (${participants.length}/${draft.maxDrafters})`}
+            contentClassName="p-4"
+          >
+            {participants.length === 0 ? (
+              <div className="text-muted-foreground text-sm">Waiting for players...</div>
+            ) : (
+              <div className="space-y-2">
+                {participants.map((participant, index) => (
+                  <div key={participant.id} className="flex items-center gap-2">
+                    <NumberBox number={index + 1} size="xs" variant="minimal" />
+                    <span className="font-medium text-sm flex-1 truncate text-black dark:text-white">
+                      {participant.name}
+                    </span>
+                    {participant.isReady && (
+                      <span className="text-xs bg-muted dark:bg-muted/20 px-2 py-1 font-medium text-black dark:text-white">
+                        Ready
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </BrutalSection>
+
+          {/* Turn Order */}
+          {draft.draftState === 'active' && (
+            <BrutalSection 
+              title="Turn Order"
+              contentClassName="p-4"
+            >
+              <div className="space-y-1">
+                {participants.map((participant, index) => {
+                  const isCurrentTurn = index === (pickInRound - 1) % participants.length
+                  return (
+                    <div 
+                      key={participant.id} 
+                      className={`px-3 py-2 text-sm font-medium flex items-center justify-between ${
+                        isCurrentTurn
+                          ? 'bg-black dark:bg-white text-white dark:text-black' 
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      <span>{index + 1}. {participant.name}</span>
+                      {isCurrentTurn && <span className="font-bold">NOW</span>}
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+                  )
+                })}
+              </div>
+            </BrutalSection>
+          )}
 
-            {/* Start Draft */}
-            {isJoined && draft.draftState === 'setting_up' && participants.length >= 2 && (
-              <Card>
-                <CardContent className="pt-6">
-                  <Button 
-                    onClick={handleStartDraft}
-                    className="w-full"
-                  >
-                    <Play className="w-4 h-4 mr-2" />
-                    Start Draft
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Current Pick */}
-            {draft.draftState === 'active' && isJoined && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Make Your Pick</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <Input
-                      placeholder="What are you drafting? (e.g., Pizza Hut, The Godfather, etc.)"
-                      value={currentPick}
-                      onChange={e => setCurrentPick(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && handleMakePick()}
-                    />
-                    <Button 
-                      onClick={handleMakePick}
-                      disabled={!currentPick.trim()}
-                      className="w-full"
-                    >
-                      Submit Pick
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Draft Results */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Draft Results</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {picks.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No picks yet. {draft.draftState === 'setting_up' ? 'Start the draft to begin!' : 'Be the first to pick!'}
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {picks.map((pick, index) => (
-                      <div 
-                        key={index}
-                        className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border"
-                      >
-                        <div className="flex-shrink-0 w-8 h-8 bg-muted rounded-full flex items-center justify-center text-sm text-muted-foreground">
-                          #{pick.pickNumber}
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-foreground">{pick.payload}</div>
-                          <div className="text-xs text-muted-foreground">{pick.clientName}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Participants Sidebar */}
-          <div>
-            <Card>
-              <CardHeader>
-                <CardTitle>Participants</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {participants.length === 0 ? (
-                  <div className="text-center py-4 text-muted-foreground">
-                    No participants yet
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {participants.map((participant, index) => (
-                      <div 
-                        key={participant.id}
-                        className="flex items-center gap-3 p-2 rounded-lg bg-muted/50"
-                      >
-                        <Avatar className="w-8 h-8">
-                          <AvatarFallback className="text-sm">
-                            {participant.name.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="text-foreground text-sm">{participant.name}</div>
-                          {participant.position && (
-                            <div className="text-xs text-muted-foreground">Position {participant.position}</div>
-                          )}
-                        </div>
-                        {participant.isReady && (
-                          <Badge className="bg-green-500/20 text-green-600 dark:text-green-400 text-xs">Ready</Badge>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+          {/* Actions */}
+          <BrutalSection contentClassName="p-4">
+            <BrutalButton
+              variant="default"
+              onClick={handleShareDraft}
+              className="w-full"
+            >
+              Share Draft
+            </BrutalButton>
+          </BrutalSection>
+        </aside>
       </div>
     </div>
   )

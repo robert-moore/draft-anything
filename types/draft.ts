@@ -1,0 +1,25 @@
+export interface Draft {
+  id: number
+  name: string
+  draftState: 'setting_up' | 'active' | 'completed' | 'errored' | 'paused' | 'canceled'
+  maxDrafters: number
+  secPerRound: string
+  numRounds: number
+  startTime: string
+  createdAt: string
+}
+
+export interface Participant {
+  id: string
+  name: string
+  position: number | null
+  isReady: boolean
+}
+
+export interface DraftPick {
+  pickNumber: number
+  clientId: string
+  clientName: string
+  payload: string
+  createdAt: string
+}

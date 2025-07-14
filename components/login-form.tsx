@@ -1,15 +1,8 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { BrutalButton } from '@/components/ui/brutal-button'
+import { BrutalInput } from '@/components/ui/brutal-input'
+import { BrutalSection } from '@/components/ui/brutal-section'
 import { useAuthRedirect } from '@/lib/hooks/use-auth-redirect'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils/index'
@@ -60,19 +53,19 @@ export function LoginForm({
       className={cn('flex flex-col items-center gap-6', className)}
       {...props}
     >
-      <Card className="w-full">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl flex flex-col items-center justify-center gap-4">
+      <div className="w-full border-2 border-black dark:border-white bg-white dark:bg-black">
+        <div className="text-center p-8 border-b-2 border-black dark:border-white">
+          <div className="text-2xl font-black tracking-tight mb-4 flex flex-col items-center justify-center gap-4">
             <BrandLogo variant="logo" size="2xl" />
-            Welcome back
-          </CardTitle>
-          <CardDescription>
+            <span className="text-black dark:text-white">Welcome back</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
             {isEmailSent 
               ? 'Check your email for the magic link!' 
               : 'Sign in to your account with a magic link'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+          </p>
+        </div>
+        <div className="p-8">
           {isEmailSent ? (
             <div className="text-center space-y-4">
               <p className="text-sm text-muted-foreground">
@@ -81,8 +74,8 @@ export function LoginForm({
               <p className="text-sm text-muted-foreground">
                 Click the link in your email to sign in. You can close this window.
               </p>
-              <Button
-                variant="outline"
+              <BrutalButton
+                variant="default"
                 className="w-full"
                 onClick={() => {
                   setIsEmailSent(false)
@@ -90,37 +83,38 @@ export function LoginForm({
                 }}
               >
                 Send another link
-              </Button>
+              </BrutalButton>
             </div>
           ) : (
             <form onSubmit={handleMagicLink} className="flex flex-col gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
+                <label htmlFor="email" className="text-sm font-medium text-black dark:text-white">Email</label>
+                <BrutalInput
                   id="email"
                   type="email"
                   placeholder="you@example.com"
                   required
                   value={email}
                   onChange={e => setEmail(e.target.value)}
+                  variant="boxed"
                 />
               </div>
               {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <BrutalButton type="submit" variant="filled" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Sending magic link...' : 'Send magic link'}
-              </Button>
+              </BrutalButton>
             </form>
           )}
           {!isEmailSent && (
             <div className="mt-6 text-center text-sm">
-              Don&apos;t have an account?{' '}
-              <Link href="/auth/sign-up" className="underline underline-offset-4">
+              <span className="text-black dark:text-white">Don&apos;t have an account?</span>{' '}
+              <Link href="/auth/sign-up" className="underline underline-offset-4 hover:no-underline text-black dark:text-white font-medium">
                 Sign Up
               </Link>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
       <div className="text-center text-xs text-muted-foreground">
         <Link href="/" className="hover:underline">
           &larr; Back to Home

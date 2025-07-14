@@ -8,9 +8,7 @@ export default function AppLayout({
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      <main className="flex-1">
-        {children}
-      </main>
+      {children}
     </div>
   )
 }

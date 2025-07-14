@@ -18,7 +18,7 @@ export function ThemeToggle() {
       <Button
         variant="outline"
         size="sm"
-        className="w-9 h-9 p-0 border-gray-300/20 dark:border-white/20 bg-gray-100/10 dark:bg-white/10 backdrop-blur-sm hover:bg-gray-200/20 dark:hover:bg-white/20"
+        className="w-9 h-9 p-0 border-border/20 bg-background/80 backdrop-blur-sm hover:bg-accent/20"
       >
         <div className="h-4 w-4" />
       </Button>
@@ -40,15 +40,15 @@ export function ThemeToggle() {
       variant="outline"
       size="sm"
       onClick={toggleTheme}
-      className="w-9 h-9 p-0 border-gray-300/20 dark:border-white/20 bg-gray-100/10 dark:bg-white/10 backdrop-blur-sm hover:bg-gray-200/20 dark:hover:bg-white/20 transition-all duration-300"
+      className="w-9 h-9 p-0 border-border/20 bg-background/80 backdrop-blur-sm hover:bg-accent/20 transition-all duration-300"
       aria-label={`Switch to ${
         resolvedTheme === 'dark' ? 'light' : 'dark'
       } mode`}
     >
       {resolvedTheme === 'dark' ? (
-        <Sun className="h-4 w-4 text-gray-700 dark:text-white" />
+        <Sun className="h-4 w-4 text-foreground" />
       ) : (
-        <Moon className="h-4 w-4 text-gray-700 dark:text-white" />
+        <Moon className="h-4 w-4 text-foreground" />
       )}
     </Button>
   )

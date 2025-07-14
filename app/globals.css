@@ -3,42 +3,42 @@
 @tailwind utilities;
 
 :root {
-  --background: 204 12.1951% 91.9608%;
-  --foreground: 0 0% 20%;
+  --background: 0 0% 100%;
+  --foreground: 0 0% 0%;
   --card: 0 0% 100%;
-  --card-foreground: 0 0% 20%;
+  --card-foreground: 0 0% 0%;
   --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 20%;
+  --popover-foreground: 0 0% 0%;
   --primary: 14.2857 73.0435% 54.902%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 220 14.2857% 95.8824%;
-  --secondary-foreground: 215 13.7931% 34.1176%;
-  --muted: 210 20% 98.0392%;
-  --muted-foreground: 220 8.9362% 46.0784%;
-  --accent: 207.6923 46.4286% 89.0196%;
-  --accent-foreground: 225.5556 64.2857% 32.9412%;
+  --secondary: 0 0% 96%;
+  --secondary-foreground: 0 0% 0%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 40%;
+  --accent: 0 0% 0%;
+  --accent-foreground: 0 0% 100%;
   --destructive: 1.0526 84.2365% 60.1961%;
   --destructive-foreground: 0 0% 100%;
-  --border: 210 9.375% 87.451%;
-  --input: 220 15.7895% 96.2745%;
+  --border: 0 0% 0%;
+  --input: 0 0% 100%;
   --ring: 14.2857 73.0435% 54.902%;
   --chart-1: 210.9091 37.5% 65.4902%;
   --chart-2: 14.1935 73.2283% 75.098%;
   --chart-3: 213.9474 29.9213% 50.1961%;
   --chart-4: 217.6923 35.7798% 42.7451%;
   --chart-5: 221.7722 43.6464% 35.4902%;
-  --sidebar: 216 7.9365% 87.6471%;
+  --sidebar: 0 0% 87.6471%;
   --sidebar-foreground: 0 0% 20%;
   --sidebar-primary: 14.2857 73.0435% 54.902%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 207.6923 46.4286% 89.0196%;
-  --sidebar-accent-foreground: 225.5556 64.2857% 32.9412%;
-  --sidebar-border: 220 13.0435% 90.9804%;
+  --sidebar-accent: 0 0% 89.0196%;
+  --sidebar-accent-foreground: 0 0% 32.9412%;
+  --sidebar-border: 0 0% 90.9804%;
   --sidebar-ring: 14.2857 73.0435% 54.902%;
-  --font-sans: Inter, sans-serif;
+  --font-sans: 'Hanken Grotesk', sans-serif;
   --font-serif: Source Serif 4, serif;
   --font-mono: JetBrains Mono, monospace;
-  --radius: 0.85rem;
+  --radius: 0rem;
   --shadow-2xs: 0px 1px 9px 0px hsl(0 0% 10.1961% / 0.05);
   --shadow-xs: 0px 1px 9px 0px hsl(0 0% 10.1961% / 0.05);
   --shadow-sm: 0px 1px 9px 0px hsl(0 0% 10.1961% / 0.1),
@@ -59,40 +59,40 @@
 .dark {
   --background: #121212;
   --foreground: 0 0% 89.8039%;
-  --card: #121212;
+  --card: 0 0% 7.451%;
   --card-foreground: 0 0% 89.8039%;
   --popover: #121212;
   --popover-foreground: 0 0% 89.8039%;
   --primary: 14.2857 73.0435% 54.902%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 222 19.2308% 20.3922%;
+  --secondary: 0 0% 20.3922%;
   --secondary-foreground: 0 0% 89.8039%;
-  --muted: 222 19.2308% 20.3922%;
+  --muted: 0 0% 20.3922%;
   --muted-foreground: 0 0% 63.9216%;
-  --accent: 225 34.375% 25.098%;
-  --accent-foreground: 214.2857 96.9231% 87.2549%;
+  --accent: 0 0% 25.098%;
+  --accent-foreground: 0 0% 87.2549%;
   --destructive: 1.0526 84.2365% 60.1961%;
   --destructive-foreground: 0 0% 100%;
-  --border: 224.3478 15.8621% 28.4314%;
-  --input: 224.3478 15.8621% 28.4314%;
+  --border: 0 0% 28.4314%;
+  --input: 0 0% 28.4314%;
   --ring: 14.2857 73.0435% 54.902%;
   --chart-1: 210.9091 37.5% 65.4902%;
   --chart-2: 12.4138 63.5036% 73.1373%;
   --chart-3: 213.9474 29.9213% 50.1961%;
   --chart-4: 217.6923 35.7798% 42.7451%;
   --chart-5: 221.7722 43.6464% 35.4902%;
-  --sidebar: 222.8571 20% 20.5882%;
+  --sidebar: 0 0% 20.5882%;
   --sidebar-foreground: 0 0% 89.8039%;
   --sidebar-primary: 14.2857 73.0435% 54.902%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 225 34.375% 25.098%;
-  --sidebar-accent-foreground: 214.2857 96.9231% 87.2549%;
-  --sidebar-border: 224.3478 15.8621% 28.4314%;
+  --sidebar-accent: 0 0% 25.098%;
+  --sidebar-accent-foreground: 0 0% 87.2549%;
+  --sidebar-border: 0 0% 28.4314%;
   --sidebar-ring: 14.2857 73.0435% 54.902%;
-  --font-sans: Inter, sans-serif;
+  --font-sans: 'Hanken Grotesk', sans-serif;
   --font-serif: Source Serif 4, serif;
   --font-mono: JetBrains Mono, monospace;
-  --radius: 0.85rem;
+  --radius: 0rem;
   --shadow-2xs: 0px 1px 9px 0px hsl(0 0% 10.1961% / 0.05);
   --shadow-xs: 0px 1px 9px 0px hsl(0 0% 10.1961% / 0.05);
   --shadow-sm: 0px 1px 9px 0px hsl(0 0% 10.1961% / 0.1),
@@ -106,4 +106,45 @@
   --shadow-xl: 0px 1px 9px 0px hsl(0 0% 10.1961% / 0.1),
     0px 8px 10px -1px hsl(0 0% 10.1961% / 0.1);
   --shadow-2xl: 0px 1px 9px 0px hsl(0 0% 10.1961% / 0.25);
+}
+
+/* Brutalist Design Classes */
+.diagonal-lines {
+  background-image: linear-gradient(45deg, transparent 48%, #000 48%, #000 52%, transparent 52%),
+    linear-gradient(-45deg, transparent 48%, #000 48%, #000 52%, transparent 52%);
+  background-size: 8px 8px;
+  opacity: 0.1;
+}
+
+.brutal-border {
+  border: 3px solid #000;
+}
+
+.brutal-border-thin {
+  border: 2px solid #000;
+}
+
+.brutal-input {
+  border: none;
+  border-bottom: 2px solid #000;
+  background: transparent;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+  font-weight: 700;
+}
+
+.brutal-input:focus {
+  outline: none;
+  border-bottom: 3px solid #000;
+}
+
+.brutal-button {
+  @apply border-2 border-black dark:border-white bg-white dark:bg-black hover:bg-black dark:hover:bg-white hover:text-white dark:hover:text-black text-black dark:text-white transition-colors font-bold text-sm tracking-wider;
+}
+
+.brutal-number {
+  @apply text-2xl font-black font-mono tabular-nums;
+}
+
+.brutal-heading {
+  @apply font-black tracking-wider uppercase;
 }

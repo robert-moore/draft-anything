@@ -1,8 +1,8 @@
-import { db } from '@/lib/db'
-import { draftsInDa, profilesInDa, draftUsersInDa } from '@/drizzle/schema'
+import { draftsInDa, draftUsersInDa, profilesInDa } from '@/drizzle/schema'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
+import { db } from '@/lib/db'
+import { and, count, eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
-import { eq, and, count } from 'drizzle-orm'
 
 export async function POST(
   request: NextRequest,
@@ -18,22 +18,18 @@ export async function POST(
       )
     }
 
-    const draftId = parseInt(params.id)
+    const { id } = await params
+    const draftId = parseInt(id)
+
     if (isNaN(draftId)) {
-      return NextResponse.json(
-        { error: 'Invalid draft ID' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid draft ID' }, { status: 400 })
     }
 
     const body = await request.json()
     const { name } = body
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
-      return NextResponse.json(
-        { error: 'Name is required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Name is required' }, { status: 400 })
     }
 
     // Check if draft exists and is in setting_up state
@@ -43,10 +39,7 @@ export async function POST(
       .where(eq(draftsInDa.id, draftId))
 
     if (!draft) {
-      return NextResponse.json(
-        { error: 'Draft not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Draft not found' }, { status: 404 })
     }
 
     if (draft.draftState !== 'setting_up') {
@@ -63,20 +56,19 @@ export async function POST(
       .where(eq(draftUsersInDa.draftId, draftId))
 
     if (participantCount.count >= draft.maxDrafters) {
-      return NextResponse.json(
-        { error: 'Draft is full' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Draft is full' }, { status: 400 })
     }
 
     // Check if user is already in this draft
     const [existingParticipant] = await db
       .select()
       .from(draftUsersInDa)
-      .where(and(
-        eq(draftUsersInDa.draftId, draftId),
-        eq(draftUsersInDa.userId, user.id)
-      ))
+      .where(
+        and(
+          eq(draftUsersInDa.draftId, draftId),
+          eq(draftUsersInDa.userId, user.id)
+        )
+      )
 
     if (existingParticipant) {
       return NextResponse.json(
@@ -87,7 +79,7 @@ export async function POST(
 
     // Create or update profile record
     const now = new Date().toISOString()
-    
+
     // First check if profile exists
     const [existingProfile] = await db
       .select()
@@ -96,13 +88,11 @@ export async function POST(
 
     if (!existingProfile) {
       // Create new profile
-      await db
-        .insert(profilesInDa)
-        .values({
-          id: user.id,
-          name: name.trim(),
-          createdAt: now
-        })
+      await db.insert(profilesInDa).values({
+        id: user.id,
+        name: name.trim(),
+        createdAt: now
+      })
     } else {
       // Update profile name
       await db
@@ -112,23 +102,24 @@ export async function POST(
     }
 
     // Add participant to draft
-    await db
-      .insert(draftUsersInDa)
-      .values({
-        draftId,
-        userId: user.id,
-        position: participantCount.count + 1,
-        isReady: true,
-        createdAt: now
-      })
+    await db.insert(draftUsersInDa).values({
+      draftId,
+      userId: user.id,
+      position: participantCount.count + 1,
+      isReady: true,
+      createdAt: now
+    })
 
     // Return the new participant data
-    return NextResponse.json({
-      id: user.id,
-      name: name.trim(),
-      position: participantCount.count + 1,
-      isReady: true
-    }, { status: 201 })
+    return NextResponse.json(
+      {
+        id: user.id,
+        name: name.trim(),
+        position: participantCount.count + 1,
+        isReady: true
+      },
+      { status: 201 }
+    )
   } catch (error) {
     console.error('Error joining draft:', error)
     return NextResponse.json(

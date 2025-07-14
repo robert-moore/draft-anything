@@ -14,17 +14,17 @@ const GeometricButton = forwardRef<HTMLButtonElement, GeometricButtonProps>(
     const getVariantStyles = (variant: string) => {
       switch (variant) {
         case 'primary':
-          return 'bg-primary text-primary-foreground border-2 border-primary hover:bg-primary/90'
+          return 'bg-primary text-primary-foreground border-2 border-primary hover:bg-primary/90 hover:text-primary-foreground'
         case 'secondary':
-          return 'bg-secondary text-secondary-foreground border-2 border-secondary hover:bg-secondary/80'
+          return 'bg-secondary text-secondary-foreground border-2 border-secondary hover:bg-secondary/80 hover:text-secondary-foreground'
         case 'outline':
-          return 'border-2 border-primary text-primary bg-transparent hover:bg-primary/5'
+          return 'border-2 border-primary text-primary bg-transparent hover:bg-primary/10 hover:text-primary'
         case 'ghost':
-          return 'border-2 border-transparent text-foreground hover:bg-muted hover:border-border'
+          return 'border-2 border-transparent text-foreground bg-transparent hover:bg-accent hover:text-accent-foreground hover:border-border'
         case 'ink':
-          return 'bg-foreground text-background border-2 border-foreground hover:bg-foreground/90'
+          return 'bg-foreground text-background border-2 border-foreground hover:bg-foreground/90 hover:text-background'
         default:
-          return 'bg-primary text-primary-foreground border-2 border-primary hover:bg-primary/90'
+          return 'bg-primary text-primary-foreground border-2 border-primary hover:bg-primary/90 hover:text-primary-foreground'
       }
     }
 

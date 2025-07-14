@@ -3,12 +3,13 @@ import { Toaster } from '@/components/ui/sonner'
 import { cn } from '@/lib/utils'
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Inter as FontSans } from 'next/font/google'
+import { Hanken_Grotesk as FontSans } from 'next/font/google'
 import './globals.css'
 
 const fontSans = FontSans({
   subsets: ['latin'],
-  variable: '--font-sans'
+  variable: '--font-sans',
+  weight: ['400', '500', '600', '700', '800']
 })
 
 const title = 'Draft Anything'

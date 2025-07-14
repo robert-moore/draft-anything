@@ -15,7 +15,7 @@ export const CurrentUserAvatar = () => {
     ?.toUpperCase()
 
   return (
-    <Avatar className="size-6">
+    <Avatar className="size-full">
       {profileImage && <AvatarImage src={profileImage} alt={initials} />}
       <AvatarFallback>
         {initials === '?' ? (

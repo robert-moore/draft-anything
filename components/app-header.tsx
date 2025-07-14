@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { BrutalistButton } from '@/components/ui/brutalist-button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,7 +53,7 @@ export function AppHeader() {
 
   if (isLoading) {
     return (
-      <header className="border-b bg-background/80 backdrop-blur-sm">
+      <header className="bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
@@ -70,7 +71,7 @@ export function AppHeader() {
 
   if (!user) {
     return (
-      <header className="border-b bg-background/80 backdrop-blur-sm">
+      <header className="bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center">
@@ -101,19 +102,19 @@ export function AppHeader() {
           <div className="flex items-center gap-4">
             <ThemeToggle />
             <Link href="/new">
-              <Button>
+              <BrutalistButton variant="primary" className="px-4 py-2">
                 <Plus className="w-4 h-4 mr-2" />
                 New Draft
-              </Button>
+              </BrutalistButton>
             </Link>
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                <Button variant="ghost" className="relative h-10 w-10 border-2 border-black hover:border-primary p-0">
                   <CurrentUserAvatar />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end">
+              <DropdownMenuContent className="w-56 border-2 border-black rounded-none" align="end">
                 <div className="flex items-center justify-start gap-2 p-2">
                   <div className="flex flex-col space-y-1 leading-none">
                     <p className="w-[200px] truncate text-sm text-muted-foreground">
