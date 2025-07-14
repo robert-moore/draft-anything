@@ -40,6 +40,8 @@ export async function GET(
       return NextResponse.json({ error: 'Draft not found' }, { status: 404 })
     }
 
+    const isAdmin = draft?.adminUserId === user.id
+
     // Get participants
     const participantsQuery = await db
       .select({
@@ -85,7 +87,8 @@ export async function GET(
       draft,
       participants: participantsQuery,
       picks: picks.sort((a, b) => a.pickNumber - b.pickNumber),
-      currentUser: user
+      currentUser: user,
+      isAdmin
     })
   } catch (error) {
     console.error('Error fetching draft:', error)

@@ -28,6 +28,7 @@ export default function DraftPage() {
   const [isJoined, setIsJoined] = useState(false)
   const [playerName, setPlayerName] = useState('')
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [currentTurn, setCurrentTurn] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -39,38 +40,109 @@ export default function DraftPage() {
   >('selections')
 
   useEffect(() => {
-    const draftUsersSub = supabase
-      .channel('debug-any')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'da',
-          table: 'draft_users',
-          filter: `draft_id=eq.${params.id}`
-        },
-        payload => {
-          const newUser = payload.new
+    const draftId = params.id as string
+    if (!draftId) return
 
-          const newParticipant = {
-            id: newUser.user_id,
-            name: newUser.draft_username,
-            isReady: newUser.is_ready,
-            position: newUser.position,
-            createdAt: newUser.created_at
+    const timeout = setTimeout(() => {
+      const draftUsersSub = supabase
+        .channel(`draft-users-${draftId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'da',
+            table: 'draft_users',
+            filter: `draft_id=eq.${draftId}`
+          },
+          payload => {
+            const newUser = payload.new
+
+            const newParticipant = {
+              id: newUser.user_id,
+              name: newUser.draft_username,
+              isReady: newUser.is_ready,
+              position: newUser.position,
+              createdAt: newUser.created_at
+            }
+
+            setParticipants(prev => {
+              if (prev.some(p => p.id === newParticipant.id)) return prev
+              return [...prev, newParticipant]
+            })
           }
+        )
+        .subscribe()
 
-          setParticipants(prev => {
-            if (prev.some(p => p.id === newParticipant.id)) return prev
-            return [...prev, newParticipant]
-          })
-        }
-      )
-      .subscribe()
+      const draftSelectionsSub = supabase
+        .channel(`draft-selections-${draftId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'da',
+            table: 'draft_selections',
+            filter: `draft_id=eq.${draftId}`
+          },
+          payload => {
+            const newPick = payload.new
 
-    return () => {
-      supabase.removeChannel(draftUsersSub)
-    }
+            setPicks(prev => {
+              if (
+                prev.some(
+                  p =>
+                    p.pickNumber === newPick.pick_number &&
+                    p.userId === newPick.user_id
+                )
+              )
+                return prev
+
+              return [
+                ...prev,
+                {
+                  pickNumber: newPick.pick_number,
+                  userId: newPick.user_id,
+                  clientName:
+                    participants.find(p => p.id === newPick.user_id)?.name ??
+                    'Unknown',
+                  payload: newPick.payload,
+                  createdAt: newPick.created_at
+                }
+              ]
+            })
+          }
+        )
+        .subscribe()
+
+      const draftStateSub = supabase
+        .channel(`draft-state-${draftId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'da',
+            table: 'drafts',
+            filter: `id=eq.${draftId}`
+          },
+          payload => {
+            const updatedState = payload.new.draft_state
+
+            setDraft(prev => {
+              if (!prev) return prev
+              return { ...prev, draftState: updatedState }
+            })
+          }
+        )
+        .subscribe()
+
+      // Clean up on unmount
+      return () => {
+        supabase.removeChannel(draftUsersSub)
+        supabase.removeChannel(draftSelectionsSub)
+        supabase.removeChannel(draftStateSub)
+      }
+    }, 250)
+
+    return () => clearTimeout(timeout)
   }, [draftId])
 
   // Load draft data and check if already joined
@@ -90,6 +162,7 @@ export default function DraftPage() {
         setParticipants(data.participants || [])
         setPicks(data.picks || [])
         setCurrentUser(data.currentUser)
+        setIsAdmin(data.isAdmin || false)
 
         if (
           data.currentUser &&
@@ -382,6 +455,7 @@ export default function DraftPage() {
 
           {/* Start Draft */}
           {isJoined &&
+            isAdmin &&
             draft.draftState === 'setting_up' &&
             participants.length >= 2 && (
               <div className="py-8">

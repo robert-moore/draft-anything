@@ -47,3 +47,10 @@ CREATE TABLE IF NOT EXISTS da.draft_selections (
 );
 
 ALTER TABLE da.draft_selections ADD PRIMARY KEY (draft_id, user_id, pick_number);
+
+-- The following grants are necessary for the Supabase Realtime feature to work correctly.
+-- TODO is there a way to make this more secure?
+-- https://github.com/supabase/realtime/issues/1107
+GRANT SELECT ON da.drafts TO anon, authenticated;
+GRANT SELECT ON da.draft_users TO anon, authenticated;
+GRANT SELECT ON da.draft_selections TO anon, authenticated;
