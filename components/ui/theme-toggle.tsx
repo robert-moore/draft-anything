@@ -1,6 +1,11 @@
 'use client'
 
-import { Moon, Sun } from 'lucide-react'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { Monitor, Moon, Sun, ChevronDown } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
 import { Button } from './button'
@@ -18,38 +23,73 @@ export function ThemeToggle() {
       <Button
         variant="outline"
         size="sm"
-        className="w-9 h-9 p-0 border-border/20 bg-background/80 backdrop-blur-sm hover:bg-accent/20"
+        className="h-9 px-3 border-border/20 bg-background/80 backdrop-blur-sm hover:bg-accent/20"
       >
         <div className="h-4 w-4" />
+        <ChevronDown className="h-3 w-3 ml-1" />
       </Button>
     )
   }
 
-  const toggleTheme = () => {
+  // Get the appropriate icon based on current theme
+  const getCurrentIcon = () => {
     if (theme === 'system') {
-      // If currently system, switch to the opposite of the resolved theme
-      setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')
-    } else {
-      // If currently light or dark, switch to the opposite
-      setTheme(theme === 'dark' ? 'light' : 'dark')
+      return <Monitor className="h-4 w-4" />
     }
+    return resolvedTheme === 'dark' ? (
+      <Moon className="h-4 w-4" />
+    ) : (
+      <Sun className="h-4 w-4" />
+    )
   }
 
+  const themeOptions = [
+    {
+      value: 'light',
+      label: 'Light',
+      icon: <Sun className="h-4 w-4" />
+    },
+    {
+      value: 'dark', 
+      label: 'Dark',
+      icon: <Moon className="h-4 w-4" />
+    },
+    {
+      value: 'system',
+      label: 'System',
+      icon: <Monitor className="h-4 w-4" />
+    }
+  ]
+
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={toggleTheme}
-      className="w-9 h-9 p-0 border-border/20 bg-background/80 backdrop-blur-sm hover:bg-accent/20 transition-all duration-300"
-      aria-label={`Switch to ${
-        resolvedTheme === 'dark' ? 'light' : 'dark'
-      } mode`}
-    >
-      {resolvedTheme === 'dark' ? (
-        <Sun className="h-4 w-4 text-foreground" />
-      ) : (
-        <Moon className="h-4 w-4 text-foreground" />
-      )}
-    </Button>
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9 px-3 border-border/20 bg-background/80 backdrop-blur-sm hover:bg-accent/20 transition-all duration-300"
+        >
+          {getCurrentIcon()}
+          <ChevronDown className="h-3 w-3 ml-1" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-32 p-1 bg-popover border border-border shadow-md">
+        <div className="space-y-1">
+          {themeOptions.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => setTheme(option.value)}
+              className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer text-foreground"
+            >
+              {option.icon}
+              <span className="flex-1 text-left">{option.label}</span>
+              {theme === option.value && (
+                <div className="w-2 h-2 bg-primary rounded-full" />
+              )}
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
   )
 }
