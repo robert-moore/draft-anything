@@ -17,19 +17,14 @@ export default function AuthLayout({
             href="/"
             className="flex items-center space-x-3 hover:opacity-70 transition-opacity duration-200"
           >
-            <BrandLogo variant="logo" size="md" />
-            <span className="text-base font-medium tracking-tight text-black dark:text-white">
-              Draft Anything
-            </span>
+            <BrandLogo variant="wordmark" size="md" />
           </Link>
         </div>
       </nav>
 
       {/* Main content */}
       <main className="flex min-h-[calc(100vh-88px)] items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
-        <div className="w-full max-w-sm">
-          {children}
-        </div>
+        <div className="w-full max-w-sm">{children}</div>
       </main>
     </div>
   )

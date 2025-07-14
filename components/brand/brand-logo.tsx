@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { useEffect, useState } from 'react'
 
 export interface BrandLogoProps {
-  variant?: 'logo' | 'wordmark' | 'icon'
+  variant?: 'logo' | 'wordmark'
   theme?: 'light' | 'dark' | 'auto'
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl'
   className?: string
@@ -75,8 +75,6 @@ export function BrandLogo({
   // Get the appropriate image path
   const getImagePath = () => {
     switch (variant) {
-      case 'icon':
-        return `/brand/icon-${themeVariant}.png`
       case 'wordmark':
         return `/brand/wordmark-${themeVariant}.svg`
       case 'logo':
@@ -87,8 +85,6 @@ export function BrandLogo({
 
   const getAltText = () => {
     switch (variant) {
-      case 'icon':
-        return 'Draft Anything icon'
       case 'wordmark':
         return 'Draft Anything wordmark'
       case 'logo':

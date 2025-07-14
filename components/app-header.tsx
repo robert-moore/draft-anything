@@ -1,19 +1,19 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
+import { BrandLogo } from '@/components/brand/brand-logo'
+import { CurrentUserAvatar } from '@/components/current-user-avatar'
 import { BrutalistButton } from '@/components/ui/brutalist-button'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
-import { Logo } from '@/components/brand/logo'
-import { CurrentUserAvatar } from '@/components/current-user-avatar'
 import { createClient } from '@/lib/supabase/client'
-import { User, LogOut, Plus } from 'lucide-react'
+import { LogOut, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -24,23 +24,25 @@ export function AppHeader() {
 
   useEffect(() => {
     const supabase = createClient()
-    
+
     // Get initial session
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session }
+      } = await supabase.auth.getSession()
       setUser(session?.user ?? null)
       setIsLoading(false)
     }
-    
+
     getSession()
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null)
-        setIsLoading(false)
-      }
-    )
+    const {
+      data: { subscription }
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null)
+      setIsLoading(false)
+    })
 
     return () => subscription.unsubscribe()
   }, [])
@@ -57,7 +59,7 @@ export function AppHeader() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <Logo className="h-8 w-auto" />
+              <BrandLogo className="h-8 w-auto" />
             </div>
             <div className="flex items-center gap-4">
               <ThemeToggle />
@@ -75,14 +77,12 @@ export function AppHeader() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center">
-              <Logo className="h-8 w-auto" />
+              <BrandLogo className="h-8 w-auto" />
             </Link>
             <div className="flex items-center gap-4">
               <ThemeToggle />
               <Link href="/auth/login">
-                <Button variant="outline">
-                  Sign In
-                </Button>
+                <Button variant="outline">Sign In</Button>
               </Link>
             </div>
           </div>
@@ -96,9 +96,9 @@ export function AppHeader() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link href="/new" className="flex items-center">
-            <Logo className="h-8 w-auto" />
+            <BrandLogo variant="wordmark" className="h-8 w-auto" />
           </Link>
-          
+
           <div className="flex items-center gap-4">
             <ThemeToggle />
             <Link href="/new">
@@ -107,14 +107,20 @@ export function AppHeader() {
                 New Draft
               </BrutalistButton>
             </Link>
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-10 w-10 border-2 border-black hover:border-primary p-0">
+                <Button
+                  variant="ghost"
+                  className="relative h-10 w-10 border-2 border-black hover:border-primary p-0"
+                >
                   <CurrentUserAvatar />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56 border-2 border-black rounded-none" align="end">
+              <DropdownMenuContent
+                className="w-56 border-2 border-black rounded-none"
+                align="end"
+              >
                 <div className="flex items-center justify-start gap-2 p-2">
                   <div className="flex flex-col space-y-1 leading-none">
                     <p className="w-[200px] truncate text-sm text-muted-foreground">
@@ -123,7 +129,7 @@ export function AppHeader() {
                   </div>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   className="cursor-pointer"
                   onClick={handleSignOut}
                 >
