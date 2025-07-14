@@ -1,56 +1,75 @@
 'use client'
 
-import { GlowCard } from '@/components/ui/glow-card'
-import { Shuffle, Star, Users, Zap } from 'lucide-react'
-import { memo, useState } from 'react'
+import { BrandLogo } from '@/components/brand/brand-logo'
+import { NotebookCard } from '@/components/ui/notebook-card'
+import { GeometricButton } from '@/components/ui/geometric-button'
+import { DotDivider } from '@/components/ui/dot-divider'
+import { JournalHeader } from '@/components/ui/journal-header'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { Heart, Play, Star, Trophy, Users, Zap } from 'lucide-react'
 import Link from 'next/link'
-import Image from 'next/image'
+import { memo, useState } from 'react'
 
 const Header = memo(() => (
-  <header className="fixed top-0 left-0 right-0 z-50 px-8 py-6 backdrop-blur-sm bg-gray-900/50 border-b border-white/[0.08]">
+  <header className="fixed top-0 left-0 right-0 z-50 px-6 py-4 backdrop-blur-md bg-background/80 border-b border-border">
     <div className="max-w-6xl mx-auto flex items-center justify-between">
       <Link href="/" className="flex items-center">
-        <Image
-          src="/brand/wordmark-light.svg"
-          alt="Draft Anything"
-          width={160}
-          height={40}
-          className="h-8 w-auto"
-        />
+        <BrandLogo variant="wordmark" size="md" />
       </Link>
-      <Link
-        href="/auth/login"
-        className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white font-medium transition-colors backdrop-blur-sm border border-white/20"
-      >
-        Sign In
-      </Link>
+      <div className="flex items-center gap-3">
+        <ThemeToggle />
+        <Link href="/auth/login">
+          <GeometricButton variant="secondary" className="px-6">
+            Sign In
+          </GeometricButton>
+        </Link>
+      </div>
     </div>
   </header>
 ))
 Header.displayName = 'Header'
 
 const HeroSection = memo(() => (
-  <section className="relative z-10 px-8 pt-40 pb-24 md:pt-48 lg:pt-56">
-    <div className="max-w-4xl mx-auto text-center">
-      <h1 className="text-5xl md:text-6xl lg:text-7xl font-light leading-[0.95] tracking-tight text-white/90 mb-8">
-        Draft
-        <span className="font-medium"> Anything</span>
-      </h1>
+  <section className="relative px-6 pt-32 pb-20 md:pt-40 lg:pt-48">
+    <div className="max-w-5xl mx-auto text-center">
+      <div className="space-y-6 mb-12">
+        <h1 className="text-5xl md:text-6xl lg:text-7xl font-light leading-tight tracking-tight">
+          Draft <span className="font-semibold text-primary">Anything</span>
+        </h1>
+        <p className="text-xl md:text-2xl text-muted-foreground leading-relaxed max-w-3xl mx-auto">
+          Create epic rankings and drafts for anything imaginable. From your
+          favorite pizza toppings to the best Marvel movies.
+        </p>
+      </div>
 
-      <p className="text-xl md:text-2xl text-white/60 mb-12 leading-relaxed max-w-2xl mx-auto">
-        Create rankings and drafts for anything imaginable. From your favorite
-        restaurants to the months of the year.
-      </p>
-
-      <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+      <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
         <Link href="/auth/login">
-          <button className="px-8 py-3 bg-white/10 hover:bg-white/20 rounded-lg text-white font-medium transition-colors backdrop-blur-sm border border-white/20">
+          <GeometricButton
+            variant="primary"
+            className="px-8 py-3 text-lg"
+            icon={<Play className="w-5 h-5" />}
+          >
             Start Drafting
-          </button>
+          </GeometricButton>
         </Link>
-        <button className="px-8 py-3 bg-transparent hover:bg-white/5 rounded-lg text-white/70 font-medium transition-colors border border-white/20">
+        <GeometricButton variant="ghost" className="px-8 py-3 text-lg">
           See Examples
-        </button>
+        </GeometricButton>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+        <div className="flex items-center justify-center gap-3 text-muted-foreground">
+          <Users className="w-5 h-5 text-primary" />
+          <span className="font-medium">Made for friends</span>
+        </div>
+        <div className="flex items-center justify-center gap-3 text-muted-foreground">
+          <Zap className="w-5 h-5 text-primary" />
+          <span className="font-medium">Super simple</span>
+        </div>
+        <div className="flex items-center justify-center gap-3 text-muted-foreground">
+          <Trophy className="w-5 h-5 text-primary" />
+          <span className="font-medium">Endless fun</span>
+        </div>
       </div>
     </div>
   </section>
@@ -71,88 +90,97 @@ const ExamplesSection = memo(() => {
         'Pasta Paradise'
       ],
       votes: ['87%', '76%', '65%', '54%', '43%'],
-      icon: <Star className="w-5 h-5" />
+      icon: <Star className="w-5 h-5" />,
+      color: 'text-amber-500'
     },
     {
-      title: 'Best Months',
-      items: ['October', 'December', 'June', 'September', 'April'],
+      title: 'Best Marvel Movies',
+      items: [
+        'Avengers: Endgame',
+        'Iron Man',
+        'Black Panther',
+        'Spider-Man',
+        'Thor: Ragnarok'
+      ],
       votes: ['92%', '81%', '70%', '59%', '48%'],
-      icon: <Shuffle className="w-5 h-5" />
+      icon: <Trophy className="w-5 h-5" />,
+      color: 'text-red-500'
     },
     {
       title: 'Programming Languages',
       items: ['TypeScript', 'Python', 'Rust', 'Go', 'JavaScript'],
       votes: ['84%', '73%', '62%', '51%', '40%'],
-      icon: <Zap className="w-5 h-5" />
+      icon: <Zap className="w-5 h-5" />,
+      color: 'text-blue-500'
     }
   ]
 
   return (
-    <section className="relative z-10 px-8 py-32 border-t border-white/[0.08]">
+    <section className="relative px-6 py-24">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-light text-white/90 mb-6 tracking-tight">
-            Draft anything you can think of
-          </h2>
-          <p className="text-lg text-white/60 max-w-2xl mx-auto">
-            Create rankings, run drafts, and settle debates with friends
-          </p>
-        </div>
+        <JournalHeader 
+          title="Draft anything you can imagine"
+          meta="Create rankings, run drafts, and settle debates with friends"
+          className="mb-16"
+        />
 
         <div className="grid md:grid-cols-3 gap-6 mb-12">
           {examples.map((example, index) => (
-            <button
+            <NotebookCard
               key={index}
+              variant={selectedExample === index ? 'lined' : 'default'}
               onClick={() => setSelectedExample(index)}
-              className={`p-6 rounded-lg border transition-all text-left ${
-                selectedExample === index
-                  ? 'border-white/30 bg-white/5'
-                  : 'border-white/10 bg-white/[0.02] hover:bg-white/[0.03]'
-              }`}
+              className="cursor-pointer hover:shadow-md transition-shadow"
             >
               <div className="flex items-center gap-3 mb-4">
-                <div className="text-white/80">{example.icon}</div>
-                <h3 className="text-lg font-medium text-white/90">
-                  {example.title}
-                </h3>
+                <div className={example.color}>{example.icon}</div>
+                <h3 className="text-lg font-semibold font-mono uppercase tracking-wide">{example.title}</h3>
               </div>
               <div className="space-y-2">
                 {example.items.slice(0, 3).map((item, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <span className="text-sm text-white/40">#{i + 1}</span>
-                    <span className="text-sm text-white/60">{item}</span>
+                  <div key={i} className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-muted-foreground w-6 font-mono">
+                      #{i + 1}
+                    </span>
+                    <span className="text-sm truncate">{item}</span>
                   </div>
                 ))}
               </div>
-            </button>
+            </NotebookCard>
           ))}
         </div>
 
-        <GlowCard variant="neutral" className="max-w-2xl mx-auto">
+        <NotebookCard variant="grid" className="max-w-2xl mx-auto">
           <div className="text-center">
-            <h3 className="text-2xl font-medium text-white/90 mb-4">
-              {examples[selectedExample].title}
-            </h3>
+            <div className="flex items-center justify-center gap-3 mb-6">
+              <div className={examples[selectedExample].color}>
+                {examples[selectedExample].icon}
+              </div>
+              <h3 className="text-2xl font-semibold font-mono uppercase tracking-wide">
+                {examples[selectedExample].title}
+              </h3>
+            </div>
+            <DotDivider variant="dots" className="mb-6" />
             <div className="space-y-3">
               {examples[selectedExample].items.map((item, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-3 bg-white/[0.02] rounded-lg border border-white/10"
+                  className="flex items-center justify-between p-4 border border-border bg-background"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="text-white/60 font-medium">
+                  <div className="flex items-center gap-4">
+                    <span className="font-semibold text-primary text-lg font-mono">
                       #{index + 1}
                     </span>
-                    <span className="text-white/80">{item}</span>
+                    <span className="font-medium">{item}</span>
                   </div>
-                  <div className="text-xs text-white/40">
-                    {examples[selectedExample].votes[index]} votes
+                  <div className="text-sm font-medium text-muted-foreground font-mono">
+                    {examples[selectedExample].votes[index]}
                   </div>
                 </div>
               ))}
             </div>
           </div>
-        </GlowCard>
+        </NotebookCard>
       </div>
     </section>
   )
@@ -160,54 +188,50 @@ const ExamplesSection = memo(() => {
 ExamplesSection.displayName = 'ExamplesSection'
 
 const HowItWorksSection = memo(() => (
-  <section className="relative z-10 px-8 py-32">
-    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/[0.18] to-transparent"></div>
+  <section className="relative px-6 py-24 bg-muted/30">
     <div className="max-w-6xl mx-auto">
-      <div className="text-center mb-16">
-        <h2 className="text-4xl md:text-5xl font-light text-white/90 mb-6 tracking-tight">
-          Simple as 1, 2, 3
-        </h2>
-      </div>
+      <JournalHeader 
+        title="Simple as 1, 2, 3"
+        meta="Get started in seconds and draft like a pro"
+        className="mb-16"
+      />
 
       <div className="grid md:grid-cols-3 gap-8">
-        <GlowCard className="text-center">
-          <div className="relative w-12 h-12 rounded-full mx-auto mb-6 bg-white/[0.02] border border-white/20 flex items-center justify-center">
-            <span className="text-xl font-medium text-white/90">1</span>
+        <NotebookCard variant="margin" className="text-center">
+          <div className="w-16 h-16 border-2 border-primary bg-background flex items-center justify-center mx-auto mb-6">
+            <span className="text-2xl font-bold text-primary font-mono">1</span>
           </div>
-          <h3 className="text-xl font-medium text-white/90 mb-4">
-            Create a Draft
-          </h3>
-          <p className="text-white/60 leading-relaxed">
+          <h3 className="text-xl font-semibold mb-4 font-mono uppercase tracking-wide">Create a Draft</h3>
+          <DotDivider variant="line" className="mb-4" />
+          <p className="text-muted-foreground leading-relaxed">
             Start with any topic you want to rank or draft. Add your items and
-            invite friends.
+            invite friends to join the fun.
           </p>
-        </GlowCard>
+        </NotebookCard>
 
-        <GlowCard className="text-center">
-          <div className="relative w-12 h-12 rounded-full mx-auto mb-6 bg-white/[0.02] border border-white/20 flex items-center justify-center">
-            <span className="text-xl font-medium text-white/90">2</span>
+        <NotebookCard variant="margin" className="text-center">
+          <div className="w-16 h-16 border-2 border-primary bg-background flex items-center justify-center mx-auto mb-6">
+            <span className="text-2xl font-bold text-primary font-mono">2</span>
           </div>
-          <h3 className="text-xl font-medium text-white/90 mb-4">
-            Make Your Picks
-          </h3>
-          <p className="text-white/60 leading-relaxed">
+          <h3 className="text-xl font-semibold mb-4 font-mono uppercase tracking-wide">Make Your Picks</h3>
+          <DotDivider variant="line" className="mb-4" />
+          <p className="text-muted-foreground leading-relaxed">
             Take turns drafting items or vote on your favorites. Watch the
-            rankings unfold.
+            rankings unfold in real-time.
           </p>
-        </GlowCard>
+        </NotebookCard>
 
-        <GlowCard className="text-center">
-          <div className="relative w-12 h-12 rounded-full mx-auto mb-6 bg-white/[0.02] border border-white/20 flex items-center justify-center">
-            <span className="text-xl font-medium text-white/90">3</span>
+        <NotebookCard variant="margin" className="text-center">
+          <div className="w-16 h-16 border-2 border-primary bg-background flex items-center justify-center mx-auto mb-6">
+            <span className="text-2xl font-bold text-primary font-mono">3</span>
           </div>
-          <h3 className="text-xl font-medium text-white/90 mb-4">
-            Share & Debate
-          </h3>
-          <p className="text-white/60 leading-relaxed">
+          <h3 className="text-xl font-semibold mb-4 font-mono uppercase tracking-wide">Share & Debate</h3>
+          <DotDivider variant="line" className="mb-4" />
+          <p className="text-muted-foreground leading-relaxed">
             Compare results, share your rankings, and settle those friendly
             debates once and for all.
           </p>
-        </GlowCard>
+        </NotebookCard>
       </div>
     </div>
   </section>
@@ -215,43 +239,60 @@ const HowItWorksSection = memo(() => (
 HowItWorksSection.displayName = 'HowItWorksSection'
 
 const CTASection = memo(() => (
-  <section className="relative z-10 px-8 py-32 border-t border-white/[0.08]">
+  <section className="relative px-6 py-24">
     <div className="max-w-4xl mx-auto text-center">
-      <h2 className="text-4xl md:text-5xl font-light text-white/90 mb-6 tracking-tight">
-        Ready to start drafting?
-      </h2>
-      <p className="text-lg text-white/60 mb-12 max-w-2xl mx-auto">
-        Join your friends and create the ultimate rankings for anything you can
-        imagine.
-      </p>
+      <div className="space-y-6 mb-12">
+        <h2 className="text-4xl md:text-5xl font-light tracking-tight">
+          Ready to start{' '}
+          <span className="font-semibold text-primary">drafting?</span>
+        </h2>
+        <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          Join thousands of friends creating epic rankings and settling debates
+          for everything under the sun.
+        </p>
+      </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+      <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
         <Link href="/auth/login">
-          <button className="px-8 py-3 bg-white/10 hover:bg-white/20 rounded-lg text-white font-medium transition-colors backdrop-blur-sm border border-white/20">
-            Get Started
-          </button>
+          <GeometricButton
+            variant="primary"
+            className="px-8 py-4 text-lg"
+            icon={<Heart className="w-5 h-5" />}
+          >
+            Get Started Free
+          </GeometricButton>
         </Link>
-        <button className="px-8 py-3 bg-transparent hover:bg-white/5 rounded-lg text-white/70 font-medium transition-colors border border-white/20">
+        <GeometricButton variant="ghost" className="px-8 py-4 text-lg">
           Learn More
-        </button>
+        </GeometricButton>
       </div>
 
-      <div className="flex items-center justify-center gap-8 text-sm text-white/40">
-        <div className="flex items-center gap-2">
-          <Users className="w-4 h-4" />
-          <span>Made for friends</span>
+      <NotebookCard
+        variant="lined"
+        className="max-w-2xl mx-auto bg-gradient-to-r from-primary/5 to-purple-500/5"
+      >
+        <div className="text-center">
+          <h3 className="text-xl font-semibold mb-4 font-mono uppercase tracking-wide">Join the fun today!</h3>
+          <DotDivider variant="dots" className="mb-4" />
+          <p className="text-muted-foreground mb-6">
+            No credit card required. Start drafting in under 30 seconds.
+          </p>
+          <div className="flex items-center justify-center gap-8 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500"></div>
+              <span className="font-mono">Free forever</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500"></div>
+              <span className="font-mono">No setup required</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-purple-500"></div>
+              <span className="font-mono">Instant results</span>
+            </div>
+          </div>
         </div>
-        <div className="h-4 w-px bg-white/20"></div>
-        <div className="flex items-center gap-2">
-          <Zap className="w-4 h-4" />
-          <span>Super simple</span>
-        </div>
-        <div className="h-4 w-px bg-white/20"></div>
-        <div className="flex items-center gap-2">
-          <Star className="w-4 h-4" />
-          <span>Endless possibilities</span>
-        </div>
-      </div>
+      </NotebookCard>
     </div>
   </section>
 ))
@@ -259,7 +300,7 @@ CTASection.displayName = 'CTASection'
 
 export default function DraftAnythingLanding() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+    <div className="min-h-screen">
       <Header />
       <HeroSection />
       <ExamplesSection />

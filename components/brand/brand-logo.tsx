@@ -3,6 +3,7 @@
 import { cn } from '@/lib/utils'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
+import { useEffect, useState } from 'react'
 
 export interface BrandLogoProps {
   variant?: 'logo' | 'wordmark' | 'icon'
@@ -12,45 +13,36 @@ export interface BrandLogoProps {
   priority?: boolean
 }
 
-// Calculate dimensions based on actual aspect ratios
-// Logo: 855 x 1138 (aspect ratio ~0.751)
-// Wordmark: 1497 x 582 (aspect ratio ~2.572)
-// Icon: 1:1 square
 const getDimensions = (variant: string, size: string) => {
-  const logoAspectRatio = 855 / 1138 // ~0.751
-  const wordmarkAspectRatio = 1497 / 582 // ~2.572
-
-  const baseSizes = {
-    sm: { logo: 24, wordmark: 20, icon: 24 },
-    md: { logo: 32, wordmark: 28, icon: 32 },
-    lg: { logo: 40, wordmark: 36, icon: 40 },
-    xl: { logo: 48, wordmark: 44, icon: 48 },
-    '2xl': { logo: 56, wordmark: 52, icon: 56 }
+  const baseDimensions = {
+    logo: {
+      sm: { width: 120, height: 30 },
+      md: { width: 160, height: 40 },
+      lg: { width: 200, height: 50 },
+      xl: { width: 240, height: 60 },
+      '2xl': { width: 280, height: 70 }
+    },
+    wordmark: {
+      sm: { width: 120, height: 30 },
+      md: { width: 160, height: 40 },
+      lg: { width: 200, height: 50 },
+      xl: { width: 240, height: 60 },
+      '2xl': { width: 280, height: 70 }
+    },
+    icon: {
+      sm: { width: 24, height: 24 },
+      md: { width: 32, height: 32 },
+      lg: { width: 48, height: 48 },
+      xl: { width: 64, height: 64 },
+      '2xl': { width: 80, height: 80 }
+    }
   }
 
-  const height =
-    baseSizes[size as keyof typeof baseSizes][
-      variant as keyof typeof baseSizes.sm
-    ]
-
-  switch (variant) {
-    case 'logo':
-      return {
-        width: Math.round(height * logoAspectRatio),
-        height
-      }
-    case 'wordmark':
-      return {
-        width: Math.round(height * wordmarkAspectRatio),
-        height
-      }
-    case 'icon':
-    default:
-      return {
-        width: height,
-        height
-      }
-  }
+  return (
+    baseDimensions[variant as keyof typeof baseDimensions]?.[
+      size as keyof typeof baseDimensions.logo
+    ] || baseDimensions.logo.md
+  )
 }
 
 export function BrandLogo({
@@ -61,6 +53,11 @@ export function BrandLogo({
   priority = false
 }: BrandLogoProps) {
   const { resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Determine which logo to show based on theme
   // For dark backgrounds, show light logo and vice versa
@@ -68,7 +65,8 @@ export function BrandLogo({
     if (theme === 'light') return 'light'
     if (theme === 'dark') return 'dark'
     // Auto mode: show dark logo on dark theme, light logo on light theme
-    return resolvedTheme === 'light' ? 'dark' : 'light'
+    // During hydration, default to light theme
+    return mounted && resolvedTheme === 'dark' ? 'light' : 'dark'
   }
 
   const themeVariant = getThemeVariant()
