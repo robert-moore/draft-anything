@@ -13,7 +13,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { Draft, DraftPick, Participant } from '@/types/draft'
 import { AlertCircle } from 'lucide-react'
 import { useParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const supabase = createClient()
 
@@ -38,6 +38,12 @@ export default function DraftPage() {
   const [viewMode, setViewMode] = useState<
     'selections' | 'by-round' | 'by-drafter'
   >('selections')
+
+  const participantsRef = useRef<Participant[]>([])
+
+  useEffect(() => {
+    participantsRef.current = participants
+  }, [participants])
 
   useEffect(() => {
     const draftId = params.id as string
@@ -93,8 +99,9 @@ export default function DraftPage() {
                     p.pickNumber === newPick.pick_number &&
                     p.userId === newPick.user_id
                 )
-              )
+              ) {
                 return prev
+              }
 
               return [
                 ...prev,
@@ -102,8 +109,8 @@ export default function DraftPage() {
                   pickNumber: newPick.pick_number,
                   userId: newPick.user_id,
                   clientName:
-                    participants.find(p => p.id === newPick.user_id)?.name ??
-                    'Unknown',
+                    participantsRef.current.find(p => p.id === newPick.user_id)
+                      ?.name ?? 'Unknown',
                   payload: newPick.payload,
                   createdAt: newPick.created_at
                 }
@@ -691,7 +698,6 @@ export default function DraftPage() {
               <div className="space-y-2">
                 {participants.map((participant, index) => (
                   <div key={participant.id} className="flex items-center gap-2">
-                    <NumberBox number={index + 1} size="xs" variant="minimal" />
                     <span className="font-medium text-sm flex-1 truncate text-black dark:text-white">
                       {participant.name}
                     </span>
@@ -708,7 +714,7 @@ export default function DraftPage() {
 
           {/* Turn Order */}
           {draft.draftState === 'active' && (
-            <BrutalSection title="Turn Order" contentClassName="p-4">
+            <BrutalSection title="Order" contentClassName="p-4">
               <div className="space-y-1">
                 {participants.map((participant, index) => {
                   const isCurrentTurn =

@@ -1,8 +1,8 @@
-import { db } from '@/lib/db'
 import { draftsInDa, draftUsersInDa } from '@/drizzle/schema'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
+import { db } from '@/lib/db'
+import { and, count, eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
-import { eq, count } from 'drizzle-orm'
 
 export async function POST(
   request: NextRequest,
@@ -20,10 +20,7 @@ export async function POST(
 
     const draftId = parseInt(params.id)
     if (isNaN(draftId)) {
-      return NextResponse.json(
-        { error: 'Invalid draft ID' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid draft ID' }, { status: 400 })
     }
 
     // Check if draft exists and is in setting_up state
@@ -33,10 +30,7 @@ export async function POST(
       .where(eq(draftsInDa.id, draftId))
 
     if (!draft) {
-      return NextResponse.json(
-        { error: 'Draft not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Draft not found' }, { status: 404 })
     }
 
     if (draft.draftState !== 'setting_up') {
@@ -59,15 +53,39 @@ export async function POST(
       )
     }
 
+    // Fetch all users in this draft
+    const participants = await db
+      .select({
+        userId: draftUsersInDa.userId
+      })
+      .from(draftUsersInDa)
+      .where(eq(draftUsersInDa.draftId, draftId))
+
+    // Randomize order
+    const shuffled = participants
+      .map(p => p.userId)
+      .sort(() => Math.random() - 0.5)
+
+    // Assign positions starting from 1
+    for (let i = 0; i < shuffled.length; i++) {
+      await db
+        .update(draftUsersInDa)
+        .set({ position: i + 1 })
+        .where(
+          and(
+            eq(draftUsersInDa.draftId, draftId),
+            eq(draftUsersInDa.userId, shuffled[i])
+          )
+        )
+    }
+
     // Update draft state to active
     await db
       .update(draftsInDa)
-      .set({ 
-        draftState: 'active'
-      })
+      .set({ draftState: 'active' })
       .where(eq(draftsInDa.id, draftId))
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: 'Draft started successfully',
       draftState: 'active'
     })
