@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -18,7 +18,8 @@ export async function POST(
       )
     }
 
-    const draftId = parseInt(params.id)
+    const { id } = await params
+    const draftId = parseInt(id)
     if (isNaN(draftId)) {
       return NextResponse.json({ error: 'Invalid draft ID' }, { status: 400 })
     }
@@ -82,7 +83,7 @@ export async function POST(
     // Update draft state to active
     await db
       .update(draftsInDa)
-      .set({ draftState: 'active' })
+      .set({ draftState: 'active', currentPositionOnClock: 1 })
       .where(eq(draftsInDa.id, draftId))
 
     return NextResponse.json({

@@ -55,33 +55,28 @@ export async function GET(
       .innerJoin(profilesInDa, eq(draftUsersInDa.userId, profilesInDa.id))
       .where(eq(draftUsersInDa.draftId, draftId))
 
-    // Get draft picks
+    // Get draft picks with user names in a single query
     const picksQuery = await db
       .select({
         pickNumber: draftSelectionsInDa.pickNumber,
         userId: draftSelectionsInDa.userId,
         payload: draftSelectionsInDa.payload,
-        createdAt: draftSelectionsInDa.createdAt
+        createdAt: draftSelectionsInDa.createdAt,
+        userName: profilesInDa.name
       })
       .from(draftSelectionsInDa)
       .innerJoin(profilesInDa, eq(draftSelectionsInDa.userId, profilesInDa.id))
       .where(eq(draftSelectionsInDa.draftId, draftId))
 
-    // Add user names to picks
-    const picks = await Promise.all(
-      picksQuery.map(async pick => {
-        const [profile] = await db
-          .select({ name: profilesInDa.name })
-          .from(profilesInDa)
-          .where(eq(profilesInDa.id, pick.userId))
-
-        return {
-          ...pick,
-          clientId: pick.userId, // For backward compatibility
-          clientName: profile?.name || 'Unknown'
-        }
-      })
-    )
+    // Transform picks to include clientId and clientName for backward compatibility
+    const picks = picksQuery.map(pick => ({
+      pickNumber: pick.pickNumber,
+      userId: pick.userId,
+      payload: pick.payload,
+      createdAt: pick.createdAt,
+      clientId: pick.userId, // For backward compatibility
+      clientName: pick.userName || 'Unknown'
+    }))
 
     return NextResponse.json({
       draft,

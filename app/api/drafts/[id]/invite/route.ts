@@ -1,13 +1,12 @@
-import { db } from '@/lib/db'
 import { draftsInDa } from '@/drizzle/schema'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
-import { NextRequest, NextResponse } from 'next/server'
+import { db } from '@/lib/db'
 import { eq } from 'drizzle-orm'
-import { randomUUID } from 'crypto'
+import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -19,12 +18,10 @@ export async function POST(
       )
     }
 
-    const draftId = parseInt(params.id)
+    const { id } = await params
+    const draftId = parseInt(id)
     if (isNaN(draftId)) {
-      return NextResponse.json(
-        { error: 'Invalid draft ID' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid draft ID' }, { status: 400 })
     }
 
     // Check if draft exists
@@ -34,15 +31,14 @@ export async function POST(
       .where(eq(draftsInDa.id, draftId))
 
     if (!draft) {
-      return NextResponse.json(
-        { error: 'Draft not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Draft not found' }, { status: 404 })
     }
 
     // For now, just return the direct link
     // In the future, you could add invite tokens to the database
-    const inviteLink = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/drafts/${draftId}`
+    const inviteLink = `${
+      process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    }/drafts/${draftId}`
 
     return NextResponse.json({
       inviteLink,

@@ -32,6 +32,8 @@ export default function DraftPage() {
   const [currentTurn, setCurrentTurn] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isReloadingAfterDraftStart, setIsReloadingAfterDraftStart] =
+    useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showInviteLink, setShowInviteLink] = useState(false)
   const [inviteLink, setInviteLink] = useState('')
@@ -40,6 +42,38 @@ export default function DraftPage() {
   >('selections')
 
   const participantsRef = useRef<Participant[]>([])
+
+  const loadDraft = async () => {
+    try {
+      const response = await fetch(`/api/drafts/${draftId}`)
+      if (!response.ok) {
+        if (response.status === 401) {
+          window.location.href = `/auth/login?redirectTo=/drafts/${draftId}`
+          return
+        }
+        throw new Error('Failed to load draft')
+      }
+      const data = await response.json()
+      setDraft(data.draft)
+      setParticipants(data.participants || [])
+      setPicks(data.picks || [])
+      setCurrentUser(data.currentUser)
+      setIsAdmin(data.isAdmin || false)
+
+      if (
+        data.currentUser &&
+        data.participants?.some(
+          (p: Participant) => p.id === data.currentUser.id
+        )
+      ) {
+        setIsJoined(true)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load draft')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
     participantsRef.current = participants
@@ -130,13 +164,25 @@ export default function DraftPage() {
             table: 'drafts',
             filter: `id=eq.${draftId}`
           },
-          payload => {
+          async payload => {
+            const prevState = draft?.draftState || 'setting_up'
             const updatedState = payload.new.draft_state
+            const positionOnClock = payload.new.current_position_on_clock
 
             setDraft(prev => {
               if (!prev) return prev
-              return { ...prev, draftState: updatedState }
+              return {
+                ...prev,
+                draftState: updatedState,
+                currentPositionOnClock: positionOnClock
+              }
             })
+
+            if (prevState === 'setting_up' && updatedState === 'active') {
+              setIsReloadingAfterDraftStart(true)
+              await loadDraft()
+              setIsReloadingAfterDraftStart(false)
+            }
           }
         )
         .subscribe()
@@ -154,38 +200,6 @@ export default function DraftPage() {
 
   // Load draft data and check if already joined
   useEffect(() => {
-    const loadDraft = async () => {
-      try {
-        const response = await fetch(`/api/drafts/${draftId}`)
-        if (!response.ok) {
-          if (response.status === 401) {
-            window.location.href = `/auth/login?redirectTo=/drafts/${draftId}`
-            return
-          }
-          throw new Error('Failed to load draft')
-        }
-        const data = await response.json()
-        setDraft(data.draft)
-        setParticipants(data.participants || [])
-        setPicks(data.picks || [])
-        setCurrentUser(data.currentUser)
-        setIsAdmin(data.isAdmin || false)
-
-        if (
-          data.currentUser &&
-          data.participants?.some(
-            (p: Participant) => p.id === data.currentUser.id
-          )
-        ) {
-          setIsJoined(true)
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load draft')
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
     loadDraft()
   }, [draftId])
 
@@ -239,8 +253,9 @@ export default function DraftPage() {
       if (!response.ok) throw new Error('Failed to make pick')
 
       const newPick = await response.json()
-      setPicks(prev => [...prev, newPick])
-      setCurrentPick('')
+      // Instead of an optimistic update, rely on the subscription to update picks for now
+      //   setPicks(prev => [...prev, newPick])
+      //   setCurrentPick('')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to make pick')
     }
@@ -361,7 +376,10 @@ export default function DraftPage() {
   const getCurrentRoundInfo = () => {
     const totalPicks = picks.length
     const picksPerRound = participants.length
-    const currentRound = Math.floor(totalPicks / picksPerRound) + 1
+    const currentRound = Math.min(
+      draft.numRounds,
+      Math.floor(totalPicks / picksPerRound) + 1
+    )
     const pickInRound = (totalPicks % picksPerRound) + 1
 
     return { currentRound, pickInRound, totalPicks }
@@ -484,8 +502,8 @@ export default function DraftPage() {
               <div className="max-w-2xl mx-auto">
                 {isJoined &&
                 currentUser &&
-                participants[picks.length % participants.length]?.id ===
-                  currentUser.id ? (
+                participants.find(p => p.id === currentUser?.id)?.position ===
+                  draft.currentPositionOnClock ? (
                   <div className="bg-white dark:bg-black border-2 border-black dark:border-white p-8 relative overflow-hidden">
                     <GeometricBackground variant="diagonal" opacity={0.05} />
                     <div className="relative z-10">
@@ -713,28 +731,32 @@ export default function DraftPage() {
           </BrutalSection>
 
           {/* Turn Order */}
-          {draft.draftState === 'active' && (
+          {draft.draftState === 'active' && !isReloadingAfterDraftStart && (
             <BrutalSection title="Order" contentClassName="p-4">
               <div className="space-y-1">
-                {participants.map((participant, index) => {
-                  const isCurrentTurn =
-                    index === (pickInRound - 1) % participants.length
-                  return (
-                    <div
-                      key={participant.id}
-                      className={`px-3 py-2 text-sm font-medium flex items-center justify-between ${
-                        isCurrentTurn
-                          ? 'bg-black dark:bg-white text-white dark:text-black'
-                          : 'text-muted-foreground'
-                      }`}
-                    >
-                      <span>
-                        {index + 1}. {participant.name}
-                      </span>
-                      {isCurrentTurn && <span className="font-bold">NOW</span>}
-                    </div>
-                  )
-                })}
+                {[...participants]
+                  .sort((a, b) => a.position! - b.position!)
+                  .map((participant, index) => {
+                    const isCurrentTurn =
+                      participant.position === draft.currentPositionOnClock
+                    return (
+                      <div
+                        key={participant.id}
+                        className={`px-3 py-2 text-sm font-medium flex items-center justify-between ${
+                          isCurrentTurn
+                            ? 'bg-black dark:bg-white text-white dark:text-black'
+                            : 'text-muted-foreground'
+                        }`}
+                      >
+                        <span>
+                          {participant.position}. {participant.name}
+                        </span>
+                        {isCurrentTurn && (
+                          <span className="font-bold">NOW</span>
+                        )}
+                      </div>
+                    )
+                  })}
               </div>
             </BrutalSection>
           )}

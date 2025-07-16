@@ -53,6 +53,7 @@ export const draftsInDa = da.table('drafts', {
   maxDrafters: smallint('max_drafters').notNull(),
   secPerRound: numeric('sec_per_round').notNull(),
   numRounds: smallint('num_rounds').notNull(),
+  currentPositionOnClock: smallint('current_position_on_clock'),
   createdAt: timestamp('created_at', { mode: 'string' }).notNull()
 })
 

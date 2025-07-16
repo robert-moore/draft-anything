@@ -1,11 +1,18 @@
 export interface Draft {
   id: number
   name: string
-  draftState: 'setting_up' | 'active' | 'completed' | 'errored' | 'paused' | 'canceled'
+  draftState:
+    | 'setting_up'
+    | 'active'
+    | 'completed'
+    | 'errored'
+    | 'paused'
+    | 'canceled'
   maxDrafters: number
   secPerRound: string
   numRounds: number
   startTime: string
+  currentPositionOnClock: number | null
   createdAt: string
 }
 

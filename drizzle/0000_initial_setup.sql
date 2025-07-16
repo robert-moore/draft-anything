@@ -24,11 +24,12 @@ CREATE TABLE IF NOT EXISTS da.drafts (
     max_drafters SMALLINT NOT NULL,
     sec_per_round NUMERIC NOT NULL,
     num_rounds SMALLINT NOT NULL,
+    current_position_on_clock SMALLINT,
     created_at TIMESTAMP NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS da.draft_users (
-    draft_id INTEGER, -- REFERENCES da.drafts (id),
+    draft_id INTEGER REFERENCES da.drafts (id),
     user_id UUID REFERENCES da.profiles (id),
     draft_username TEXT NOT NULL,
     position SMALLINT,
@@ -39,7 +40,7 @@ CREATE TABLE IF NOT EXISTS da.draft_users (
 ALTER TABLE da.draft_users ADD PRIMARY KEY (draft_id, user_id);
 
 CREATE TABLE IF NOT EXISTS da.draft_selections (
-    draft_id INTEGER, -- REFERENCES da.drafts (id),
+    draft_id INTEGER REFERENCES da.drafts (id),
     user_id UUID REFERENCES da.profiles (id),
     pick_number SMALLINT NOT NULL,
     created_at TIMESTAMP NOT NULL,
