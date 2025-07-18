@@ -5,14 +5,18 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { Monitor, Moon, Sun, ChevronDown } from 'lucide-react'
+import { Monitor, Moon, Sun, ChevronDown, Palette } from 'lucide-react'
 import { useTheme } from 'next-themes'
+import { useColorTheme } from '@/lib/theme/color-theme-context'
+import { ColorTheme } from '@/lib/theme/color-themes'
 import { useEffect, useState } from 'react'
 import { Button } from './button'
 
 export function ThemeToggle() {
   const { theme, setTheme, resolvedTheme } = useTheme()
+  const { currentTheme, setTheme: setColorTheme, themes } = useColorTheme()
   const [mounted, setMounted] = useState(false)
+  const [hoveredColorTheme, setHoveredColorTheme] = useState<ColorTheme | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -61,6 +65,30 @@ export function ThemeToggle() {
     }
   ]
 
+  const handleColorThemeHover = (colorTheme: ColorTheme | null) => {
+    setHoveredColorTheme(colorTheme)
+    if (colorTheme) {
+      // Preview the theme instantly on hover
+      const root = document.documentElement
+      root.style.setProperty('--primary', colorTheme.primary)
+      root.style.setProperty('--ring', colorTheme.primary)
+      root.style.setProperty('--sidebar-primary', colorTheme.primary)
+      root.style.setProperty('--sidebar-ring', colorTheme.primary)
+    } else {
+      // Revert to current theme when not hovering
+      const root = document.documentElement
+      root.style.setProperty('--primary', currentTheme.primary)
+      root.style.setProperty('--ring', currentTheme.primary)
+      root.style.setProperty('--sidebar-primary', currentTheme.primary)
+      root.style.setProperty('--sidebar-ring', currentTheme.primary)
+    }
+  }
+
+  const handleColorThemeSelect = (colorTheme: ColorTheme) => {
+    setColorTheme(colorTheme)
+    setHoveredColorTheme(null)
+  }
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -73,21 +101,89 @@ export function ThemeToggle() {
           <ChevronDown className="h-3 w-3 ml-1" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-32 p-1 bg-popover border border-border shadow-md">
-        <div className="space-y-1">
-          {themeOptions.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => setTheme(option.value)}
-              className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer text-foreground"
-            >
-              {option.icon}
-              <span className="flex-1 text-left">{option.label}</span>
-              {theme === option.value && (
-                <div className="w-2 h-2 bg-primary rounded-full" />
-              )}
-            </button>
-          ))}
+      <PopoverContent 
+        align="end" 
+        className="w-72 p-0 bg-card/95 backdrop-blur-xl border border-border/50 shadow-xl rounded-lg overflow-hidden"
+        onPointerLeave={() => handleColorThemeHover(null)}
+      >
+        {/* Theme Mode Section */}
+        <div className="p-4 border-b border-border/30">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Appearance
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {themeOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setTheme(option.value)}
+                className={`
+                  flex flex-col items-center gap-1.5 p-3 rounded-md transition-all duration-200
+                  hover:bg-accent/50 text-foreground
+                  ${theme === option.value 
+                    ? 'bg-accent/70 ring-1 ring-primary/30' 
+                    : 'hover:bg-accent/30'
+                  }
+                `}
+              >
+                {option.icon}
+                <span className="text-xs font-medium">{option.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Color Theme Section */}
+        <div className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Color Theme
+            </span>
+          </div>
+          
+          <div className="mb-3 text-center">
+            <p className="text-sm font-medium text-foreground">
+              {hoveredColorTheme?.name || currentTheme.name}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {hoveredColorTheme?.description || currentTheme.description}
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-4 gap-2.5">
+            {themes.map((colorTheme) => (
+              <button
+                key={colorTheme.id}
+                onClick={() => handleColorThemeSelect(colorTheme)}
+                onMouseEnter={() => handleColorThemeHover(colorTheme)}
+                className={`
+                  relative aspect-square rounded-lg transition-all duration-200 border-2
+                  hover:scale-105 hover:shadow-lg hover:shadow-primary/20
+                  ${currentTheme.id === colorTheme.id 
+                    ? 'border-border shadow-md scale-105 ring-2 ring-primary/30' 
+                    : 'border-border/30 hover:border-border/60'
+                  }
+                `}
+                style={{ backgroundColor: colorTheme.primaryHex }}
+                title={`${colorTheme.name} - ${colorTheme.description}`}
+              >
+                {currentTheme.id === colorTheme.id && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-2 h-2 bg-white/90 rounded-full shadow-sm" />
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+          
+          <div className="text-center pt-3 mt-3 border-t border-border/30">
+            <p className="text-xs text-muted-foreground">
+              Hover to preview • Click to apply
+            </p>
+          </div>
         </div>
       </PopoverContent>
     </Popover>

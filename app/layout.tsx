@@ -1,4 +1,5 @@
 import { ThemeProvider } from '@/components/theme-provider'
+import { ColorThemeProvider } from '@/lib/theme/color-theme-context'
 import { Toaster } from '@/components/ui/sonner'
 import { cn } from '@/lib/utils'
 import { Analytics } from '@vercel/analytics/next'
@@ -62,9 +63,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
-          <Toaster />
-          <Analytics />
+          <ColorThemeProvider>
+            {children}
+            <Toaster />
+            <Analytics />
+          </ColorThemeProvider>
         </ThemeProvider>
       </body>
     </html>
