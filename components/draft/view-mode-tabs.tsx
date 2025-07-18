@@ -1,5 +1,7 @@
 'use client'
 
+import { RadioGroupSegmented, RadioGroupSegmentedItem } from '@/components/ui/radio-group-segmented'
+
 type ViewMode = 'selections' | 'by-round' | 'by-drafter'
 
 interface ViewModeTabsProps {
@@ -7,30 +9,22 @@ interface ViewModeTabsProps {
   onChange: (mode: ViewMode) => void
 }
 
-const VIEW_MODES = [
-  { key: 'selections' as const, label: 'Selections' },
-  { key: 'by-round' as const, label: 'By Round' },
-  { key: 'by-drafter' as const, label: 'By Drafter' }
-]
-
 export function ViewModeTabs({ viewMode, onChange }: ViewModeTabsProps) {
   return (
-    <div className="flex border-2 border-black dark:border-white">
-      {VIEW_MODES.map(({ key, label }, index) => (
-        <button
-          key={key}
-          onClick={() => onChange(key)}
-          className={`px-3 py-1 text-xs font-medium transition-colors ${
-            index > 0 ? 'border-l-2 border-black dark:border-white' : ''
-          } ${
-            viewMode === key 
-              ? 'bg-black dark:bg-white text-white dark:text-black' 
-              : 'bg-white dark:bg-black text-black dark:text-white hover:bg-muted dark:hover:bg-muted/20'
-          }`}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
+    <RadioGroupSegmented 
+      value={viewMode} 
+      onValueChange={(value) => onChange(value as ViewMode)}
+      className="text-xs"
+    >
+      <RadioGroupSegmentedItem value="selections" className="px-3 py-1">
+        Selections
+      </RadioGroupSegmentedItem>
+      <RadioGroupSegmentedItem value="by-round" className="px-3 py-1">
+        By Round
+      </RadioGroupSegmentedItem>
+      <RadioGroupSegmentedItem value="by-drafter" className="px-3 py-1">
+        By Drafter
+      </RadioGroupSegmentedItem>
+    </RadioGroupSegmented>
   )
 }

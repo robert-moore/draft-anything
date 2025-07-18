@@ -24,14 +24,14 @@ export function BrutalSection({
 }: BrutalSectionProps) {
   const variantClasses = {
     default: '',
-    bordered: 'border-2 border-black dark:border-white',
+    bordered: 'border-2 border-border',
     clean: ''
   }
 
   const bgClasses = {
-    white: 'bg-white dark:bg-black',
-    muted: 'bg-muted dark:bg-muted/20',
-    diagonal: 'bg-white dark:bg-black relative'
+    white: 'bg-card',
+    muted: 'bg-muted',
+    diagonal: 'bg-card relative'
   }
 
   return (
@@ -47,9 +47,9 @@ export function BrutalSection({
       )}
       
       {title && (
-        <div className="border-b-2 border-black dark:border-white px-4 py-3 bg-white dark:bg-black relative z-10">
+        <div className="border-b-2 border-border px-4 py-3 bg-card relative z-10">
           <div className="flex justify-between items-center">
-            <h3 className="font-bold text-sm tracking-wider uppercase text-black dark:text-white">
+            <h3 className="font-bold text-sm tracking-wider uppercase text-foreground">
               {title}
             </h3>
             {headerActions}

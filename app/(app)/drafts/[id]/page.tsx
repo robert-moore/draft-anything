@@ -3,6 +3,8 @@
 import { DraftMetadata } from '@/components/draft/draft-metadata'
 import { DraftPickGrid } from '@/components/draft/draft-pick-grid'
 import { ViewModeTabs } from '@/components/draft/view-mode-tabs'
+import { DraftTimer } from '@/components/draft/draft-timer'
+import { AutoPickMonitor } from '@/components/draft/auto-pick-monitor'
 import { BrutalButton } from '@/components/ui/brutal-button'
 import { BrutalInput } from '@/components/ui/brutal-input'
 import { BrutalListItem } from '@/components/ui/brutal-list-item'
@@ -54,6 +56,7 @@ export default function DraftPage() {
         throw new Error('Failed to load draft')
       }
       const data = await response.json()
+      
       setDraft(data.draft)
       setParticipants(data.participants || [])
       setPicks(data.picks || [])
@@ -131,7 +134,7 @@ export default function DraftPage() {
                 prev.some(
                   p =>
                     p.pickNumber === newPick.pick_number &&
-                    p.userId === newPick.user_id
+                    p.clientId === newPick.user_id
                 )
               ) {
                 return prev
@@ -141,7 +144,7 @@ export default function DraftPage() {
                 ...prev,
                 {
                   pickNumber: newPick.pick_number,
-                  userId: newPick.user_id,
+                  clientId: newPick.user_id,
                   clientName:
                     participantsRef.current.find(p => p.id === newPick.user_id)
                       ?.name ?? 'Unknown',
@@ -174,7 +177,9 @@ export default function DraftPage() {
               return {
                 ...prev,
                 draftState: updatedState,
-                currentPositionOnClock: positionOnClock
+                currentPositionOnClock: positionOnClock,
+                turnStartedAt: payload.new.turn_started_at,
+                timerPaused: payload.new.timer_paused ?? false
               }
             })
 
@@ -328,8 +333,8 @@ export default function DraftPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-background">
-        <div className="border-t-4 border-black dark:border-white bg-white dark:bg-black">
+      <div className="min-h-screen bg-background">
+        <div className="border-t-4 border-border bg-card">
           <div className="flex items-center justify-center py-32">
             <BrutalSection
               variant="bordered"
@@ -337,7 +342,7 @@ export default function DraftPage() {
               background="diagonal"
             >
               <div className="p-8">
-                <div className="font-mono text-lg font-bold mb-4 text-black dark:text-white">
+                <div className="font-mono text-lg font-bold mb-4 text-foreground">
                   Loading draft data...
                 </div>
                 <div className="text-sm opacity-70">
@@ -353,13 +358,13 @@ export default function DraftPage() {
 
   if (error || !draft) {
     return (
-      <div className="min-h-screen bg-white dark:bg-background">
-        <div className="border-t-4 border-black dark:border-white bg-white dark:bg-black">
+      <div className="min-h-screen bg-background">
+        <div className="border-t-4 border-border bg-card">
           <div className="flex items-center justify-center py-32">
             <BrutalSection variant="bordered" className="w-96 text-center">
               <div className="p-8">
                 <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
-                <div className="font-mono text-lg font-bold text-black dark:text-white">
+                <div className="font-mono text-lg font-bold text-foreground">
                   {error || 'Draft not found'}
                 </div>
               </div>
@@ -421,13 +426,27 @@ export default function DraftPage() {
   const roundsData = getPicksByRounds()
   const drafterData = getPicksByDrafter()
 
+  const isMyTurn = isJoined && 
+    currentUser && 
+    participants.find(p => p.id === currentUser?.id)?.position === draft?.currentPositionOnClock
+
   return (
-    <div className="min-h-screen bg-white dark:bg-background">
+    <div className="min-h-screen bg-background">
+      {/* Auto-pick handler (only for timed drafts) */}
+      {draft && parseInt(draft.secPerRound) > 0 && (
+        <AutoPickMonitor
+          draftId={draft.id}
+          turnStartedAt={draft.turnStartedAt}
+          secondsPerRound={parseInt(draft.secPerRound)}
+          isMyTurn={isMyTurn}
+          currentPickNumber={picks.length + 1}
+        />
+      )}
       {/* Draft Header - Primary Visual Anchor */}
-      <div className="border-t-4 border-black dark:border-white bg-white dark:bg-black">
+      <div className="border-t-4 border-border bg-card">
         <div className="max-w-7xl mx-auto px-6 py-8">
           <div className="flex items-center gap-4 mb-4">
-            <h1 className="text-4xl font-black tracking-tight text-black dark:text-white">
+            <h1 className="text-4xl font-black tracking-tight text-foreground">
               {draft.name}
             </h1>
             <NumberBox
@@ -446,14 +465,14 @@ export default function DraftPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto flex border-t-2 border-black dark:border-white">
+      <div className="max-w-7xl mx-auto flex border-t-2 border-border">
         {/* Main Content */}
-        <main className="flex-1 px-6 pt-6 bg-white dark:bg-background">
+        <main className="flex-1 px-6 pt-6 bg-background">
           {/* Join Draft */}
           {!isJoined && draft.draftState === 'setting_up' && (
             <div className="py-8">
               <div className="max-w-xl mx-auto">
-                <h2 className="text-2xl font-bold mb-6 text-center text-black dark:text-white">
+                <h2 className="text-2xl font-bold mb-6 text-center text-foreground">
                   Join Draft
                 </h2>
                 <div className="flex gap-4">
@@ -504,16 +523,24 @@ export default function DraftPage() {
                 currentUser &&
                 participants.find(p => p.id === currentUser?.id)?.position ===
                   draft.currentPositionOnClock ? (
-                  <div className="bg-white dark:bg-black border-2 border-black dark:border-white p-8 relative overflow-hidden">
+                  <div className="bg-card border-2 border-border p-8 relative overflow-hidden">
                     <GeometricBackground variant="diagonal" opacity={0.05} />
                     <div className="relative z-10">
                       <div className="text-center mb-6">
-                        <h2 className="text-2xl font-bold text-black dark:text-white">
+                        <h2 className="text-2xl font-bold text-foreground">
                           Round {currentRound} - Pick {pickInRound}
                         </h2>
                         <p className="text-sm text-muted-foreground mt-1">
                           It's your turn to pick
                         </p>
+                        <div className="mt-4 flex justify-center">
+                          <DraftTimer
+                            turnStartedAt={draft.turnStartedAt}
+                            secondsPerRound={parseInt(draft.secPerRound)}
+                            isPaused={draft.timerPaused}
+                            variant="full"
+                          />
+                        </div>
                       </div>
                       <div className="space-y-4">
                         <BrutalInput
@@ -522,7 +549,7 @@ export default function DraftPage() {
                           onChange={e => setCurrentPick(e.target.value)}
                           onKeyDown={e => e.key === 'Enter' && handleMakePick()}
                           variant="boxed"
-                          className="w-full bg-white dark:bg-black text-black dark:text-white text-lg py-3"
+                          className="w-full bg-card text-foreground text-lg py-3"
                           autoFocus
                         />
                         <BrutalButton
@@ -537,27 +564,35 @@ export default function DraftPage() {
                     </div>
                   </div>
                 ) : draft.draftState === 'completed' ? (
-                  <div className="border-2 border-black dark:border-white bg-white dark:bg-black p-12 text-center">
-                    <p className="text-2xl font-bold mb-2 text-black dark:text-white">
+                  <div className="border-2 border-border bg-card p-12 text-center">
+                    <p className="text-2xl font-bold mb-2 text-foreground">
                       Draft Complete!
                     </p>
                     <p className="text-muted-foreground">
                       All {picks.length} picks have been made
                     </p>
                   </div>
-                ) : (
-                  <div className="border-2 border-black dark:border-white border-dashed p-12 text-center">
+                ) : draft.draftState === 'active' ? (
+                  <div className="border-2 border-border border-dashed p-12 text-center">
                     <p className="text-lg text-muted-foreground mb-2">
                       Draft in Progress
                     </p>
                     <p className="text-sm text-muted-foreground">
                       Waiting for{' '}
-                      {participants[picks.length % participants.length]?.name ||
+                      {participants.find(p => p.position === draft.currentPositionOnClock)?.name ||
                         'next player'}{' '}
                       to pick...
                     </p>
+                    <div className="mt-6 flex justify-center">
+                      <DraftTimer
+                        turnStartedAt={draft.turnStartedAt}
+                        secondsPerRound={parseInt(draft.secPerRound)}
+                        isPaused={draft.timerPaused}
+                        variant="compact"
+                      />
+                    </div>
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
           )}
@@ -565,13 +600,13 @@ export default function DraftPage() {
           {/* Draft Board */}
           <div className="pt-6">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-black dark:text-white">
+              <h2 className="text-2xl font-bold text-foreground">
                 Draft Board
               </h2>
               <ViewModeTabs viewMode={viewMode} onChange={setViewMode} />
             </div>
             {picks.length === 0 ? (
-              <div className="border-2 border-black dark:border-white border-dashed p-16 text-center">
+              <div className="border-2 border-border border-dashed p-16 text-center">
                 <p className="text-lg text-muted-foreground mb-2">
                   {draft.draftState === 'setting_up'
                     ? 'Draft Not Started'
@@ -594,7 +629,7 @@ export default function DraftPage() {
                   <div className="space-y-8">
                     {roundsData.map((round, roundIndex) => (
                       <div key={roundIndex}>
-                        <h3 className="font-bold text-sm mb-3 text-black dark:text-white">
+                        <h3 className="font-bold text-sm mb-3 text-foreground">
                           Round {roundIndex + 1}
                         </h3>
                         <div className="space-y-2">
@@ -605,7 +640,7 @@ export default function DraftPage() {
                               variant="default"
                             >
                               <div className="flex-1">
-                                <div className="font-medium text-black dark:text-white">
+                                <div className="font-medium text-foreground">
                                   {pick.payload}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
@@ -626,7 +661,7 @@ export default function DraftPage() {
                     {Array.from({ length: draft.numRounds }).map(
                       (_, roundIndex) => (
                         <div key={roundIndex}>
-                          <h3 className="font-bold text-sm mb-3 text-black dark:text-white">
+                          <h3 className="font-bold text-sm mb-3 text-foreground">
                             Round {roundIndex + 1}
                           </h3>
                           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -661,7 +696,7 @@ export default function DraftPage() {
                     {drafterData.map(drafter => (
                       <div key={drafter.name}>
                         <div className="flex items-center justify-between mb-3">
-                          <h3 className="font-bold text-sm text-black dark:text-white">
+                          <h3 className="font-bold text-sm text-foreground">
                             {drafter.name}
                           </h3>
                           <span className="text-xs text-muted-foreground">
@@ -681,7 +716,7 @@ export default function DraftPage() {
                                 variant="minimal"
                               >
                                 <div className="flex-1">
-                                  <div className="font-medium text-black dark:text-white">
+                                  <div className="font-medium text-foreground">
                                     {pick.payload}
                                   </div>
                                   <div className="text-xs text-muted-foreground">
@@ -702,7 +737,7 @@ export default function DraftPage() {
         </main>
 
         {/* Sidebar */}
-        <aside className="w-80 border-l-2 border-black dark:border-white bg-white dark:bg-black">
+        <aside className="w-80 border-l-2 border-border bg-card">
           {/* Players */}
           <BrutalSection
             title={`Players (${participants.length}/${draft.maxDrafters})`}
@@ -716,11 +751,11 @@ export default function DraftPage() {
               <div className="space-y-2">
                 {participants.map((participant, index) => (
                   <div key={participant.id} className="flex items-center gap-2">
-                    <span className="font-medium text-sm flex-1 truncate text-black dark:text-white">
+                    <span className="font-medium text-sm flex-1 truncate text-foreground">
                       {participant.name}
                     </span>
                     {participant.isReady && (
-                      <span className="text-xs bg-muted dark:bg-muted/20 px-2 py-1 font-medium text-black dark:text-white">
+                      <span className="text-xs bg-muted px-2 py-1 font-medium text-foreground">
                         Ready
                       </span>
                     )}
@@ -744,7 +779,7 @@ export default function DraftPage() {
                         key={participant.id}
                         className={`px-3 py-2 text-sm font-medium flex items-center justify-between ${
                           isCurrentTurn
-                            ? 'bg-black dark:bg-white text-white dark:text-black'
+                            ? 'bg-accent text-accent-foreground'
                             : 'text-muted-foreground'
                         }`}
                       >

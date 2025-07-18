@@ -112,13 +112,13 @@ export function AppHeader() {
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="relative h-10 w-10 border-2 border-black hover:border-primary p-0"
+                  className="relative h-10 w-10 border-2 border-border hover:border-primary p-0"
                 >
                   <CurrentUserAvatar />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
-                className="w-56 border-2 border-black rounded-none"
+                className="w-56 border-2 border-border rounded-none"
                 align="end"
               >
                 <div className="flex items-center justify-start gap-2 p-2">

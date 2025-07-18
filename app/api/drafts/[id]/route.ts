@@ -6,6 +6,7 @@ import {
 } from '@/drizzle/schema'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
+import { parseDraftId } from '@/lib/api/route-helpers'
 import { eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -23,12 +24,10 @@ export async function GET(
       )
     }
 
-    // Await params before accessing properties
-    const { id } = await params
-    const draftId = parseInt(id)
-    if (isNaN(draftId)) {
-      return NextResponse.json({ error: 'Invalid draft ID' }, { status: 400 })
-    }
+    // Validate draft ID
+    const idResult = await parseDraftId({ params })
+    if (!idResult.success) return idResult.error
+    const { draftId } = idResult
 
     // Get draft details
     const [draft] = await db
@@ -62,7 +61,9 @@ export async function GET(
         userId: draftSelectionsInDa.userId,
         payload: draftSelectionsInDa.payload,
         createdAt: draftSelectionsInDa.createdAt,
-        userName: profilesInDa.name
+        userName: profilesInDa.name,
+        wasAutoPick: draftSelectionsInDa.wasAutoPick,
+        timeTakenSeconds: draftSelectionsInDa.timeTakenSeconds
       })
       .from(draftSelectionsInDa)
       .innerJoin(profilesInDa, eq(draftSelectionsInDa.userId, profilesInDa.id))
@@ -75,7 +76,9 @@ export async function GET(
       payload: pick.payload,
       createdAt: pick.createdAt,
       clientId: pick.userId, // For backward compatibility
-      clientName: pick.userName || 'Unknown'
+      clientName: pick.userName || 'Unknown',
+      wasAutoPick: pick.wasAutoPick,
+      timeTakenSeconds: pick.timeTakenSeconds
     }))
 
     return NextResponse.json({

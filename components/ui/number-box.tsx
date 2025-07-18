@@ -24,10 +24,10 @@ export function NumberBox({
 
   const variantClasses = {
     default:
-      'border-2 border-black dark:border-white bg-white dark:bg-black text-black dark:text-white',
+      'border-2 border-border bg-card text-foreground',
     filled:
-      'border-2 border-black dark:border-white bg-black dark:bg-white text-white dark:text-black',
-    minimal: 'dark:bg-muted/20 text-black dark:text-white'
+      'border-2 border-border bg-accent text-accent-foreground',
+    minimal: 'bg-transparent text-foreground'
   }
 
   return (

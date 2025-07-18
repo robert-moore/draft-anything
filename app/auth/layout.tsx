@@ -9,9 +9,9 @@ export default function AuthLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-white dark:bg-black">
+    <div className="min-h-screen bg-background">
       {/* Navigation */}
-      <nav className="border-b-2 border-black dark:border-white bg-white dark:bg-black px-8 py-6">
+      <nav className="border-b-2 border-border bg-card px-8 py-6">
         <div className="max-w-7xl mx-auto">
           <Link
             href="/"

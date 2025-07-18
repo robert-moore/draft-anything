@@ -1,6 +1,8 @@
 import { draftsInDa, draftUsersInDa } from '@/drizzle/schema'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
+import { getUtcNow } from '@/lib/time-utils'
+import { parseDraftId } from '@/lib/api/route-helpers'
 import { and, count, eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -18,11 +20,10 @@ export async function POST(
       )
     }
 
-    const { id } = await params
-    const draftId = parseInt(id)
-    if (isNaN(draftId)) {
-      return NextResponse.json({ error: 'Invalid draft ID' }, { status: 400 })
-    }
+    // Validate draft ID
+    const idResult = await parseDraftId({ params })
+    if (!idResult.success) return idResult.error
+    const { draftId } = idResult
 
     // Check if draft exists and is in setting_up state
     const [draft] = await db
@@ -62,9 +63,10 @@ export async function POST(
       .from(draftUsersInDa)
       .where(eq(draftUsersInDa.draftId, draftId))
 
-    // Randomize order
+    // Randomize order, filtering out null userIds
     const shuffled = participants
       .map(p => p.userId)
+      .filter((id): id is string => id !== null)
       .sort(() => Math.random() - 0.5)
 
     // Assign positions starting from 1
@@ -80,11 +82,15 @@ export async function POST(
         )
     }
 
-    // Update draft state to active
-    await db
-      .update(draftsInDa)
-      .set({ draftState: 'active', currentPositionOnClock: 1 })
-      .where(eq(draftsInDa.id, draftId))
+    // Update draft state to active and initialize timer
+    const updates: any = {
+      draftState: 'active',
+      currentPositionOnClock: 1,
+      // Always set turnStartedAt to track elapsed time (for both timed and untimed drafts)
+      turnStartedAt: getUtcNow()
+    }
+
+    await db.update(draftsInDa).set(updates).where(eq(draftsInDa.id, draftId))
 
     return NextResponse.json({
       message: 'Draft started successfully',

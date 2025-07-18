@@ -6,21 +6,29 @@ import {
 } from '@/drizzle/schema'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
+import { getElapsedSeconds, getUtcNow } from '@/lib/time-utils'
+import { parseJsonRequest } from '@/lib/api/validation'
+import { parseDraftId } from '@/lib/api/route-helpers'
 import { and, count, eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+
+// Schema for making a pick
+const makePickSchema = z.object({
+  payload: z.string().trim().min(1, 'Pick content is required').max(200)
+})
 
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await context.params
-    const draftId = parseInt(id)
+    // Validate draft ID
+    const idResult = await parseDraftId(context)
+    if (!idResult.success) return idResult.error
+    const { draftId } = idResult
 
-    if (isNaN(draftId)) {
-      return NextResponse.json({ error: 'Invalid draft ID' }, { status: 400 })
-    }
-
+    // Check authentication
     const user = await getCurrentUser()
     if (!user) {
       return NextResponse.json(
@@ -29,19 +37,10 @@ export async function POST(
       )
     }
 
-    const body = await request.json()
-    const { payload } = body
-
-    if (
-      !payload ||
-      typeof payload !== 'string' ||
-      payload.trim().length === 0
-    ) {
-      return NextResponse.json(
-        { error: 'Pick content is required' },
-        { status: 400 }
-      )
-    }
+    // Validate request body
+    const bodyResult = await parseJsonRequest(request, makePickSchema)
+    if (!bodyResult.success) return bodyResult.error
+    const { payload } = bodyResult.data
 
     // Fetch draft
     const [draft] = await db
@@ -88,6 +87,24 @@ export async function POST(
       )
     }
 
+    // Check timer if enabled
+    const secPerRound = parseInt(draft.secPerRound)
+    let timeTakenSeconds = null
+
+    if (secPerRound > 0 && draft.turnStartedAt && !draft.timerPaused) {
+      timeTakenSeconds = getElapsedSeconds(draft.turnStartedAt)
+
+      // Add 1 second grace period to handle network latency
+      if (timeTakenSeconds > secPerRound + 1) {
+        return NextResponse.json(
+          {
+            error: `Time expired. You had ${secPerRound} seconds to make your pick.`
+          },
+          { status: 400 }
+        )
+      }
+    }
+
     // Count existing picks
     const [pickCountResult] = await db
       .select({ count: count() })
@@ -97,13 +114,15 @@ export async function POST(
     const currentPickNumber = pickCountResult.count + 1
 
     // Insert the pick
-    const now = new Date().toISOString()
+    const now = getUtcNow()
     await db.insert(draftSelectionsInDa).values({
       draftId,
       userId: user.id,
       pickNumber: currentPickNumber,
-      payload: payload.trim(),
-      createdAt: now
+      payload: payload,
+      createdAt: now,
+      wasAutoPick: false,
+      timeTakenSeconds: timeTakenSeconds?.toString() || null
     })
 
     // Get number of participants
@@ -127,14 +146,18 @@ export async function POST(
         ? nextPickInRound + 1 // 1-based
         : numParticipants - nextPickInRound
 
-    // Update draft state
-    await db
-      .update(draftsInDa)
-      .set({
-        currentPositionOnClock: nextPosition,
-        draftState: nextPickNumber > totalPicks ? 'completed' : draft.draftState
-      })
-      .where(eq(draftsInDa.id, draftId))
+    // Update draft state and reset timer for next pick
+    const updates: any = {
+      currentPositionOnClock: nextPosition,
+      draftState: nextPickNumber > totalPicks ? 'completed' : draft.draftState
+    }
+
+    // Reset timer for next player if draft continues (for both timed and untimed)
+    if (nextPosition !== null) {
+      updates.turnStartedAt = getUtcNow()
+    }
+
+    await db.update(draftsInDa).set(updates).where(eq(draftsInDa.id, draftId))
 
     // Get profile name
     const [profile] = await db
@@ -148,7 +171,7 @@ export async function POST(
         userId: user.id,
         clientId: user.id,
         clientName: profile?.name || 'Unknown',
-        payload: payload.trim(),
+        payload: payload,
         createdAt: now
       },
       { status: 201 }

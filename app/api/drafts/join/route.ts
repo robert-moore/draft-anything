@@ -6,10 +6,10 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { userId, draftId } = body
+    const { userId, draftId, name } = body
 
-    if (!userId || !draftId) {
-      console.warn('Missing fields:', { userId, draftId })
+    if (!userId || !draftId || !name) {
+      console.warn('Missing fields:', { userId, draftId, name })
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
     }
 
@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
       await db.insert(draftUsersInDa).values({
         userId,
         draftId,
+        draftUsername: name,
         position: null,
         isReady: false,
         createdAt: new Date().toISOString()

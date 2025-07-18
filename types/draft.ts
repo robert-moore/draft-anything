@@ -13,6 +13,8 @@ export interface Draft {
   numRounds: number
   startTime: string
   currentPositionOnClock: number | null
+  turnStartedAt: string | null
+  timerPaused: boolean
   createdAt: string
 }
 
@@ -29,4 +31,6 @@ export interface DraftPick {
   clientName: string
   payload: string
   createdAt: string
+  wasAutoPick?: boolean
+  timeTakenSeconds?: string
 }

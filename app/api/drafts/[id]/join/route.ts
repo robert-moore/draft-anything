@@ -1,8 +1,16 @@
 import { draftsInDa, draftUsersInDa, profilesInDa } from '@/drizzle/schema'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
+import { parseJsonRequest } from '@/lib/api/validation'
+import { parseDraftId } from '@/lib/api/route-helpers'
 import { and, count, eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+
+// Schema for joining a draft
+const joinDraftSchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(50)
+})
 
 export async function POST(
   request: NextRequest,
@@ -18,19 +26,15 @@ export async function POST(
       )
     }
 
-    const { id } = await params
-    const draftId = parseInt(id)
+    // Validate draft ID
+    const idResult = await parseDraftId({ params })
+    if (!idResult.success) return idResult.error
+    const { draftId } = idResult
 
-    if (isNaN(draftId)) {
-      return NextResponse.json({ error: 'Invalid draft ID' }, { status: 400 })
-    }
-
-    const body = await request.json()
-    const { name } = body
-
-    if (!name || typeof name !== 'string' || name.trim().length === 0) {
-      return NextResponse.json({ error: 'Name is required' }, { status: 400 })
-    }
+    // Validate request body
+    const bodyResult = await parseJsonRequest(request, joinDraftSchema)
+    if (!bodyResult.success) return bodyResult.error
+    const { name } = bodyResult.data
 
     // Check if draft exists and is in setting_up state
     const [draft] = await db

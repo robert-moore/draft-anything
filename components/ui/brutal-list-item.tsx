@@ -23,12 +23,12 @@ export function BrutalListItem({
 }: BrutalListItemProps) {
   const variantClasses = {
     default:
-      'border-2 border-black dark:border-white bg-white dark:bg-black text-black dark:text-white hover:bg-muted dark:hover:bg-muted/20',
-    minimal: 'bg-white dark:bg-black text-black dark:text-white',
+      'border-2 border-border bg-card text-foreground hover:bg-muted',
+    minimal: 'bg-card text-foreground',
     empty:
-      'border-2 border-black dark:border-white border-dashed bg-muted dark:bg-muted/20',
+      'border-2 border-border border-dashed bg-muted',
     active:
-      'border-2 border-black dark:border-white bg-black dark:bg-white text-white dark:text-black'
+      'border-2 border-border bg-accent text-accent-foreground'
   }
 
   const Component = onClick ? 'button' : 'div'

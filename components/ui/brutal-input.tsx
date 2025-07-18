@@ -11,7 +11,7 @@ export const BrutalInput = forwardRef<HTMLInputElement, BrutalInputProps>(
   ({ className, variant = 'underline', ...props }, ref) => {
     const variantClasses = {
       underline: 'brutal-input',
-      boxed: 'border-2 border-black dark:border-white px-3 py-2 bg-white dark:bg-black text-black dark:text-white font-bold'
+      boxed: 'border-2 border-border px-3 py-2 bg-card text-foreground font-bold'
     }
 
     return (

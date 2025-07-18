@@ -1,7 +1,18 @@
 import { draftsInDa } from '@/drizzle/schema'
-import { db } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
+import { db } from '@/lib/db'
+import { parseJsonRequest } from '@/lib/api/validation'
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+
+// Schema for creating a draft
+const createDraftSchema = z.object({
+  name: z.string().min(1, 'Draft name is required').max(100),
+  maxDrafters: z.number().int().min(2).max(20),
+  secPerRound: z.number().int().min(0).max(300),
+  numRounds: z.number().int().min(1).max(10),
+  draftState: z.enum(['setting_up', 'active', 'completed', 'paused']).optional()
+})
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,16 +25,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const body = await req.json()
-
-    const { name, draftState, maxDrafters, secPerRound, numRounds } = body
-
-    if (!name || !maxDrafters || !secPerRound || !numRounds) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
+    // Validate request body
+    const bodyResult = await parseJsonRequest(req, createDraftSchema)
+    if (!bodyResult.success) return bodyResult.error
+    const { name, draftState, maxDrafters, secPerRound, numRounds } = bodyResult.data
 
     const [newDraft] = await db
       .insert(draftsInDa)
@@ -32,7 +37,7 @@ export async function POST(req: NextRequest) {
         adminUserId: user.id,
         draftState: draftState || 'setting_up',
         maxDrafters,
-        secPerRound,
+        secPerRound: secPerRound.toString(),
         numRounds,
         createdAt: new Date().toISOString()
       })

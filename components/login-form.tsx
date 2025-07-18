@@ -53,11 +53,11 @@ export function LoginForm({
       className={cn('flex flex-col items-center gap-6', className)}
       {...props}
     >
-      <div className="w-full border-2 border-black dark:border-white bg-white dark:bg-black">
-        <div className="text-center p-8 border-b-2 border-black dark:border-white">
+      <div className="w-full border-2 border-border bg-card">
+        <div className="text-center p-8 border-b-2 border-border">
           <div className="text-2xl font-black tracking-tight mb-4 flex flex-col items-center justify-center gap-4">
             <BrandLogo variant="logo" size="2xl" />
-            <span className="text-black dark:text-white">Welcome back</span>
+            <span className="text-foreground">Welcome back</span>
           </div>
           <p className="text-sm text-muted-foreground">
             {isEmailSent 
@@ -88,7 +88,7 @@ export function LoginForm({
           ) : (
             <form onSubmit={handleMagicLink} className="flex flex-col gap-4">
               <div className="grid gap-2">
-                <label htmlFor="email" className="text-sm font-medium text-black dark:text-white">Email</label>
+                <label htmlFor="email" className="text-sm font-medium text-foreground">Email</label>
                 <BrutalInput
                   id="email"
                   type="email"
@@ -107,8 +107,8 @@ export function LoginForm({
           )}
           {!isEmailSent && (
             <div className="mt-6 text-center text-sm">
-              <span className="text-black dark:text-white">Don&apos;t have an account?</span>{' '}
-              <Link href="/auth/sign-up" className="underline underline-offset-4 hover:no-underline text-black dark:text-white font-medium">
+              <span className="text-foreground">Don&apos;t have an account?</span>{' '}
+              <Link href="/auth/sign-up" className="underline underline-offset-4 hover:no-underline text-foreground font-medium">
                 Sign Up
               </Link>
             </div>

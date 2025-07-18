@@ -8,6 +8,7 @@ import {
   smallint,
   text,
   timestamp,
+  unique,
   uuid
 } from 'drizzle-orm/pg-core'
 
@@ -28,14 +29,17 @@ export const draftSelectionsInDa = da.table(
     userId: uuid('user_id'),
     pickNumber: smallint('pick_number').notNull(),
     createdAt: timestamp('created_at', { mode: 'string' }).notNull(),
-    payload: text().notNull()
+    payload: text().notNull(),
+    wasAutoPick: boolean('was_auto_pick').default(false),
+    timeTakenSeconds: numeric('time_taken_seconds')
   },
   table => [
     foreignKey({
       columns: [table.userId],
       foreignColumns: [profilesInDa.id],
       name: 'draft_selections_user_id_fkey'
-    })
+    }),
+    unique('unique_draft_pick_number').on(table.draftId, table.pickNumber)
   ]
 )
 
@@ -54,6 +58,8 @@ export const draftsInDa = da.table('drafts', {
   secPerRound: numeric('sec_per_round').notNull(),
   numRounds: smallint('num_rounds').notNull(),
   currentPositionOnClock: smallint('current_position_on_clock'),
+  turnStartedAt: timestamp('turn_started_at', { mode: 'string' }),
+  timerPaused: boolean('timer_paused').default(false),
   createdAt: timestamp('created_at', { mode: 'string' }).notNull()
 })
 

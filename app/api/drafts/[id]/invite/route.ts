@@ -1,6 +1,7 @@
 import { draftsInDa } from '@/drizzle/schema'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
+import { parseDraftId } from '@/lib/api/route-helpers'
 import { eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -18,11 +19,10 @@ export async function POST(
       )
     }
 
-    const { id } = await params
-    const draftId = parseInt(id)
-    if (isNaN(draftId)) {
-      return NextResponse.json({ error: 'Invalid draft ID' }, { status: 400 })
-    }
+    // Validate draft ID
+    const idResult = await parseDraftId({ params })
+    if (!idResult.success) return idResult.error
+    const { draftId } = idResult
 
     // Check if draft exists
     const [draft] = await db

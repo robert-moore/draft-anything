@@ -1,14 +1,15 @@
 'use client'
 
-import { BrutalistCard } from '@/components/ui/brutalist-card'
 import { BrutalistButton } from '@/components/ui/brutalist-button'
-import { VisualFocus } from '@/components/ui/visual-focus'
-import { RhythmSpacer } from '@/components/ui/rhythm-spacer'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { PageHeader } from '@/components/ui/page-header'
 import { NumberInput } from '@/components/ui/number-input'
-import { Plus, Users, Clock, RotateCcw, AlertCircle, Sparkles, ArrowRight, CheckCircle } from 'lucide-react'
+import { PageHeader } from '@/components/ui/page-header'
+import {
+  RadioGroupSegmented,
+  RadioGroupSegmentedItem
+} from '@/components/ui/radio-group-segmented'
+import { Infinity, Timer } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
@@ -17,6 +18,7 @@ export default function NewDraftPage() {
   const [maxDrafters, setMaxDrafters] = useState(4)
   const [secPerRound, setSecPerRound] = useState(60)
   const [numRounds, setNumRounds] = useState(3)
+  const [timerMode, setTimerMode] = useState<'timed' | 'untimed'>('timed')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -30,14 +32,14 @@ export default function NewDraftPage() {
       const response = await fetch('/api/drafts', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           name,
           maxDrafters,
-          secPerRound,
-          numRounds,
-        }),
+          secPerRound: timerMode === 'untimed' ? 0 : secPerRound,
+          numRounds
+        })
       })
 
       if (!response.ok) {
@@ -46,7 +48,7 @@ export default function NewDraftPage() {
       }
 
       const data = await response.json()
-      
+
       router.push(`/drafts/${data.draft.id}`)
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An error occurred')
@@ -68,7 +70,7 @@ export default function NewDraftPage() {
       title: 'FOOD_ESTABLISHMENTS',
       category: 'CULINARY',
       icon: 'EAT',
-      sample: ['Joe\'s Pizza', 'Burger Palace', 'Sushi Central']
+      sample: ["Joe's Pizza", 'Burger Palace', 'Sushi Central']
     },
     {
       id: 'TEMPLATE_003',
@@ -88,87 +90,139 @@ export default function NewDraftPage() {
 
   return (
     <div>
-      <PageHeader 
+      <PageHeader
         title="Create Draft"
         subtitle="Turn any topic into a ranking"
       />
-      
-      <div className="px-6 py-12 border-t-2 border-black dark:border-white bg-background">
+
+      <div className="px-6 py-12 border-t-2 border-border bg-background">
         <div className="max-w-3xl mx-auto">
+          {/* Core Form */}
+          <div className="border-2 border-border bg-card p-8 mb-8">
+            <h2 className="text-2xl font-bold mb-6 text-foreground">
+              Draft Settings
+            </h2>
 
-        {/* Core Form */}
-        <div className="border-2 border-black dark:border-white bg-white dark:bg-black p-8 mb-8">
-          <h2 className="text-2xl font-bold mb-6 text-black dark:text-white">Draft Settings</h2>
-              
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Topic Input */}
-            <div>
-              <Label htmlFor="name" className="text-lg font-bold mb-3 block text-black dark:text-white">
-                What are you drafting?
-              </Label>
-              <Input
-                id="name"
-                placeholder="Best Pizza Places, Favorite Movies..."
-                value={name}
-                onChange={e => setName(e.target.value)}
-                required
-                className="text-xl py-4 rounded-none border-2 border-black dark:border-white w-full bg-white dark:bg-black text-black dark:text-white placeholder:text-muted-foreground focus:border-black dark:focus:border-white"
-              />
-            </div>
-
-            {/* Settings Grid */}
-            <div className="grid grid-cols-3 gap-6">
-              <NumberInput
-                id="maxDrafters"
-                label="Players"
-                value={maxDrafters}
-                onChange={setMaxDrafters}
-                min={2}
-                max={20}
-              />
-              <NumberInput
-                id="secPerRound"
-                label="Seconds"
-                value={secPerRound}
-                onChange={setSecPerRound}
-                min={5}
-                max={300}
-              />
-              <NumberInput
-                id="numRounds"
-                label="Rounds"
-                value={numRounds}
-                onChange={setNumRounds}
-                min={1}
-                max={10}
-              />
-            </div>
-
-            {error && (
-              <div className="border-2 border-destructive bg-destructive/10 p-4">
-                <p className="text-destructive font-medium">{error}</p>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Topic Input */}
+              <div>
+                <Label
+                  htmlFor="name"
+                  className="text-lg font-bold mb-3 block text-foreground"
+                >
+                  What are you drafting?
+                </Label>
+                <Input
+                  id="name"
+                  placeholder="Best Pizza Places, Favorite Movies..."
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  required
+                  className="text-xl py-4 rounded-none border-2 border-border w-full bg-card text-foreground placeholder:text-muted-foreground focus:border-border"
+                />
               </div>
-            )}
 
-            <BrutalistButton
-              type="submit"
-              variant="primary"
-              className="w-full py-4 text-xl font-bold"
-              loading={isLoading}
-              disabled={
-                isLoading ||
-                !name.trim() ||
-                maxDrafters < 2 ||
-                secPerRound < 5 ||
-                numRounds < 1
-              }
-            >
-              {isLoading ? 'Creating...' : 'Create Draft'}
-            </BrutalistButton>
-          </form>
+              {/* Draft Configuration */}
+              <div className="space-y-8">
+                {/* Draft Structure */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                    Draft Structure
+                  </h3>
+                  <div className="grid grid-cols-2 gap-6">
+                    <NumberInput
+                      id="maxDrafters"
+                      label="Players"
+                      value={maxDrafters}
+                      onChange={setMaxDrafters}
+                      min={2}
+                      max={20}
+                    />
+                    <NumberInput
+                      id="numRounds"
+                      label="Rounds"
+                      value={numRounds}
+                      onChange={setNumRounds}
+                      min={1}
+                      max={10}
+                    />
+                  </div>
+                </div>
+
+                {/* Timer Settings */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                      Timer Settings
+                    </h3>
+                    <RadioGroupSegmented
+                      value={timerMode}
+                      onValueChange={value =>
+                        setTimerMode(value as 'timed' | 'untimed')
+                      }
+                    >
+                      <RadioGroupSegmentedItem value="timed" icon={Timer}>
+                        Timed
+                      </RadioGroupSegmentedItem>
+                      <RadioGroupSegmentedItem value="untimed" icon={Infinity}>
+                        Untimed
+                      </RadioGroupSegmentedItem>
+                    </RadioGroupSegmented>
+                  </div>
+
+                  {timerMode === 'untimed' ? (
+                    <div className="border-2 border-border p-6 text-center">
+                      <Infinity className="w-8 h-8 mx-auto mb-2 text-foreground" />
+                      <p className="text-sm font-medium text-foreground">
+                        No Time Limit
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Players can take as long as they need
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <NumberInput
+                        id="secPerRound"
+                        label="Seconds per pick"
+                        value={secPerRound}
+                        onChange={setSecPerRound}
+                        min={5}
+                        max={300}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Auto-pick activates when time expires
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {error && (
+                <div className="border-2 border-destructive bg-destructive/10 p-4">
+                  <p className="text-destructive font-medium">{error}</p>
+                </div>
+              )}
+
+              <BrutalistButton
+                type="submit"
+                variant="primary"
+                className="w-full py-4 text-xl font-bold"
+                loading={isLoading}
+                disabled={
+                  isLoading ||
+                  !name.trim() ||
+                  maxDrafters < 2 ||
+                  (timerMode === 'timed' && secPerRound < 5) ||
+                  numRounds < 1
+                }
+              >
+                {isLoading ? 'Creating...' : 'Create Draft'}
+              </BrutalistButton>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
     </div>
   )
 }
