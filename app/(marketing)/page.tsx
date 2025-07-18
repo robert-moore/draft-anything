@@ -135,7 +135,7 @@ const ExamplesSection = memo(() => {
       ],
       votes: ['87%', '76%', '65%', '54%', '43%'],
       icon: <Star className="w-6 h-6" />,
-      color: 'text-amber-500'
+      color: 'text-primary'
     },
     {
       title: 'Best Marvel Movies',
@@ -149,7 +149,7 @@ const ExamplesSection = memo(() => {
       ],
       votes: ['92%', '81%', '70%', '59%', '48%'],
       icon: <Trophy className="w-6 h-6" />,
-      color: 'text-red-500'
+      color: 'text-primary'
     },
     {
       title: 'Programming Languages',
@@ -157,7 +157,7 @@ const ExamplesSection = memo(() => {
       items: ['TypeScript', 'Python', 'Rust', 'Go', 'JavaScript'],
       votes: ['84%', '73%', '62%', '51%', '40%'],
       icon: <Zap className="w-6 h-6" />,
-      color: 'text-blue-500'
+      color: 'text-primary'
     }
   ]
 
@@ -288,7 +288,7 @@ const HowItWorksSection = memo(() => (
 
       <div className="grid md:grid-cols-3 gap-8">
         <BrutalistCard className="text-center">
-          <div className="w-16 h-16 border-2 border-primary bg-background flex items-center justify-center mx-auto mb-6">
+          <div className="w-16 h-16 border-2 border-primary bg-primary/10 flex items-center justify-center mx-auto mb-6">
             <span className="text-2xl font-bold text-primary">1</span>
           </div>
           <h3 className="text-xl font-semibold mb-4">Create a Draft</h3>
@@ -299,7 +299,7 @@ const HowItWorksSection = memo(() => (
         </BrutalistCard>
 
         <BrutalistCard className="text-center">
-          <div className="w-16 h-16 border-2 border-primary bg-background flex items-center justify-center mx-auto mb-6">
+          <div className="w-16 h-16 border-2 border-primary bg-primary/10 flex items-center justify-center mx-auto mb-6">
             <span className="text-2xl font-bold text-primary">2</span>
           </div>
           <h3 className="text-xl font-semibold mb-4">Make Your Picks</h3>
@@ -310,7 +310,7 @@ const HowItWorksSection = memo(() => (
         </BrutalistCard>
 
         <BrutalistCard className="text-center">
-          <div className="w-16 h-16 border-2 border-primary bg-background flex items-center justify-center mx-auto mb-6">
+          <div className="w-16 h-16 border-2 border-primary bg-primary/10 flex items-center justify-center mx-auto mb-6">
             <span className="text-2xl font-bold text-primary">3</span>
           </div>
           <h3 className="text-xl font-semibold mb-4">Share & Debate</h3>
@@ -369,50 +369,15 @@ const CTASection = memo(() => (
             </BrutalistButton>
           </div>
 
-          <RhythmSpacer size="md" variant="dots" />
-
-          {/* Trust signals - organized for easy scanning */}
-          <VisualFocus
-            priority="tertiary"
-            className="max-w-3xl mx-auto bg-gradient-to-r from-primary/5 to-purple-500/5"
-          >
-            <h3 className="text-2xl font-bold mb-6">Join the fun today!</h3>
-            <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-              No credit card required. Start drafting in under 30 seconds.
+          {/* Simple, elegant closing statement */}
+          <div className="text-center max-w-2xl mx-auto">
+            <p className="text-lg text-muted-foreground leading-relaxed">
+              Free to use. No signup required.{' '}
+              <span className="text-foreground font-medium">
+                Start creating in seconds.
+              </span>
             </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-12 h-12 border-2 border-green-500 bg-green-500/10 flex items-center justify-center">
-                  <div className="w-3 h-3 bg-green-500" />
-                </div>
-                <span className="font-semibold">Free forever</span>
-                <span className="text-sm text-muted-foreground text-center">
-                  No hidden costs or premium tiers
-                </span>
-              </div>
-
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-12 h-12 border-2 border-blue-500 bg-blue-500/10 flex items-center justify-center">
-                  <div className="w-3 h-3 bg-blue-500" />
-                </div>
-                <span className="font-semibold">No setup required</span>
-                <span className="text-sm text-muted-foreground text-center">
-                  Create and share instantly
-                </span>
-              </div>
-
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-12 h-12 border-2 border-purple-500 bg-purple-500/10 flex items-center justify-center">
-                  <div className="w-3 h-3 bg-purple-500" />
-                </div>
-                <span className="font-semibold">Instant results</span>
-                <span className="text-sm text-muted-foreground text-center">
-                  See rankings update in real-time
-                </span>
-              </div>
-            </div>
-          </VisualFocus>
+          </div>
         </div>
       </VisualFocus>
     </div>

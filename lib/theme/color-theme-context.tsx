@@ -19,10 +19,13 @@ export function ColorThemeProvider({ children }: { children: React.ReactNode }) 
     const savedThemeId = localStorage.getItem('color-theme')
     if (savedThemeId) {
       const savedTheme = COLOR_THEMES.find(theme => theme.id === savedThemeId)
-      if (savedTheme) {
+      if (savedTheme && savedTheme.id !== currentTheme.id) {
         setCurrentTheme(savedTheme)
         updateCSSVariables(savedTheme)
       }
+    } else {
+      // Apply default theme CSS variables on first load
+      updateCSSVariables(DEFAULT_COLOR_THEME)
     }
   }, [])
 
@@ -33,13 +36,21 @@ export function ColorThemeProvider({ children }: { children: React.ReactNode }) 
   }
 
   const updateCSSVariables = (theme: ColorTheme) => {
+    if (typeof document === 'undefined') return // SSR guard
+    
     const root = document.documentElement
     
-    // Update all primary-related CSS variables
-    root.style.setProperty('--primary', theme.primary)
-    root.style.setProperty('--ring', theme.primary)
-    root.style.setProperty('--sidebar-primary', theme.primary)
-    root.style.setProperty('--sidebar-ring', theme.primary)
+    // Only update if the value is actually different
+    const currentPrimary = root.style.getPropertyValue('--primary').trim()
+    const newPrimary = theme.primary.trim()
+    
+    if (currentPrimary !== newPrimary) {
+      // console.log('Updating CSS variables:', { from: currentPrimary, to: newPrimary, theme: theme.name })
+      root.style.setProperty('--primary', newPrimary)
+      root.style.setProperty('--ring', newPrimary)
+      root.style.setProperty('--sidebar-primary', newPrimary)
+      root.style.setProperty('--sidebar-ring', newPrimary)
+    }
   }
 
   return (

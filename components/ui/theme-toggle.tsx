@@ -22,6 +22,15 @@ export function ThemeToggle() {
     setMounted(true)
   }, [])
 
+  // Clean up hover state when component unmounts
+  useEffect(() => {
+    return () => {
+      if (hoveredColorTheme) {
+        setHoveredColorTheme(null)
+      }
+    }
+  }, [])
+
   if (!mounted) {
     return (
       <Button
@@ -67,20 +76,17 @@ export function ThemeToggle() {
 
   const handleColorThemeHover = (colorTheme: ColorTheme | null) => {
     setHoveredColorTheme(colorTheme)
-    if (colorTheme) {
-      // Preview the theme instantly on hover
-      const root = document.documentElement
-      root.style.setProperty('--primary', colorTheme.primary)
-      root.style.setProperty('--ring', colorTheme.primary)
-      root.style.setProperty('--sidebar-primary', colorTheme.primary)
-      root.style.setProperty('--sidebar-ring', colorTheme.primary)
-    } else {
-      // Revert to current theme when not hovering
-      const root = document.documentElement
-      root.style.setProperty('--primary', currentTheme.primary)
-      root.style.setProperty('--ring', currentTheme.primary)
-      root.style.setProperty('--sidebar-primary', currentTheme.primary)
-      root.style.setProperty('--sidebar-ring', currentTheme.primary)
+    
+    // Only update CSS if we're actually changing to a different theme
+    const targetTheme = colorTheme || currentTheme
+    const root = document.documentElement
+    const currentPrimary = root.style.getPropertyValue('--primary')
+    
+    if (currentPrimary !== targetTheme.primary) {
+      root.style.setProperty('--primary', targetTheme.primary)
+      root.style.setProperty('--ring', targetTheme.primary)
+      root.style.setProperty('--sidebar-primary', targetTheme.primary)
+      root.style.setProperty('--sidebar-ring', targetTheme.primary)
     }
   }
 
