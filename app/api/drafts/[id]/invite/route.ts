@@ -2,6 +2,7 @@ import { draftsInDa } from '@/drizzle/schema'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
 import { parseDraftId } from '@/lib/api/route-helpers'
+import { getAppUrl } from '@/lib/utils/get-app-url'
 import { eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -36,9 +37,7 @@ export async function POST(
 
     // For now, just return the direct link
     // In the future, you could add invite tokens to the database
-    const inviteLink = `${
-      process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-    }/drafts/${draftId}`
+    const inviteLink = `${getAppUrl()}/drafts/${draftId}`
 
     return NextResponse.json({
       inviteLink,

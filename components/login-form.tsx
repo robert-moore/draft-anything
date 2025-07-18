@@ -6,6 +6,7 @@ import { BrutalSection } from '@/components/ui/brutal-section'
 import { useAuthRedirect } from '@/lib/hooks/use-auth-redirect'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils/index'
+import { getAppUrl } from '@/lib/utils/get-app-url'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
@@ -36,7 +37,7 @@ export function LoginForm({
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`
+          emailRedirectTo: `${getAppUrl()}/auth/callback?next=${encodeURIComponent(redirectTo)}`
         }
       })
       if (error) throw error
