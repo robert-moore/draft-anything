@@ -1,10 +1,10 @@
 'use client'
 
+import { AutoPickMonitor } from '@/components/draft/auto-pick-monitor'
 import { DraftMetadata } from '@/components/draft/draft-metadata'
 import { DraftPickGrid } from '@/components/draft/draft-pick-grid'
-import { ViewModeTabs } from '@/components/draft/view-mode-tabs'
 import { DraftTimer } from '@/components/draft/draft-timer'
-import { AutoPickMonitor } from '@/components/draft/auto-pick-monitor'
+import { ViewModeTabs } from '@/components/draft/view-mode-tabs'
 import { BrutalButton } from '@/components/ui/brutal-button'
 import { BrutalInput } from '@/components/ui/brutal-input'
 import { BrutalListItem } from '@/components/ui/brutal-list-item'
@@ -56,7 +56,7 @@ export default function DraftPage() {
         throw new Error('Failed to load draft')
       }
       const data = await response.json()
-      
+
       setDraft(data.draft)
       setParticipants(data.participants || [])
       setPicks(data.picks || [])
@@ -334,23 +334,21 @@ export default function DraftPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="border-t-4 border-border bg-card">
-          <div className="flex items-center justify-center py-32">
-            <BrutalSection
-              variant="bordered"
-              className="w-96 text-center"
-              background="diagonal"
-            >
-              <div className="p-8">
-                <div className="font-mono text-lg font-bold mb-4 text-foreground">
-                  Loading draft data...
-                </div>
-                <div className="text-sm opacity-70">
-                  {'[' + '█'.repeat(10) + '▒'.repeat(20) + '] 33%'}
-                </div>
+        <div className="flex items-center justify-center py-32">
+          <BrutalSection
+            variant="bordered"
+            className="w-96 text-center"
+            background="diagonal"
+          >
+            <div className="p-8">
+              <div className="font-mono text-lg font-bold mb-4 text-foreground">
+                Loading draft data...
               </div>
-            </BrutalSection>
-          </div>
+              <div className="text-sm opacity-70">
+                {'[' + '█'.repeat(10) + '▒'.repeat(20) + '] 33%'}
+              </div>
+            </div>
+          </BrutalSection>
         </div>
       </div>
     )
@@ -359,17 +357,15 @@ export default function DraftPage() {
   if (error || !draft) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="border-t-4 border-border bg-card">
-          <div className="flex items-center justify-center py-32">
-            <BrutalSection variant="bordered" className="w-96 text-center">
-              <div className="p-8">
-                <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
-                <div className="font-mono text-lg font-bold text-foreground">
-                  {error || 'Draft not found'}
-                </div>
+        <div className="flex items-center justify-center py-32">
+          <BrutalSection variant="bordered" className="w-96 text-center">
+            <div className="p-8">
+              <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+              <div className="font-mono text-lg font-bold text-foreground">
+                {error || 'Draft not found'}
               </div>
-            </BrutalSection>
-          </div>
+            </div>
+          </BrutalSection>
         </div>
       </div>
     )
@@ -426,9 +422,11 @@ export default function DraftPage() {
   const roundsData = getPicksByRounds()
   const drafterData = getPicksByDrafter()
 
-  const isMyTurn = isJoined && 
-    currentUser && 
-    participants.find(p => p.id === currentUser?.id)?.position === draft?.currentPositionOnClock
+  const isMyTurn =
+    isJoined &&
+    currentUser &&
+    participants.find(p => p.id === currentUser?.id)?.position ===
+      draft?.currentPositionOnClock
 
   return (
     <div className="min-h-screen bg-background">
@@ -442,32 +440,30 @@ export default function DraftPage() {
           currentPickNumber={picks.length + 1}
         />
       )}
-      {/* Draft Header - Primary Visual Anchor */}
-      <div className="border-t-4 border-border bg-card">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex items-center gap-4 mb-4">
-            <h1 className="text-4xl font-black tracking-tight text-foreground">
-              {draft.name}
-            </h1>
-            <NumberBox
-              number={stateInfo.label}
-              size="sm"
-              variant={stateInfo.variant}
-              className="px-4"
-            />
-          </div>
-          <DraftMetadata
-            players={{ current: participants.length, max: draft.maxDrafters }}
-            timer={parseInt(draft.secPerRound)}
-            round={{ current: currentRound, total: draft.numRounds }}
-            pick={{ current: pickInRound, perRound: participants.length }}
-          />
-        </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto flex border-t-2 border-border">
+      <div className="max-w-7xl mx-auto flex">
         {/* Main Content */}
         <main className="flex-1 px-6 pt-6 bg-background">
+          {/* Draft Header */}
+          <div className="mb-8">
+            <div className="flex items-center gap-4 mb-4">
+              <h1 className="text-4xl font-black tracking-tight text-foreground">
+                {draft.name}
+              </h1>
+              <NumberBox
+                number={stateInfo.label}
+                size="sm"
+                variant={stateInfo.variant}
+                className="px-4"
+              />
+            </div>
+            <DraftMetadata
+              players={{ current: participants.length, max: draft.maxDrafters }}
+              timer={parseInt(draft.secPerRound)}
+              round={{ current: currentRound, total: draft.numRounds }}
+              pick={{ current: pickInRound, perRound: participants.length }}
+            />
+          </div>
           {/* Join Draft */}
           {!isJoined && draft.draftState === 'setting_up' && (
             <div className="py-8">
@@ -579,8 +575,9 @@ export default function DraftPage() {
                     </p>
                     <p className="text-sm text-muted-foreground">
                       Waiting for{' '}
-                      {participants.find(p => p.position === draft.currentPositionOnClock)?.name ||
-                        'next player'}{' '}
+                      {participants.find(
+                        p => p.position === draft.currentPositionOnClock
+                      )?.name || 'next player'}{' '}
                       to pick...
                     </p>
                     <div className="mt-6 flex justify-center">
@@ -738,32 +735,37 @@ export default function DraftPage() {
 
         {/* Sidebar */}
         <aside className="w-80 border-l-2 border-border bg-card">
-          {/* Players */}
-          <BrutalSection
-            title={`Players (${participants.length}/${draft.maxDrafters})`}
-            contentClassName="p-4"
-          >
-            {participants.length === 0 ? (
-              <div className="text-muted-foreground text-sm">
-                Waiting for players...
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {participants.map((participant, index) => (
-                  <div key={participant.id} className="flex items-center gap-2">
-                    <span className="font-medium text-sm flex-1 truncate text-foreground">
-                      {participant.name}
-                    </span>
-                    {participant.isReady && (
-                      <span className="text-xs bg-muted px-2 py-1 font-medium text-foreground">
-                        Ready
+          {/* Players - Only show when draft is not active */}
+          {draft.draftState !== 'active' && (
+            <BrutalSection
+              title={`Players (${participants.length}/${draft.maxDrafters})`}
+              contentClassName="p-4"
+            >
+              {participants.length === 0 ? (
+                <div className="text-muted-foreground text-sm">
+                  Waiting for players...
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {participants.map((participant, index) => (
+                    <div
+                      key={participant.id}
+                      className="flex items-center gap-2"
+                    >
+                      <span className="font-medium text-sm flex-1 truncate text-foreground">
+                        {participant.name}
                       </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </BrutalSection>
+                      {participant.isReady && (
+                        <span className="text-xs bg-muted px-2 py-1 font-medium text-foreground">
+                          Ready
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </BrutalSection>
+          )}
 
           {/* Turn Order */}
           {draft.draftState === 'active' && !isReloadingAfterDraftStart && (

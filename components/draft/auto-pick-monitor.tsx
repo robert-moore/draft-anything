@@ -31,8 +31,8 @@ export function AutoPickMonitor({
 
     hasTriggeredRef.current = true
 
-    // Delay based on role: 1s for current player, 5s for backup
-    const delay = isMyTurn ? 1000 : 5000
+    // Delay based on role: 1s for current player, 2s for backup
+    const delay = isMyTurn ? 1000 : 2000
 
     const timeout = setTimeout(async () => {
       try {

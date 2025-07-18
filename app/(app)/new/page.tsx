@@ -95,7 +95,7 @@ export default function NewDraftPage() {
         subtitle="Turn any topic into a ranking"
       />
 
-      <div className="px-6 py-12 border-t-2 border-border bg-background">
+      <div className="px-6 py-12 bg-background">
         <div className="max-w-3xl mx-auto">
           {/* Core Form */}
           <div className="border-2 border-border bg-card p-8 mb-8">
