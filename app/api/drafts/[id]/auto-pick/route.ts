@@ -1,14 +1,21 @@
 import {
   draftSelectionsInDa,
-  draftsInDa,
   draftUsersInDa,
   profilesInDa
 } from '@/drizzle/schema'
+import {
+  calculateNextDrafter,
+  getCurrentPickNumber,
+  getParticipantCount,
+  getUsedPayloads,
+  updateDraftAfterPick,
+  validateAndFetchDraft
+} from '@/lib/api/draft-helpers'
+import { parseDraftId } from '@/lib/api/route-helpers'
+import { parseJsonRequest } from '@/lib/api/validation'
 import { db } from '@/lib/db'
 import { getElapsedSeconds, getUtcNow } from '@/lib/time-utils'
-import { parseJsonRequest } from '@/lib/api/validation'
-import { parseDraftId } from '@/lib/api/route-helpers'
-import { and, count, eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -32,22 +39,10 @@ export async function POST(
     if (!bodyResult.success) return bodyResult.error
     const { expectedPickNumber } = bodyResult.data
 
-    // Fetch draft
-    const [draft] = await db
-      .select()
-      .from(draftsInDa)
-      .where(eq(draftsInDa.id, draftId))
-
-    if (!draft) {
-      return NextResponse.json({ error: 'Draft not found' }, { status: 404 })
-    }
-
-    if (draft.draftState !== 'active') {
-      return NextResponse.json(
-        { error: 'Draft is not active' },
-        { status: 400 }
-      )
-    }
+    // Validate and fetch draft
+    const draftResult = await validateAndFetchDraft(draftId)
+    if (!draftResult.success) return draftResult.error
+    const { draft } = draftResult
 
     // Check if timer is enabled and expired
     const secPerRound = parseInt(draft.secPerRound)
@@ -97,13 +92,8 @@ export async function POST(
       )
     }
 
-    // Count existing picks first
-    const [pickCountResult] = await db
-      .select({ count: count() })
-      .from(draftSelectionsInDa)
-      .where(eq(draftSelectionsInDa.draftId, draftId))
-
-    const currentPickNumber = pickCountResult.count + 1
+    // Get current pick number
+    const currentPickNumber = await getCurrentPickNumber(draftId)
 
     // Check if the expected pick number matches (if provided)
     if (expectedPickNumber && expectedPickNumber < currentPickNumber) {
@@ -117,16 +107,9 @@ export async function POST(
       )
     }
 
-    // Get all previous picks
-    const previousPicks = await db
-      .select({ payload: draftSelectionsInDa.payload })
-      .from(draftSelectionsInDa)
-      .where(eq(draftSelectionsInDa.draftId, draftId))
-
-    const usedPayloads = previousPicks.map(p => p.payload.toLowerCase())
-
-    // Generate auto-pick payload
-    const autoPickPayload = generateAutoPick(usedPayloads, draft.name)
+    // Get used payloads and generate auto-pick
+    const usedPayloads = await getUsedPayloads(draftId)
+    const autoPickPayload = generateAutoPick(usedPayloads)
 
     // Insert the auto-pick - database will enforce unique constraint on pickNumber
     const nowStr = getUtcNow()
@@ -157,39 +140,21 @@ export async function POST(
       throw insertError
     }
 
-    // Get number of participants
-    const [countResult] = await db
-      .select({ count: count() })
-      .from(draftUsersInDa)
-      .where(eq(draftUsersInDa.draftId, draftId))
+    // Get participant count and calculate next drafter
+    const numParticipants = await getParticipantCount(draftId)
+    const { nextPosition, isDraftCompleted } = calculateNextDrafter(
+      currentPickNumber,
+      numParticipants,
+      draft.numRounds
+    )
 
-    const numParticipants = countResult.count
-    const totalPicks = draft.numRounds * numParticipants
-
-    // Calculate next drafter
-    const nextPickNumber = currentPickNumber + 1
-    const nextRound = Math.ceil(nextPickNumber / numParticipants)
-    const nextPickInRound = (nextPickNumber - 1) % numParticipants
-
-    const nextPosition =
-      nextPickNumber > totalPicks
-        ? null
-        : nextRound % 2 === 1
-        ? nextPickInRound + 1 // 1-based
-        : numParticipants - nextPickInRound
-
-    // Update draft state and reset timer for next pick
-    const updates: any = {
-      currentPositionOnClock: nextPosition,
-      draftState: nextPickNumber > totalPicks ? 'completed' : draft.draftState
-    }
-
-    // Reset timer for next player if draft continues
-    if (nextPosition !== null && secPerRound > 0) {
-      updates.turnStartedAt = getUtcNow()
-    }
-
-    await db.update(draftsInDa).set(updates).where(eq(draftsInDa.id, draftId))
+    // Update draft state
+    await updateDraftAfterPick(
+      draftId,
+      nextPosition,
+      isDraftCompleted,
+      secPerRound > 0 // only reset timer if timer is enabled
+    )
 
     // Get profile name
     const [profile] = await db
@@ -218,56 +183,11 @@ export async function POST(
   }
 }
 
-function generateAutoPick(usedPayloads: string[], draftName: string): string {
-  // Generate contextual auto-picks based on draft theme
-  const theme = draftName.toLowerCase()
-
-  // Common default picks for different themes
-  const themePicks: Record<string, string[]> = {
-    restaurant: [
-      'Pizza Place',
-      'Burger Joint',
-      'Sushi Bar',
-      'Taco Stand',
-      'Italian Restaurant'
-    ],
-    movie: ['Action Movie', 'Comedy Film', 'Drama', 'Thriller', 'Documentary'],
-    sport: ['Basketball', 'Football', 'Baseball', 'Soccer', 'Tennis'],
-    music: ['Rock', 'Pop', 'Jazz', 'Classical', 'Hip Hop'],
-    game: [
-      'Board Game',
-      'Video Game',
-      'Card Game',
-      'Sports Game',
-      'Puzzle Game'
-    ]
-  }
-
-  // Find matching theme
-  let candidates: string[] = []
-  for (const [key, values] of Object.entries(themePicks)) {
-    if (theme.includes(key)) {
-      candidates = values
-      break
-    }
-  }
-
-  // If no theme match, use generic picks
-  if (candidates.length === 0) {
-    candidates = Array.from({ length: 20 }, (_, i) => `Item ${i + 1}`)
-  }
-
-  // Find first unused pick
-  for (const candidate of candidates) {
-    if (!usedPayloads.includes(candidate.toLowerCase())) {
-      return candidate
-    }
-  }
-
-  // Fallback: generate unique pick
+function generateAutoPick(usedPayloads: string[]): string {
+  // Generate simple auto-pick with counter
   let counter = 1
   while (true) {
-    const pick = `Auto-Pick #${counter}`
+    const pick = `Auto Pick #${counter}`
     if (!usedPayloads.includes(pick.toLowerCase())) {
       return pick
     }
