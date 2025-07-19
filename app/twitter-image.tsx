@@ -13,6 +13,9 @@ export const contentType = 'image/png'
 
 // Image generation
 export default async function Image() {
+  // Sage mint color
+  const primaryColor = '#64B5A6'
+  
   return new ImageResponse(
     (
       <div
@@ -33,14 +36,14 @@ export default async function Image() {
           style={{
             position: 'absolute',
             inset: 0,
-            background: 'linear-gradient(135deg, rgba(230, 132, 100, 0.05) 0%, transparent 40%, rgba(230, 132, 100, 0.1) 100%)',
+            background: 'linear-gradient(135deg, rgba(100, 181, 166, 0.05) 0%, transparent 40%, rgba(100, 181, 166, 0.1) 100%)',
           }}
         />
         <div
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: `linear-gradient(to right, rgba(230, 132, 100, 0.4) 1px, transparent 1px), linear-gradient(to bottom, rgba(230, 132, 100, 0.4) 1px, transparent 1px)`,
+            backgroundImage: `linear-gradient(to right, rgba(100, 181, 166, 0.4) 1px, transparent 1px), linear-gradient(to bottom, rgba(100, 181, 166, 0.4) 1px, transparent 1px)`,
             backgroundSize: '40px 40px',
             opacity: 0.3,
           }}
@@ -74,7 +77,7 @@ export default async function Image() {
             Draft{' '}
             <span
               style={{
-                color: '#E68464',
+                color: primaryColor,
                 marginLeft: 20,
                 position: 'relative',
               }}
@@ -87,7 +90,7 @@ export default async function Image() {
                   left: 0,
                   right: 0,
                   height: 6,
-                  background: 'rgba(230, 132, 100, 0.4)',
+                  background: 'rgba(100, 181, 166, 0.4)',
                 }}
               />
             </span>
@@ -132,8 +135,8 @@ export default async function Image() {
                   style={{
                     padding: '24px 32px',
                     border: '2px solid',
-                    borderColor: i === 1 ? '#E68464' : '#484848',
-                    background: i === 1 ? 'rgba(230, 132, 100, 0.1)' : '#1A1A1A',
+                    borderColor: i === 1 ? primaryColor : '#484848',
+                    background: i === 1 ? 'rgba(100, 181, 166, 0.1)' : '#1A1A1A',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 16,
@@ -144,7 +147,7 @@ export default async function Image() {
                     style={{
                       fontSize: 24,
                       fontWeight: 600,
-                      color: i === 1 ? '#E68464' : '#999',
+                      color: i === 1 ? primaryColor : '#999',
                     }}
                   >
                     {item.step}
@@ -173,7 +176,7 @@ export default async function Image() {
             left: 0,
             right: 0,
             height: 4,
-            background: 'linear-gradient(90deg, transparent 0%, #E68464 50%, transparent 100%)',
+            background: `linear-gradient(90deg, transparent 0%, ${primaryColor} 50%, transparent 100%)`,
           }}
         />
       </div>

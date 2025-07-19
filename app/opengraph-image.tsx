@@ -13,6 +13,9 @@ export const contentType = 'image/png'
 
 // Image generation
 export default async function Image() {
+  // Sage mint color
+  const primaryColor = '#64B5A6'
+  
   return new ImageResponse(
     (
       <div
@@ -34,7 +37,7 @@ export default async function Image() {
           style={{
             position: 'absolute',
             inset: 0,
-            background: 'linear-gradient(135deg, rgba(230, 132, 100, 0.03) 0%, transparent 50%, rgba(230, 132, 100, 0.08) 100%)',
+            background: 'linear-gradient(135deg, rgba(100, 181, 166, 0.03) 0%, transparent 50%, rgba(100, 181, 166, 0.08) 100%)',
           }}
         />
         
@@ -43,7 +46,7 @@ export default async function Image() {
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: `linear-gradient(to right, rgba(230, 132, 100, 0.3) 1px, transparent 1px), linear-gradient(to bottom, rgba(230, 132, 100, 0.3) 1px, transparent 1px)`,
+            backgroundImage: `linear-gradient(to right, rgba(100, 181, 166, 0.3) 1px, transparent 1px), linear-gradient(to bottom, rgba(100, 181, 166, 0.3) 1px, transparent 1px)`,
             backgroundSize: '32px 32px',
             opacity: 0.4,
           }}
@@ -67,7 +70,7 @@ export default async function Image() {
             left: 40,
             right: 40,
             bottom: 40,
-            border: '2px solid rgba(230, 132, 100, 0.3)',
+            border: '2px solid rgba(100, 181, 166, 0.3)',
             pointerEvents: 'none',
           }}
         />
@@ -84,7 +87,6 @@ export default async function Image() {
             padding: '80px 60px',
           }}
         >
-
           {/* Main text */}
           <div
             style={{
@@ -99,7 +101,7 @@ export default async function Image() {
             Draft{' '}
             <span
               style={{
-                color: '#E68464',
+                color: primaryColor,
                 marginLeft: 20,
                 position: 'relative',
               }}
@@ -113,7 +115,7 @@ export default async function Image() {
                   left: 0,
                   right: 0,
                   height: 4,
-                  background: 'rgba(230, 132, 100, 0.3)',
+                  background: 'rgba(100, 181, 166, 0.3)',
                 }}
               />
             </span>
@@ -153,8 +155,8 @@ export default async function Image() {
                   gap: 16,
                   padding: '20px 32px',
                   border: '2px solid',
-                  borderColor: item.selected ? '#E68464' : '#484848',
-                  background: item.selected ? 'rgba(230, 132, 100, 0.1)' : '#1A1A1A',
+                  borderColor: item.selected ? primaryColor : '#484848',
+                  background: item.selected ? 'rgba(100, 181, 166, 0.1)' : '#1A1A1A',
                   position: 'relative',
                   overflow: 'hidden',
                 }}
@@ -164,14 +166,14 @@ export default async function Image() {
                     width: 40,
                     height: 40,
                     border: '2px solid',
-                    borderColor: item.selected ? '#E68464' : '#484848',
+                    borderColor: item.selected ? primaryColor : '#484848',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: 20,
                     fontWeight: 700,
-                    color: item.selected ? '#E68464' : '#999',
-                    background: item.selected ? 'rgba(230, 132, 100, 0.2)' : 'transparent',
+                    color: item.selected ? primaryColor : '#999',
+                    background: item.selected ? 'rgba(100, 181, 166, 0.2)' : 'transparent',
                   }}
                 >
                   {item.num}
@@ -193,7 +195,7 @@ export default async function Image() {
                       left: 0,
                       bottom: 0,
                       width: 4,
-                      background: '#E68464',
+                      background: primaryColor,
                     }}
                   />
                 )}
@@ -212,7 +214,7 @@ export default async function Image() {
             height: 0,
             borderStyle: 'solid',
             borderWidth: '0 0 100px 100px',
-            borderColor: 'transparent transparent rgba(230, 132, 100, 0.2) transparent',
+            borderColor: 'transparent transparent rgba(100, 181, 166, 0.2) transparent',
           }}
         />
       </div>
