@@ -56,16 +56,17 @@ export default async function Image() {
             position: 'relative',
             zIndex: 10,
             textAlign: 'center',
+            padding: '60px',
           }}
         >
           {/* Main text */}
           <div
             style={{
               display: 'flex',
-              fontSize: 100,
+              fontSize: 90,
               fontWeight: 800,
               letterSpacing: '-0.02em',
-              marginBottom: 32,
+              marginBottom: 24,
               lineHeight: 1,
               color: '#E5E5E5',
             }}
@@ -95,11 +96,11 @@ export default async function Image() {
           {/* Tagline */}
           <div
             style={{
-              fontSize: 30,
+              fontSize: 28,
               color: '#999',
               fontWeight: 500,
-              marginBottom: 60,
-              maxWidth: 800,
+              marginBottom: 50,
+              maxWidth: 700,
               letterSpacing: '-0.01em',
             }}
           >

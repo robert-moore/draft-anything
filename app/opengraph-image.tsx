@@ -59,6 +59,19 @@ export default async function Image() {
           }}
         />
 
+        {/* Brutalist accent border */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 40,
+            left: 40,
+            right: 40,
+            bottom: 40,
+            border: '2px solid rgba(230, 132, 100, 0.3)',
+            pointerEvents: 'none',
+          }}
+        />
+
         {/* Content */}
         <div
           style={{
@@ -68,29 +81,18 @@ export default async function Image() {
             justifyContent: 'center',
             position: 'relative',
             zIndex: 10,
+            padding: '80px 60px',
           }}
         >
-          {/* Brutalist accent border */}
-          <div
-            style={{
-              position: 'absolute',
-              top: 60,
-              left: 60,
-              right: 60,
-              bottom: 60,
-              border: '2px solid rgba(230, 132, 100, 0.3)',
-              pointerEvents: 'none',
-            }}
-          />
 
           {/* Main text */}
           <div
             style={{
               display: 'flex',
-              fontSize: 110,
+              fontSize: 100,
               fontWeight: 800,
               letterSpacing: '-0.02em',
-              marginBottom: 24,
+              marginBottom: 20,
               color: '#E5E5E5',
             }}
           >
@@ -98,7 +100,7 @@ export default async function Image() {
             <span
               style={{
                 color: '#E68464',
-                marginLeft: 24,
+                marginLeft: 20,
                 position: 'relative',
               }}
             >
@@ -107,7 +109,7 @@ export default async function Image() {
               <div
                 style={{
                   position: 'absolute',
-                  bottom: 8,
+                  bottom: 6,
                   left: 0,
                   right: 0,
                   height: 4,
@@ -120,10 +122,10 @@ export default async function Image() {
           {/* Tagline */}
           <div
             style={{
-              fontSize: 36,
+              fontSize: 32,
               color: '#999',
               fontWeight: 500,
-              marginBottom: 80,
+              marginBottom: 60,
               letterSpacing: '-0.01em',
             }}
           >
@@ -134,8 +136,8 @@ export default async function Image() {
           <div
             style={{
               display: 'flex',
-              gap: 32,
-              marginTop: 20,
+              gap: 24,
+              marginTop: 0,
             }}
           >
             {[

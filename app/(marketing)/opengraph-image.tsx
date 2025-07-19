@@ -63,7 +63,10 @@ export default async function Image() {
         <div
           style={{
             position: 'absolute',
-            inset: 40,
+            top: 30,
+            left: 30,
+            right: 30,
+            bottom: 30,
             border: '3px solid rgba(230, 132, 100, 0.5)',
           }}
         />
@@ -77,16 +80,17 @@ export default async function Image() {
             justifyContent: 'center',
             position: 'relative',
             zIndex: 10,
+            padding: '60px 50px',
           }}
         >
           {/* Title */}
           <div
             style={{
               display: 'flex',
-              fontSize: 120,
+              fontSize: 100,
               fontWeight: 800,
               letterSpacing: '-0.03em',
-              marginBottom: 32,
+              marginBottom: 24,
               textAlign: 'center',
               color: '#E5E5E5',
             }}
@@ -116,10 +120,10 @@ export default async function Image() {
           {/* Tagline */}
           <div
             style={{
-              fontSize: 36,
+              fontSize: 30,
               color: '#999',
               fontWeight: 500,
-              marginBottom: 80,
+              marginBottom: 50,
               textAlign: 'center',
               maxWidth: 800,
               letterSpacing: '-0.01em',
@@ -206,9 +210,9 @@ export default async function Image() {
         <div
           style={{
             position: 'absolute',
-            top: 60,
-            right: 60,
-            fontSize: 20,
+            top: 45,
+            right: 45,
+            fontSize: 18,
             fontWeight: 600,
             color: '#E68464',
             opacity: 0.6,
