@@ -146,11 +146,17 @@ const ExamplesSection = memo(() => {
       color: 'text-primary'
     },
     {
-      title: 'Programming Languages',
-      description: 'Building a superteam of languages',
-      items: ['TypeScript', 'Python', 'Rust', 'Go', 'JavaScript'],
+      title: 'Best NBA Players Ever',
+      description: 'The GOAT debate continues',
+      items: [
+        'Michael Jordan',
+        'LeBron James',
+        'Kareem Abdul-Jabbar',
+        'Magic Johnson',
+        'Bill Russell'
+      ],
       votes: ['84%', '73%', '62%', '51%', '40%'],
-      icon: <Zap className="w-6 h-6" />,
+      icon: <Trophy className="w-6 h-6" />,
       color: 'text-primary'
     }
   ]
@@ -206,12 +212,6 @@ const ExamplesSection = memo(() => {
                   </div>
                 ))}
               </div>
-
-              {selectedExample !== index && (
-                <div className="mt-4 text-xs text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                  Click to view full ranking →
-                </div>
-              )}
             </VisualFocus>
           ))}
         </div>
@@ -244,7 +244,7 @@ const ExamplesSection = memo(() => {
             {examples[selectedExample].items.map((item, index) => (
               <div
                 key={index}
-                className="flex items-center justify-between p-6 border-2 border-border bg-background/50 hover:bg-background transition-all duration-300 ease-out hover:translate-x-1 hover:shadow-[2px_2px_0px_0px_hsl(var(--border))]"
+                className="flex items-center justify-between py-8 px-6 border-2 border-border bg-background/50 hover:bg-background transition-all duration-300 ease-out hover:translate-x-1 hover:shadow-[2px_2px_0px_0px_hsl(var(--border))]"
               >
                 <div className="flex items-center gap-6">
                   <div className="w-12 h-12 border-2 border-primary bg-primary/10 flex items-center justify-center text-lg font-bold text-primary">

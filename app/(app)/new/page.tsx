@@ -9,7 +9,7 @@ import {
   RadioGroupSegmented,
   RadioGroupSegmentedItem
 } from '@/components/ui/radio-group-segmented'
-import { Infinity, Timer } from 'lucide-react'
+import { Edit, Infinity, List, Timer } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
@@ -19,6 +19,9 @@ export default function NewDraftPage() {
   const [secPerRound, setSecPerRound] = useState(60)
   const [numRounds, setNumRounds] = useState(3)
   const [timerMode, setTimerMode] = useState<'timed' | 'untimed'>('timed')
+  const [selectionType, setSelectionType] = useState<'freeform' | 'curated'>(
+    'freeform'
+  )
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -125,9 +128,6 @@ export default function NewDraftPage() {
               <div className="space-y-8">
                 {/* Draft Structure */}
                 <div className="space-y-4">
-                  <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
-                    Draft Structure
-                  </h3>
                   <div className="grid grid-cols-2 gap-6">
                     <NumberInput
                       id="maxDrafters"
@@ -148,12 +148,55 @@ export default function NewDraftPage() {
                   </div>
                 </div>
 
+                {/* Selection Type */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                    Selection Type
+                  </h3>
+                  <div className="space-y-3">
+                    <RadioGroupSegmented
+                      value={selectionType}
+                      onValueChange={value =>
+                        setSelectionType(value as 'freeform' | 'curated')
+                      }
+                    >
+                      <RadioGroupSegmentedItem value="freeform" icon={Edit}>
+                        Freeform
+                      </RadioGroupSegmentedItem>
+                      <RadioGroupSegmentedItem
+                        value="curated"
+                        icon={List}
+                        disabled
+                      >
+                        Curated
+                      </RadioGroupSegmentedItem>
+                    </RadioGroupSegmented>
+
+                    <div className="text-xs text-muted-foreground space-y-2">
+                      <p>
+                        <strong>Freeform:</strong> Players can pick any item
+                        they want during their turn.
+                      </p>
+                      <p>
+                        <strong>Curated:</strong> Players select from a
+                        predefined list of items. (Coming soon)
+                      </p>
+                      <p className="text-primary font-medium">
+                        Challenge mechanism: Other players can challenge picks
+                        within 30 seconds if they think the pick is invalid or
+                        inappropriate. If at least 50% of eligible voters agree,
+                        the pick is removed and the player must choose again.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Timer Settings */}
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground hidden sm:block">
-                      Timer Settings
-                    </h3>
+                  <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                    Timer Settings
+                  </h3>
+                  <div className="space-y-3">
                     <RadioGroupSegmented
                       value={timerMode}
                       onValueChange={value =>
@@ -167,33 +210,35 @@ export default function NewDraftPage() {
                         Untimed
                       </RadioGroupSegmentedItem>
                     </RadioGroupSegmented>
-                  </div>
 
-                  {timerMode === 'untimed' ? (
-                    <div className="border-2 border-border p-6 text-center">
-                      <Infinity className="w-8 h-8 mx-auto mb-2 text-foreground" />
-                      <p className="text-sm font-medium text-foreground">
-                        No Time Limit
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Players can take as long as they need
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <NumberInput
-                        id="secPerRound"
-                        label="Seconds per pick"
-                        value={secPerRound}
-                        onChange={setSecPerRound}
-                        min={5}
-                        max={300}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Auto-pick activates when time expires
-                      </p>
-                    </div>
-                  )}
+                    {timerMode === 'untimed' ? (
+                      <div className="border-2 border-border p-6 text-center">
+                        <Infinity className="w-8 h-8 mx-auto mb-2 text-foreground" />
+                        <p className="text-sm font-medium text-foreground">
+                          No Time Limit
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Players can take as long as they need
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="pt-2">
+                          <NumberInput
+                            id="secPerRound"
+                            label="Seconds per pick"
+                            value={secPerRound}
+                            onChange={setSecPerRound}
+                            min={5}
+                            max={300}
+                          />
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Auto-pick activates when time expires
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
