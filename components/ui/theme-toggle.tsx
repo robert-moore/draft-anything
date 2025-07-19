@@ -127,10 +127,9 @@ export function ThemeToggle() {
                 onClick={() => setTheme(option.value)}
                 className={`
                   flex flex-col items-center gap-1.5 p-3 rounded-md transition-all duration-200
-                  hover:bg-accent/50 text-foreground
                   ${theme === option.value 
-                    ? 'bg-accent/70 ring-1 ring-primary/30' 
-                    : 'hover:bg-accent/30'
+                    ? 'bg-primary/10 text-primary border-2 border-primary/20' 
+                    : 'hover:bg-muted text-foreground border-2 border-transparent'
                   }
                 `}
               >
@@ -169,7 +168,7 @@ export function ThemeToggle() {
                   relative aspect-square rounded-lg transition-all duration-200 border-2
                   hover:scale-105 hover:shadow-lg hover:shadow-primary/20
                   ${currentTheme.id === colorTheme.id 
-                    ? 'border-border shadow-md scale-105 ring-2 ring-primary/30' 
+                    ? 'border-primary shadow-md scale-105 ring-2 ring-primary/20' 
                     : 'border-border/30 hover:border-border/60'
                   }
                 `}
