@@ -6,16 +6,7 @@ import { BrutalistCard } from '@/components/ui/brutalist-card'
 import { RhythmSpacer } from '@/components/ui/rhythm-spacer'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { VisualFocus } from '@/components/ui/visual-focus'
-import {
-  ArrowRight,
-  Heart,
-  Play,
-  Sparkles,
-  Star,
-  Trophy,
-  Users,
-  Zap
-} from 'lucide-react'
+import { Heart, Play, Sparkles, Star, Trophy, Users, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { memo, useState } from 'react'
 
@@ -67,7 +58,7 @@ const HeroSection = memo(() => (
           </h1>
 
           <p className="text-2xl md:text-3xl text-muted-foreground leading-relaxed max-w-4xl mx-auto mb-12">
-            Create rankings and settle debates with friends.
+            Have fun ranking and debating with friends.
             <br />
             <span className="text-lg md:text-xl opacity-80">
               Simple, fast, and surprisingly addictive.
@@ -75,7 +66,7 @@ const HeroSection = memo(() => (
           </p>
 
           {/* Primary CTA - Maximum visual weight */}
-          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
+          <div className="flex justify-center">
             <Link href="/auth/login">
               <BrutalistButton
                 variant="primary"
@@ -87,10 +78,6 @@ const HeroSection = memo(() => (
                 Start Drafting
               </BrutalistButton>
             </Link>
-            <BrutalistButton variant="ghost" className="px-8 py-4 text-lg">
-              See Examples
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </BrutalistButton>
           </div>
         </div>
       </VisualFocus>
@@ -131,8 +118,8 @@ const ExamplesSection = memo(() => {
 
   const examples = [
     {
-      title: 'Favorite Restaurants',
-      description: 'Where should we eat tonight?',
+      title: 'Best Restaurants Nearby',
+      description: 'Top local dining spots',
       items: [
         'Pizza Palace',
         'Burger Haven',
@@ -160,7 +147,7 @@ const ExamplesSection = memo(() => {
     },
     {
       title: 'Programming Languages',
-      description: 'What should we learn next?',
+      description: 'Building a superteam of languages',
       items: ['TypeScript', 'Python', 'Rust', 'Go', 'JavaScript'],
       votes: ['84%', '73%', '62%', '51%', '40%'],
       icon: <Zap className="w-6 h-6" />,
@@ -181,8 +168,8 @@ const ExamplesSection = memo(() => {
             </span>
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            From movie nights to menu choices, create rankings that actually
-            matter to you and your friends
+            From movie nights to menu choices, create and debate rankings with
+            your friends
           </p>
         </div>
 
@@ -216,9 +203,6 @@ const ExamplesSection = memo(() => {
                       {i + 1}
                     </div>
                     <span className="truncate flex-1">{item}</span>
-                    <span className="text-xs text-muted-foreground font-mono">
-                      {example.votes[i]}
-                    </span>
                   </div>
                 ))}
               </div>
@@ -267,9 +251,6 @@ const ExamplesSection = memo(() => {
                     {index + 1}
                   </div>
                   <span className="text-lg font-medium">{item}</span>
-                </div>
-                <div className="text-lg font-bold text-muted-foreground font-mono">
-                  {examples[selectedExample].votes[index]}
                 </div>
               </div>
             ))}
@@ -333,7 +314,7 @@ const HowItWorksSection = memo(() => (
 HowItWorksSection.displayName = 'HowItWorksSection'
 
 const CTASection = memo(() => (
-  <section className="relative px-6 py-32">
+  <section className="relative px-6 py-20">
     <div className="max-w-5xl mx-auto">
       {/* Final conversion focus - maximum impact */}
       <VisualFocus
@@ -350,47 +331,35 @@ const CTASection = memo(() => (
           <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(circle_at_30%_70%,hsl(var(--primary))_1px,transparent_1px)] bg-[size:16px_16px]" />
         </div>
 
-        <div className="relative z-10">
-          <h2 className="text-5xl md:text-6xl font-bold tracking-tight mb-8 leading-tight">
-            Ready to start{' '}
-            <span className="text-primary relative">
-              drafting?
-              <div className="absolute bottom-0 left-0 right-0 h-2 bg-primary/20 -rotate-1" />
-            </span>
-          </h2>
-
-          <p className="text-2xl text-muted-foreground max-w-3xl mx-auto mb-12 leading-relaxed">
-            Join thousands of friends creating epic rankings and settling
-            debates for everything under the sun.
-          </p>
-
-          {/* Primary conversion action */}
-          <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
-            <Link href="/auth/login">
-              <BrutalistButton
-                variant="primary"
-                className="px-12 py-5 text-xl font-semibold group"
-                icon={
-                  <Heart className="w-6 h-6 transition-transform group-hover:scale-110" />
-                }
-              >
-                Get Started Free
-              </BrutalistButton>
-            </Link>
-            <BrutalistButton variant="ghost" className="px-8 py-5 text-lg">
-              Learn More
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </BrutalistButton>
-          </div>
-
-          {/* Simple, elegant closing statement */}
-          <div className="text-center max-w-2xl mx-auto">
-            <p className="text-lg text-muted-foreground leading-relaxed">
-              Free to use. No signup required.{' '}
-              <span className="text-foreground font-medium">
-                Start creating in seconds.
+        <div className="relative z-10 flex items-center justify-center min-h-full">
+          <div className="pt-16">
+            <h2 className="text-5xl md:text-6xl font-bold tracking-tight mb-8 leading-tight">
+              Ready to start{' '}
+              <span className="text-primary relative">
+                drafting?
+                <div className="absolute bottom-0 left-0 right-0 h-2 bg-primary/20 -rotate-1" />
               </span>
+            </h2>
+
+            <p className="text-2xl text-muted-foreground max-w-3xl mx-auto mb-12 leading-relaxed">
+              Join thousands of friends creating epic rankings and having fun
+              together.
             </p>
+
+            {/* Primary conversion action */}
+            <div className="flex justify-center mb-16">
+              <Link href="/auth/login">
+                <BrutalistButton
+                  variant="primary"
+                  className="px-12 py-5 text-xl font-semibold group"
+                  icon={
+                    <Heart className="w-6 h-6 transition-transform group-hover:scale-110" />
+                  }
+                >
+                  Get Started
+                </BrutalistButton>
+              </Link>
+            </div>
           </div>
         </div>
       </VisualFocus>
