@@ -413,9 +413,8 @@ export default function DraftPage() {
       if (!response.ok) throw new Error('Failed to make pick')
 
       const newPick = await response.json()
-      // Instead of an optimistic update, rely on the subscription to update picks for now
-      //   setPicks(prev => [...prev, newPick])
-      //   setCurrentPick('')
+      // Clear the input after successful pick
+      setCurrentPick('')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to make pick')
     }
