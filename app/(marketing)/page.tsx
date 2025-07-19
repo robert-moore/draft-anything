@@ -46,8 +46,15 @@ const HeroSection = memo(() => (
         priority="primary"
         className="text-center mb-16 py-10 lg:py-16 relative overflow-hidden"
       >
-        {/* Subtle grid background for texture */}
-        <div className="absolute inset-0 opacity-[0.02] bg-[linear-gradient(to_right,hsl(var(--foreground))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--foreground))_1px,transparent_1px)] bg-[size:40px_40px]" />
+        {/* Enhanced grid background with primary gradient */}
+        <div className="absolute inset-0">
+          {/* Primary color gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.03] via-transparent to-primary/[0.08]" />
+          {/* Enhanced grid pattern */}
+          <div className="absolute inset-0 opacity-[0.12] bg-[linear-gradient(to_right,hsl(var(--primary))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--primary))_1px,transparent_1px)] bg-[size:32px_32px]" />
+          {/* Secondary grid for depth */}
+          <div className="absolute inset-0 opacity-[0.04] bg-[linear-gradient(to_right,hsl(var(--foreground))_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--foreground))_1px,transparent_1px)] bg-[size:8px_8px]" />
+        </div>
 
         <div className="relative z-10">
           <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold tracking-tighter mb-8 leading-none">
@@ -333,8 +340,15 @@ const CTASection = memo(() => (
         priority="primary"
         className="text-center relative overflow-hidden py-10 lg:py-16"
       >
-        {/* Subtle background pattern for texture */}
-        <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary))_1px,transparent_1px)] bg-[size:30px_30px]" />
+        {/* Enhanced radial pattern with gradient */}
+        <div className="absolute inset-0">
+          {/* Primary color gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-primary/[0.02] via-transparent to-primary/[0.06]" />
+          {/* Enhanced radial pattern */}
+          <div className="absolute inset-0 opacity-[0.08] bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary))_2px,transparent_2px)] bg-[size:24px_24px]" />
+          {/* Subtle overlay dots for depth */}
+          <div className="absolute inset-0 opacity-[0.03] bg-[radial-gradient(circle_at_30%_70%,hsl(var(--primary))_1px,transparent_1px)] bg-[size:16px_16px]" />
+        </div>
 
         <div className="relative z-10">
           <h2 className="text-5xl md:text-6xl font-bold tracking-tight mb-8 leading-tight">
