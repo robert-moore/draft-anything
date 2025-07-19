@@ -442,7 +442,6 @@ export default function DraftPage() {
       if (!response.ok) throw new Error('Failed to join draft')
 
       const newParticipant = await response.json()
-      setParticipants(prev => [...prev, newParticipant])
       setIsJoined(true)
       setPlayerName('')
     } catch (err) {
@@ -727,6 +726,16 @@ export default function DraftPage() {
                 variant={stateInfo.variant}
                 className="px-4"
               />
+              {/* Mobile Share Button - Only visible on small screens */}
+              <div className="lg:hidden ml-auto">
+                <BrutalButton
+                  variant="default"
+                  onClick={handleShareDraft}
+                  className="text-sm px-4 py-2"
+                >
+                  Share Draft
+                </BrutalButton>
+              </div>
             </div>
             {draft.draftState === 'setting_up' ? (
               <div className="flex flex-wrap items-center gap-x-8 gap-y-2 text-sm">
