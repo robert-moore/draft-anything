@@ -19,7 +19,8 @@ export const draftStateInDa = da.enum('draft_state', [
   'completed',
   'errored',
   'paused',
-  'canceled'
+  'canceled',
+  'challenge'
 ])
 
 export const draftSelectionsInDa = da.table(
@@ -78,6 +79,61 @@ export const draftUsersInDa = da.table(
       columns: [table.userId],
       foreignColumns: [profilesInDa.id],
       name: 'draft_users_user_id_fkey'
+    })
+  ]
+)
+
+export const draftChallengeVotesInDa = da.table(
+  'draft_challenge_votes',
+  {
+    id: serial().primaryKey().notNull(),
+    challengeId: integer('challenge_id').notNull(),
+    voterUserId: uuid('voter_user_id').notNull(),
+    vote: boolean().notNull(), // true = valid challenge, false = invalid
+    createdAt: timestamp('created_at', { mode: 'string' }).notNull()
+  },
+  table => [
+    foreignKey({
+      columns: [table.challengeId],
+      foreignColumns: [draftChallengesInDa.id],
+      name: 'draft_challenge_votes_challenge_id_fkey'
+    }),
+    foreignKey({
+      columns: [table.voterUserId],
+      foreignColumns: [profilesInDa.id],
+      name: 'draft_challenge_votes_voter_user_id_fkey'
+    }),
+    unique('unique_challenge_vote').on(table.challengeId, table.voterUserId)
+  ]
+)
+
+export const draftChallengesInDa = da.table(
+  'draft_challenges',
+  {
+    id: serial().primaryKey().notNull(),
+    draftId: integer('draft_id').notNull(),
+    challengedPickNumber: smallint('challenged_pick_number').notNull(),
+    challengedUserId: uuid('challenged_user_id').notNull(),
+    challengerUserId: uuid('challenger_user_id').notNull(),
+    status: text('status').notNull().default('pending'), // pending, resolved, dismissed
+    createdAt: timestamp('created_at', { mode: 'string' }).notNull(),
+    resolvedAt: timestamp('resolved_at', { mode: 'string' })
+  },
+  table => [
+    foreignKey({
+      columns: [table.draftId],
+      foreignColumns: [draftsInDa.id],
+      name: 'draft_challenges_draft_id_fkey'
+    }),
+    foreignKey({
+      columns: [table.challengedUserId],
+      foreignColumns: [profilesInDa.id],
+      name: 'draft_challenges_challenged_user_id_fkey'
+    }),
+    foreignKey({
+      columns: [table.challengerUserId],
+      foreignColumns: [profilesInDa.id],
+      name: 'draft_challenges_challenger_user_id_fkey'
     })
   ]
 )

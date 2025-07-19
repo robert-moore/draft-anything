@@ -1,0 +1,15 @@
+[0m10:48:53.102159 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'start', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x10483c0d0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x105b22710>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x105b21a10>]}
+
+
+============================== 10:48:53.104689 | 205bcb74-b523-420f-8265-6292b1e01874 ==============================
+[0m10:48:53.104689 [info ] [MainThread]: Running with dbt=1.7.11
+[0m10:48:53.104973 [debug] [MainThread]: running dbt with arguments {'printer_width': '80', 'indirect_selection': 'eager', 'log_cache_events': 'False', 'write_json': 'True', 'partial_parse': 'True', 'cache_selected_only': 'False', 'profiles_dir': '/Users/shri/.dbt', 'version_check': 'True', 'fail_fast': 'False', 'log_path': 'logs', 'debug': 'False', 'warn_error': 'None', 'use_colors': 'True', 'use_experimental_parser': 'False', 'no_print': 'None', 'quiet': 'False', 'log_format': 'default', 'invocation_command': 'dbt run --models play_type_stats_off_ball_screens --vars {game_id: "89ad4b97-b8c3-4e60-8549-a9767fc45363", data_type: "all", is_single_game: true, delete_all_project_data_before_run_or_on_error: false}', 'introspect': 'True', 'static_parser': 'True', 'target_path': 'None', 'warn_error_options': 'WarnErrorOptions(include=[], exclude=[])', 'send_anonymous_usage_stats': 'True'}
+[0m10:48:53.105254 [error] [MainThread]: Encountered an error:
+Runtime Error
+  No dbt_project.yml found at expected path /Users/shri/Developer/draft-anything/dbt_project.yml
+  Verify that each entry within packages.yml (and their transitive dependencies) contains a file named dbt_project.yml
+  
+[0m10:48:53.119952 [debug] [MainThread]: Resource report: {"command_name": "run", "command_wall_clock_time": 0.052677456, "process_user_time": 0.80649, "process_kernel_time": 0.116275, "process_mem_max_rss": "107364352", "command_success": false, "process_in_blocks": "0", "process_out_blocks": "0"}
+[0m10:48:53.120207 [debug] [MainThread]: Command `dbt run` failed at 10:48:53.120146 after 0.05 seconds
+[0m10:48:53.120381 [debug] [MainThread]: Sending event: {'category': 'dbt', 'action': 'invocation', 'label': 'end', 'context': [<snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x105b200d0>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x105b96410>, <snowplow_tracker.self_describing_json.SelfDescribingJson object at 0x1010e4850>]}
+[0m10:48:53.120541 [debug] [MainThread]: Flushing usage events

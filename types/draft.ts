@@ -8,6 +8,7 @@ export interface Draft {
     | 'errored'
     | 'paused'
     | 'canceled'
+    | 'challenge'
   maxDrafters: number
   secPerRound: string
   numRounds: number
