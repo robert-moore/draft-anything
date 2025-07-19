@@ -143,6 +143,11 @@ export default function DraftPage() {
       if (data.draft.draftState === 'challenge') {
         await loadChallenge()
       }
+
+      // If we've advanced past the setting up state, set the order to finalized
+      if (data.draft.draftState !== 'setting_up') {
+        setIsOrderFinalized(true)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load draft')
     } finally {
@@ -289,7 +294,6 @@ export default function DraftPage() {
             if (prevState === 'setting_up' && updatedState === 'active') {
               // Reload to get the randomized pick order
               await loadDraft()
-              setIsOrderFinalized(true)
             }
 
             // Handle challenge state changes
@@ -816,6 +820,7 @@ export default function DraftPage() {
                 ) : draft.draftState === 'active' &&
                   isJoined &&
                   currentUser &&
+                  isOrderFinalized &&
                   participants.find(p => p.id === currentUser?.id)?.position ===
                     draft.currentPositionOnClock &&
                   !justSubmittedPick ? (

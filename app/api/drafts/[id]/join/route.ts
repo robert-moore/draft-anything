@@ -42,6 +42,19 @@ export async function POST(
     if (!bodyResult.success) return bodyResult.error
     const { name } = bodyResult.data
 
+    // Check for existing participants with the same name and disambiguate
+    const existingParticipants = await db
+      .select({ draftUsername: draftUsersInDa.draftUsername })
+      .from(draftUsersInDa)
+      .where(eq(draftUsersInDa.draftId, draft.id))
+
+    let finalName = name
+    let counter = 2
+    while (existingParticipants.some(p => p.draftUsername === finalName)) {
+      finalName = `${name} (${counter})`
+      counter++
+    }
+
     // Ensure user profile exists, create if it doesn't
     const [existingProfile] = await db
       .select()
@@ -102,7 +115,7 @@ export async function POST(
       .values({
         draftId: draft.id,
         userId: user.id,
-        draftUsername: name,
+        draftUsername: finalName,
         position: participantCount[0].count + 1,
         isReady: true,
         createdAt: new Date().toISOString()
@@ -111,7 +124,7 @@ export async function POST(
 
     return NextResponse.json({
       id: user.id,
-      name,
+      name: finalName,
       position: newParticipant.position,
       isReady: newParticipant.isReady,
       createdAt: newParticipant.createdAt

@@ -6,7 +6,7 @@ import {
 import { getDraftByGuid, parseDraftGuid } from '@/lib/api/draft-guid-helpers'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
@@ -41,7 +41,7 @@ export async function GET(
     const participantsQuery = await db
       .select({
         id: profilesInDa.id,
-        name: profilesInDa.name,
+        name: draftUsersInDa.draftUsername,
         position: draftUsersInDa.position,
         isReady: draftUsersInDa.isReady,
         createdAt: draftUsersInDa.createdAt
@@ -57,13 +57,21 @@ export async function GET(
         userId: draftSelectionsInDa.userId,
         payload: draftSelectionsInDa.payload,
         createdAt: draftSelectionsInDa.createdAt,
-        userName: profilesInDa.name,
+        userName: draftUsersInDa.draftUsername,
         wasAutoPick: draftSelectionsInDa.wasAutoPick,
         timeTakenSeconds: draftSelectionsInDa.timeTakenSeconds
       })
       .from(draftSelectionsInDa)
-      .innerJoin(profilesInDa, eq(draftSelectionsInDa.userId, profilesInDa.id))
-      .where(eq(draftSelectionsInDa.draftId, draft.id))
+      .innerJoin(
+        draftUsersInDa,
+        eq(draftSelectionsInDa.userId, draftUsersInDa.userId)
+      )
+      .where(
+        and(
+          eq(draftSelectionsInDa.draftId, draft.id),
+          eq(draftUsersInDa.draftId, draft.id)
+        )
+      )
 
     // Transform picks to include clientId and clientName for backward compatibility
     const picks = picksQuery.map(pick => ({
