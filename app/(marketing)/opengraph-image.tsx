@@ -18,7 +18,7 @@ export default async function Image() {
       <div
         style={{
           fontSize: 128,
-          background: 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)',
+          background: '#0F0F0F',
           width: '100%',
           height: '100%',
           display: 'flex',
@@ -29,22 +29,42 @@ export default async function Image() {
           padding: 60,
         }}
       >
+        {/* Multi-layered background effects */}
+        {/* Primary gradient */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'radial-gradient(ellipse at top right, rgba(230, 132, 100, 0.15) 0%, transparent 40%), radial-gradient(ellipse at bottom left, rgba(230, 132, 100, 0.1) 0%, transparent 40%)',
+          }}
+        />
+
+        {/* Grid patterns */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: `linear-gradient(to right, rgba(230, 132, 100, 0.5) 2px, transparent 2px), linear-gradient(to bottom, rgba(230, 132, 100, 0.5) 2px, transparent 2px)`,
+            backgroundSize: '48px 48px',
+            opacity: 0.2,
+          }}
+        />
+        
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: `linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px)`,
+            backgroundSize: '12px 12px',
+          }}
+        />
+
         {/* Brutalist border */}
         <div
           style={{
             position: 'absolute',
             inset: 40,
-            border: '4px solid #000',
-          }}
-        />
-
-        {/* Grid background pattern */}
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: `linear-gradient(to right, #E6846412 2px, transparent 2px), linear-gradient(to bottom, #E6846412 2px, transparent 2px)`,
-            backgroundSize: '60px 60px',
+            border: '3px solid rgba(230, 132, 100, 0.5)',
           }}
         />
 
@@ -63,31 +83,31 @@ export default async function Image() {
           <div
             style={{
               display: 'flex',
-              fontSize: 110,
+              fontSize: 120,
               fontWeight: 800,
-              letterSpacing: '-0.02em',
+              letterSpacing: '-0.03em',
               marginBottom: 32,
               textAlign: 'center',
+              color: '#E5E5E5',
             }}
           >
             <span>Draft</span>
             <span
               style={{
                 color: '#E68464',
-                marginLeft: 24,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
+                marginLeft: 28,
+                position: 'relative',
               }}
             >
               Anything
               <div
                 style={{
-                  width: '100%',
+                  position: 'absolute',
+                  bottom: 4,
+                  left: 0,
+                  right: 0,
                   height: 8,
-                  background: '#E68464',
-                  marginTop: -10,
-                  opacity: 0.3,
+                  background: 'rgba(230, 132, 100, 0.4)',
                 }}
               />
             </span>
@@ -96,84 +116,106 @@ export default async function Image() {
           {/* Tagline */}
           <div
             style={{
-              fontSize: 32,
-              color: '#666',
+              fontSize: 36,
+              color: '#999',
               fontWeight: 500,
               marginBottom: 80,
               textAlign: 'center',
               maxWidth: 800,
+              letterSpacing: '-0.01em',
             }}
           >
             Create rankings and settle debates with friends
           </div>
 
-          {/* Example drafts */}
+          {/* Example ranking cards */}
           <div
             style={{
               display: 'flex',
-              gap: 32,
-              alignItems: 'center',
+              flexDirection: 'column',
+              gap: 16,
+              width: '100%',
+              maxWidth: 700,
             }}
           >
             {[
-              { emoji: '🍕', text: 'Pizza Places' },
-              { emoji: '🎬', text: 'Movies' },
-              { emoji: '🎮', text: 'Video Games' },
-            ].map((item, i) => (
+              { rank: '1', name: 'Avengers: Endgame', score: '92%', active: true },
+              { rank: '2', name: 'Iron Man', score: '81%', active: false },
+              { rank: '3', name: 'Black Panther', score: '70%', active: false },
+            ].map((item) => (
               <div
-                key={i}
+                key={item.rank}
                 style={{
                   display: 'flex',
-                  flexDirection: 'column',
                   alignItems: 'center',
-                  gap: 12,
+                  gap: 24,
+                  padding: '24px 32px',
+                  border: '2px solid',
+                  borderColor: item.active ? '#E68464' : '#333',
+                  background: item.active ? 'rgba(230, 132, 100, 0.08)' : '#1A1A1A',
+                  position: 'relative',
+                  transform: item.active ? 'translateX(8px)' : 'translateX(0)',
+                  boxShadow: item.active ? '4px 4px 0px 0px rgba(230, 132, 100, 0.3)' : 'none',
                 }}
               >
                 <div
                   style={{
-                    width: 100,
-                    height: 100,
-                    border: '3px solid',
-                    borderColor: i === 1 ? '#E68464' : '#000',
+                    width: 48,
+                    height: 48,
+                    border: '2px solid',
+                    borderColor: item.active ? '#E68464' : '#484848',
+                    background: item.active ? 'rgba(230, 132, 100, 0.2)' : 'transparent',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: 48,
-                    background: i === 1 ? '#E6846410' : 'white',
+                    fontSize: 24,
+                    fontWeight: 700,
+                    color: item.active ? '#E68464' : '#999',
                   }}
                 >
-                  {item.emoji}
+                  {item.rank}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div
+                    style={{
+                      fontSize: 26,
+                      fontWeight: 600,
+                      color: item.active ? '#E5E5E5' : '#999',
+                      marginBottom: 4,
+                    }}
+                  >
+                    {item.name}
+                  </div>
                 </div>
                 <div
                   style={{
-                    fontSize: 20,
-                    fontWeight: 600,
-                    color: i === 1 ? '#E68464' : '#000',
+                    fontSize: 22,
+                    fontWeight: 700,
+                    color: item.active ? '#E68464' : '#666',
+                    fontFamily: 'monospace',
                   }}
                 >
-                  {item.text}
+                  {item.score}
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Bottom accent bars */}
+        {/* Decorative elements */}
         <div
           style={{
             position: 'absolute',
-            bottom: 40,
-            left: 40,
-            right: 40,
-            height: 4,
-            background: '#000',
-            display: 'flex',
-            gap: 4,
+            top: 60,
+            right: 60,
+            fontSize: 20,
+            fontWeight: 600,
+            color: '#E68464',
+            opacity: 0.6,
+            letterSpacing: '0.1em',
           }}
         >
-          <div style={{ flex: 1, background: '#E68464' }} />
-          <div style={{ flex: 1, background: '#000' }} />
-          <div style={{ flex: 1, background: '#E68464' }} />
+          DRAFTANYTHING.IO
         </div>
       </div>
     ),

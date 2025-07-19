@@ -18,7 +18,7 @@ export default async function Image() {
       <div
         style={{
           fontSize: 128,
-          background: '#fafafa',
+          background: '#121212',
           width: '100%',
           height: '100%',
           display: 'flex',
@@ -28,13 +28,21 @@ export default async function Image() {
           position: 'relative',
         }}
       >
-        {/* Background grid pattern */}
+        {/* Enhanced grid background */}
         <div
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: `linear-gradient(to right, #E6846415 1px, transparent 1px), linear-gradient(to bottom, #E6846415 1px, transparent 1px)`,
-            backgroundSize: '32px 32px',
+            background: 'linear-gradient(135deg, rgba(230, 132, 100, 0.05) 0%, transparent 40%, rgba(230, 132, 100, 0.1) 100%)',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: `linear-gradient(to right, rgba(230, 132, 100, 0.4) 1px, transparent 1px), linear-gradient(to bottom, rgba(230, 132, 100, 0.4) 1px, transparent 1px)`,
+            backgroundSize: '40px 40px',
+            opacity: 0.3,
           }}
         />
 
@@ -57,8 +65,9 @@ export default async function Image() {
               fontSize: 100,
               fontWeight: 800,
               letterSpacing: '-0.02em',
-              marginBottom: 24,
+              marginBottom: 32,
               lineHeight: 1,
+              color: '#E5E5E5',
             }}
           >
             Draft{' '}
@@ -77,7 +86,7 @@ export default async function Image() {
                   left: 0,
                   right: 0,
                   height: 6,
-                  background: '#E6846440',
+                  background: 'rgba(230, 132, 100, 0.4)',
                 }}
               />
             </span>
@@ -86,55 +95,65 @@ export default async function Image() {
           {/* Tagline */}
           <div
             style={{
-              fontSize: 28,
-              color: '#666',
+              fontSize: 30,
+              color: '#999',
               fontWeight: 500,
-              marginBottom: 48,
+              marginBottom: 60,
               maxWidth: 800,
+              letterSpacing: '-0.01em',
             }}
           >
             Create rankings and settle debates with friends
           </div>
 
-          {/* Visual example */}
+          {/* Visual flow with brutalist cards */}
           <div
             style={{
               display: 'flex',
-              gap: 16,
+              gap: 24,
               alignItems: 'center',
             }}
           >
-            {['1', '2', '3'].map((num, i) => (
+            {[
+              { step: 'Create', icon: '✏️' },
+              { step: 'Draft', icon: '🎯' },
+              { step: 'Share', icon: '🏆' },
+            ].map((item, i) => (
               <div
                 key={i}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 16,
+                  gap: 20,
                 }}
               >
                 <div
                   style={{
-                    width: 48,
-                    height: 48,
+                    padding: '24px 32px',
                     border: '2px solid',
-                    borderColor: i === 0 ? '#E68464' : '#000',
+                    borderColor: i === 1 ? '#E68464' : '#484848',
+                    background: i === 1 ? 'rgba(230, 132, 100, 0.1)' : '#1A1A1A',
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 24,
-                    fontWeight: 700,
-                    background: i === 0 ? '#E68464' : 'transparent',
-                    color: i === 0 ? 'white' : '#000',
+                    gap: 16,
                   }}
                 >
-                  {num}
+                  <span style={{ fontSize: 32 }}>{item.icon}</span>
+                  <div
+                    style={{
+                      fontSize: 24,
+                      fontWeight: 600,
+                      color: i === 1 ? '#E68464' : '#999',
+                    }}
+                  >
+                    {item.step}
+                  </div>
                 </div>
                 {i < 2 && (
                   <div
                     style={{
-                      fontSize: 32,
-                      color: '#ccc',
+                      fontSize: 28,
+                      color: '#484848',
                     }}
                   >
                     →
@@ -145,25 +164,15 @@ export default async function Image() {
           </div>
         </div>
 
-        {/* Corner accents */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: 200,
-            height: 200,
-            background: 'linear-gradient(135deg, #E6846410 0%, transparent 70%)',
-          }}
-        />
+        {/* Bottom border accent */}
         <div
           style={{
             position: 'absolute',
             bottom: 0,
+            left: 0,
             right: 0,
-            width: 200,
-            height: 200,
-            background: 'linear-gradient(-45deg, #E6846410 0%, transparent 70%)',
+            height: 4,
+            background: 'linear-gradient(90deg, transparent 0%, #E68464 50%, transparent 100%)',
           }}
         />
       </div>

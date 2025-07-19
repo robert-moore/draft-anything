@@ -18,7 +18,7 @@ export default async function Image() {
       <div
         style={{
           fontSize: 128,
-          background: '#fafafa',
+          background: '#121212',
           width: '100%',
           height: '100%',
           display: 'flex',
@@ -28,22 +28,34 @@ export default async function Image() {
           position: 'relative',
         }}
       >
-        {/* Background grid pattern */}
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            backgroundImage: `linear-gradient(to right, #0000000A 1px, transparent 1px), linear-gradient(to bottom, #0000000A 1px, transparent 1px)`,
-            backgroundSize: '40px 40px',
-          }}
-        />
-        
+        {/* Multi-layered background like marketing page */}
         {/* Primary color gradient overlay */}
         <div
           style={{
             position: 'absolute',
             inset: 0,
             background: 'linear-gradient(135deg, rgba(230, 132, 100, 0.03) 0%, transparent 50%, rgba(230, 132, 100, 0.08) 100%)',
+          }}
+        />
+        
+        {/* Enhanced grid pattern */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: `linear-gradient(to right, rgba(230, 132, 100, 0.3) 1px, transparent 1px), linear-gradient(to bottom, rgba(230, 132, 100, 0.3) 1px, transparent 1px)`,
+            backgroundSize: '32px 32px',
+            opacity: 0.4,
+          }}
+        />
+        
+        {/* Secondary grid for depth */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: `linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px)`,
+            backgroundSize: '8px 8px',
           }}
         />
 
@@ -58,101 +70,147 @@ export default async function Image() {
             zIndex: 10,
           }}
         >
-          {/* Logo/Brand */}
+          {/* Brutalist accent border */}
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 20,
-              marginBottom: 40,
+              position: 'absolute',
+              top: 60,
+              left: 60,
+              right: 60,
+              bottom: 60,
+              border: '2px solid rgba(230, 132, 100, 0.3)',
+              pointerEvents: 'none',
             }}
-          >
-            <div
-              style={{
-                width: 80,
-                height: 80,
-                border: '4px solid #000',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 40,
-                fontWeight: 800,
-                background: '#E68464',
-                color: 'white',
-              }}
-            >
-              DA
-            </div>
-          </div>
+          />
 
           {/* Main text */}
           <div
             style={{
               display: 'flex',
-              fontSize: 96,
+              fontSize: 110,
               fontWeight: 800,
               letterSpacing: '-0.02em',
-              marginBottom: 20,
+              marginBottom: 24,
+              color: '#E5E5E5',
             }}
           >
             Draft{' '}
             <span
               style={{
                 color: '#E68464',
-                marginLeft: 20,
+                marginLeft: 24,
+                position: 'relative',
               }}
             >
               Anything
+              {/* Underline accent */}
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: 8,
+                  left: 0,
+                  right: 0,
+                  height: 4,
+                  background: 'rgba(230, 132, 100, 0.3)',
+                }}
+              />
             </span>
           </div>
 
           {/* Tagline */}
           <div
             style={{
-              fontSize: 32,
-              color: '#666',
+              fontSize: 36,
+              color: '#999',
               fontWeight: 500,
-              marginBottom: 60,
+              marginBottom: 80,
+              letterSpacing: '-0.01em',
             }}
           >
             Create rankings and settle debates with friends
           </div>
 
-          {/* Example items */}
+          {/* Example items in brutalist style */}
           <div
             style={{
               display: 'flex',
-              gap: 24,
+              gap: 32,
               marginTop: 20,
             }}
           >
-            {['Pizza Places', 'Marvel Movies', 'Travel Spots'].map((item, i) => (
+            {[
+              { num: '1', text: 'Pizza Palace', selected: true },
+              { num: '2', text: 'Burger Haven', selected: false },
+              { num: '3', text: 'Sushi Central', selected: false },
+            ].map((item, i) => (
               <div
                 key={i}
                 style={{
-                  padding: '16px 32px',
-                  border: '2px solid #000',
-                  fontSize: 24,
-                  fontWeight: 600,
-                  background: i === 1 ? '#E68464' : 'white',
-                  color: i === 1 ? 'white' : '#000',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 16,
+                  padding: '20px 32px',
+                  border: '2px solid',
+                  borderColor: item.selected ? '#E68464' : '#484848',
+                  background: item.selected ? 'rgba(230, 132, 100, 0.1)' : '#1A1A1A',
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
               >
-                {item}
+                <div
+                  style={{
+                    width: 40,
+                    height: 40,
+                    border: '2px solid',
+                    borderColor: item.selected ? '#E68464' : '#484848',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 20,
+                    fontWeight: 700,
+                    color: item.selected ? '#E68464' : '#999',
+                    background: item.selected ? 'rgba(230, 132, 100, 0.2)' : 'transparent',
+                  }}
+                >
+                  {item.num}
+                </div>
+                <div
+                  style={{
+                    fontSize: 24,
+                    fontWeight: 600,
+                    color: item.selected ? '#E5E5E5' : '#999',
+                  }}
+                >
+                  {item.text}
+                </div>
+                {item.selected && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      bottom: 0,
+                      width: 4,
+                      background: '#E68464',
+                    }}
+                  />
+                )}
               </div>
             ))}
           </div>
         </div>
 
-        {/* Bottom accent */}
+        {/* Corner accent */}
         <div
           style={{
             position: 'absolute',
             bottom: 0,
-            left: 0,
             right: 0,
-            height: 8,
-            background: '#E68464',
+            width: 0,
+            height: 0,
+            borderStyle: 'solid',
+            borderWidth: '0 0 100px 100px',
+            borderColor: 'transparent transparent rgba(230, 132, 100, 0.2) transparent',
           }}
         />
       </div>
