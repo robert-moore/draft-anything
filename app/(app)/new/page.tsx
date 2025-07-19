@@ -151,7 +151,7 @@ export default function NewDraftPage() {
                 {/* Timer Settings */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                    <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground hidden sm:block">
                       Timer Settings
                     </h3>
                     <RadioGroupSegmented

@@ -1057,18 +1057,18 @@ export default function DraftPage() {
                         </p>
                         <div className="flex gap-4 justify-center">
                           <BrutalButton
-                            onClick={() => handleVote(true)}
-                            variant="filled"
-                            className="px-8 py-3"
-                          >
-                            Redo Pick
-                          </BrutalButton>
-                          <BrutalButton
                             onClick={() => handleVote(false)}
                             variant="default"
-                            className="px-8 py-3"
+                            className="px-6 py-2 text-sm"
                           >
                             Keep Pick
+                          </BrutalButton>
+                          <BrutalButton
+                            onClick={() => handleVote(true)}
+                            variant="filled"
+                            className="px-8 py-3 text-lg font-bold"
+                          >
+                            Redo Pick
                           </BrutalButton>
                         </div>
                       </div>
@@ -1095,7 +1095,7 @@ export default function DraftPage() {
           {/* Draft Board */}
           <div className="pt-6">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-foreground">
+              <h2 className="text-2xl font-bold text-foreground hidden sm:block">
                 Draft Board
               </h2>
               <ViewModeTabs viewMode={viewMode} onChange={setViewMode} />
