@@ -1,13 +1,13 @@
 import { draftSelectionsInDa, profilesInDa } from '@/drizzle/schema'
+import { parseDraftGuid } from '@/lib/api/draft-guid-helpers'
 import {
   calculateNextDrafter,
-  getCurrentPickNumber,
-  getParticipantCount,
-  updateDraftAfterPick,
-  validateAndFetchDraft,
-  verifyParticipant
+  getCurrentPickNumberByGuid,
+  getParticipantCountByGuid,
+  updateDraftAfterPickByGuid,
+  validateAndFetchDraftByGuid,
+  verifyParticipantByGuid
 } from '@/lib/api/draft-helpers'
-import { parseDraftId } from '@/lib/api/route-helpers'
 import { parseJsonRequest } from '@/lib/api/validation'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
@@ -26,10 +26,10 @@ export async function POST(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Validate draft ID
-    const idResult = await parseDraftId(context)
-    if (!idResult.success) return idResult.error
-    const { draftId } = idResult
+    // Validate draft GUID
+    const guidResult = await parseDraftGuid(context)
+    if (!guidResult.success) return guidResult.error
+    const { draftGuid } = guidResult
 
     // Check authentication
     const user = await getCurrentUser()
@@ -46,12 +46,12 @@ export async function POST(
     const { payload } = bodyResult.data
 
     // Validate and fetch draft
-    const draftResult = await validateAndFetchDraft(draftId)
+    const draftResult = await validateAndFetchDraftByGuid(draftGuid)
     if (!draftResult.success) return draftResult.error
     const { draft } = draftResult
 
     // Verify participant
-    const participantResult = await verifyParticipant(draftId, user.id)
+    const participantResult = await verifyParticipantByGuid(draftGuid, user.id)
     if (!participantResult.success) return participantResult.error
     const { position } = participantResult
 
@@ -84,12 +84,12 @@ export async function POST(
     }
 
     // Get current pick number
-    const currentPickNumber = await getCurrentPickNumber(draftId)
+    const currentPickNumber = await getCurrentPickNumberByGuid(draftGuid)
 
     // Insert the pick
     const now = getUtcNow()
     await db.insert(draftSelectionsInDa).values({
-      draftId,
+      draftId: draft.id,
       userId: user.id,
       pickNumber: currentPickNumber,
       payload: payload,
@@ -99,7 +99,7 @@ export async function POST(
     })
 
     // Get participant count and calculate next drafter
-    const numParticipants = await getParticipantCount(draftId)
+    const numParticipants = await getParticipantCountByGuid(draftGuid)
     const { nextPosition, isDraftCompleted } = calculateNextDrafter(
       currentPickNumber,
       numParticipants,
@@ -107,7 +107,12 @@ export async function POST(
     )
 
     // Update draft state (always reset timer for next player)
-    await updateDraftAfterPick(draftId, nextPosition, isDraftCompleted, true)
+    await updateDraftAfterPickByGuid(
+      draftGuid,
+      nextPosition,
+      isDraftCompleted,
+      true
+    )
 
     // Get profile name
     const [profile] = await db

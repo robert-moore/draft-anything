@@ -13,7 +13,7 @@ import { GeometricBackground } from '@/components/ui/geometric-background'
 import { NumberBox } from '@/components/ui/number-box'
 import { createClient } from '@/lib/supabase/client'
 import type { Draft, DraftPick, Participant } from '@/types/draft'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Clock } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
@@ -34,8 +34,6 @@ export default function DraftPage() {
   const [currentTurn, setCurrentTurn] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [isReloadingAfterDraftStart, setIsReloadingAfterDraftStart] =
-    useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showInviteLink, setShowInviteLink] = useState(false)
   const [inviteLink, setInviteLink] = useState('')
@@ -49,8 +47,70 @@ export default function DraftPage() {
   const [challengeVotes, setChallengeVotes] = useState<any[]>([])
   const [hasVoted, setHasVoted] = useState(false)
   const [voteCounts, setVoteCounts] = useState<any>(null)
+  const [similarPick, setSimilarPick] = useState<{
+    pick: string
+    player: string
+  } | null>(null)
+  const [justSubmittedPick, setJustSubmittedPick] = useState(false)
+  const [isOrderFinalized, setIsOrderFinalized] = useState(false)
 
   const participantsRef = useRef<Participant[]>([])
+
+  // Function to check for similar picks
+  const checkSimilarPick = (input: string) => {
+    if (!input.trim()) {
+      setSimilarPick(null)
+      return
+    }
+
+    const normalizedInput = input.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+    for (const pick of picks) {
+      const normalizedPick = pick.payload
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '')
+
+      // Exact match after normalization
+      if (normalizedInput === normalizedPick) {
+        setSimilarPick({ pick: pick.payload, player: pick.clientName })
+        return
+      }
+
+      // Levenshtein distance check (if strings are similar length)
+      if (Math.abs(normalizedInput.length - normalizedPick.length) <= 2) {
+        const distance = levenshteinDistance(normalizedInput, normalizedPick)
+        if (distance <= 1) {
+          setSimilarPick({ pick: pick.payload, player: pick.clientName })
+          return
+        }
+      }
+    }
+
+    setSimilarPick(null)
+  }
+
+  // Levenshtein distance function
+  const levenshteinDistance = (str1: string, str2: string): number => {
+    const matrix = Array(str2.length + 1)
+      .fill(null)
+      .map(() => Array(str1.length + 1).fill(null))
+
+    for (let i = 0; i <= str1.length; i++) matrix[0][i] = i
+    for (let j = 0; j <= str2.length; j++) matrix[j][0] = j
+
+    for (let j = 1; j <= str2.length; j++) {
+      for (let i = 1; i <= str1.length; i++) {
+        const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1
+        matrix[j][i] = Math.min(
+          matrix[j][i - 1] + 1, // deletion
+          matrix[j - 1][i] + 1, // insertion
+          matrix[j - 1][i - 1] + indicator // substitution
+        )
+      }
+    }
+
+    return matrix[str2.length][str1.length]
+  }
 
   const loadDraft = async () => {
     try {
@@ -127,6 +187,9 @@ export default function DraftPage() {
     if (!draftId) return
 
     const timeout = setTimeout(() => {
+      // Only set up subscriptions if we have the draft data with numeric ID
+      if (!draft?.id) return
+
       const draftUsersSub = supabase
         .channel(`draft-users-${draftId}`)
         .on(
@@ -135,7 +198,7 @@ export default function DraftPage() {
             event: 'INSERT',
             schema: 'da',
             table: 'draft_users',
-            filter: `draft_id=eq.${draftId}`
+            filter: `draft_id=eq.${draft.id}`
           },
           payload => {
             const newUser = payload.new
@@ -164,7 +227,7 @@ export default function DraftPage() {
             event: 'INSERT',
             schema: 'da',
             table: 'draft_selections',
-            filter: `draft_id=eq.${draftId}`
+            filter: `draft_id=eq.${draft.id}`
           },
           payload => {
             const newPick = payload.new
@@ -205,7 +268,7 @@ export default function DraftPage() {
             event: 'UPDATE',
             schema: 'da',
             table: 'drafts',
-            filter: `id=eq.${draftId}`
+            filter: `id=eq.${draft.id}`
           },
           async payload => {
             const prevState = draft?.draftState || 'setting_up'
@@ -225,9 +288,8 @@ export default function DraftPage() {
 
             if (prevState === 'setting_up' && updatedState === 'active') {
               // Reload to get the randomized pick order
-              setIsReloadingAfterDraftStart(true)
               await loadDraft()
-              setIsReloadingAfterDraftStart(false)
+              setIsOrderFinalized(true)
             }
 
             // Handle challenge state changes
@@ -252,7 +314,7 @@ export default function DraftPage() {
             event: 'INSERT',
             schema: 'da',
             table: 'draft_challenges',
-            filter: `draft_id=eq.${draftId}`
+            filter: `draft_id=eq.${draft.id}`
           },
           payload => {
             setCurrentChallenge(payload.new)
@@ -264,7 +326,7 @@ export default function DraftPage() {
             event: 'UPDATE',
             schema: 'da',
             table: 'draft_challenges',
-            filter: `draft_id=eq.${draftId}`
+            filter: `draft_id=eq.${draft.id}`
           },
           payload => {
             setCurrentChallenge(payload.new)
@@ -302,7 +364,7 @@ export default function DraftPage() {
     }, 250)
 
     return () => clearTimeout(timeout)
-  }, [draftId])
+  }, [draftId, draft?.id])
 
   // Load draft data and check if already joined
   useEffect(() => {
@@ -402,6 +464,7 @@ export default function DraftPage() {
     if (!currentPick.trim()) return
 
     try {
+      setJustSubmittedPick(true)
       const response = await fetch(`/api/drafts/${draftId}/pick`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -413,9 +476,16 @@ export default function DraftPage() {
       if (!response.ok) throw new Error('Failed to make pick')
 
       const newPick = await response.json()
-      // Clear the input after successful pick
+      // Clear the input and similar pick warning after successful pick
       setCurrentPick('')
+      setSimilarPick(null)
+
+      // Clear the just submitted state after a short delay to prevent layout shift
+      setTimeout(() => {
+        setJustSubmittedPick(false)
+      }, 1000)
     } catch (err) {
+      setJustSubmittedPick(false)
       setError(err instanceof Error ? err.message : 'Failed to make pick')
     }
   }
@@ -630,7 +700,7 @@ export default function DraftPage() {
       {/* Auto-pick handler (only for timed drafts) */}
       {draft && parseInt(draft.secPerRound) > 0 && (
         <AutoPickMonitor
-          draftId={draft.id}
+          draftId={draft.guid}
           turnStartedAt={draft.turnStartedAt}
           secondsPerRound={parseInt(draft.secPerRound)}
           isMyTurn={isMyTurn}
@@ -731,124 +801,172 @@ export default function DraftPage() {
             )}
 
           {/* Current Pick - Primary Focus Area */}
-          {!isReloadingAfterDraftStart &&
-            (draft.draftState === 'active' ||
-              (draft.draftState === 'completed' && picks.length > 0)) && (
-              <div className="py-8">
-                <div className="max-w-2xl mx-auto">
-                  {isJoined &&
+          {
+            <div className="py-8">
+              <div className="max-w-2xl mx-auto">
+                {draft.draftState === 'completed' && picks.length > 0 ? (
+                  <div className="border-2 border-border bg-card p-12 text-center">
+                    <p className="text-2xl font-bold mb-2 text-foreground">
+                      Draft Complete!
+                    </p>
+                    <p className="text-muted-foreground">
+                      All {picks.length} picks have been made
+                    </p>
+                  </div>
+                ) : draft.draftState === 'active' &&
+                  isJoined &&
                   currentUser &&
                   participants.find(p => p.id === currentUser?.id)?.position ===
-                    draft.currentPositionOnClock ? (
-                    <div className="bg-card border-2 border-border p-8 relative overflow-hidden">
-                      <GeometricBackground variant="diagonal" opacity={0.05} />
-                      <div className="relative z-10">
-                        <div className="text-center mb-6">
-                          <h2 className="text-2xl font-bold text-foreground">
-                            Round {currentRound} - Pick {pickInRound}
-                          </h2>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            It's your turn to pick
-                          </p>
-                          <div className="mt-4 flex justify-center">
-                            <DraftTimer
-                              turnStartedAt={draft.turnStartedAt}
-                              secondsPerRound={parseInt(draft.secPerRound)}
-                              isPaused={draft.timerPaused}
-                              variant="full"
-                            />
-                          </div>
+                    draft.currentPositionOnClock &&
+                  !justSubmittedPick ? (
+                  <div className="bg-card border-2 border-border p-8 relative overflow-hidden">
+                    <GeometricBackground variant="diagonal" opacity={0.05} />
+                    <div className="relative z-10">
+                      <div className="text-center mb-6">
+                        <h2 className="text-2xl font-bold text-foreground">
+                          Round {currentRound} - Pick {pickInRound}
+                        </h2>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          It's your turn to pick
+                        </p>
+                        <div className="mt-4 flex justify-center">
+                          <DraftTimer
+                            turnStartedAt={draft.turnStartedAt}
+                            secondsPerRound={parseInt(draft.secPerRound)}
+                            isPaused={draft.timerPaused ?? undefined}
+                            variant="full"
+                          />
                         </div>
-                        <div className="space-y-4">
+                      </div>
+                      <div className="space-y-4">
+                        <div>
                           <BrutalInput
                             placeholder="Enter your pick..."
                             value={currentPick}
-                            onChange={e => setCurrentPick(e.target.value)}
+                            onChange={e => {
+                              setCurrentPick(e.target.value)
+                              checkSimilarPick(e.target.value)
+                            }}
                             onKeyDown={e =>
                               e.key === 'Enter' && handleMakePick()
                             }
                             variant="boxed"
-                            className="w-full bg-card text-foreground text-lg py-3"
+                            className={`w-full bg-card text-foreground text-lg py-3 ${
+                              similarPick
+                                ? 'border-orange-500 dark:border-orange-400 border-2'
+                                : ''
+                            }`}
                             autoFocus
                           />
-                          <BrutalButton
-                            onClick={handleMakePick}
-                            disabled={!currentPick.trim()}
-                            variant="filled"
-                            className="w-full py-3 text-lg"
-                          >
-                            Submit Pick
-                          </BrutalButton>
+                          {similarPick && (
+                            <div className="mt-2 p-3 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                              <div className="text-sm text-orange-700 dark:text-orange-300 font-medium">
+                                ⚠️ Note that "{similarPick.pick}" has already
+                                been picked by {similarPick.player}
+                              </div>
+                            </div>
+                          )}
                         </div>
+                        <BrutalButton
+                          onClick={handleMakePick}
+                          disabled={!currentPick.trim()}
+                          variant="filled"
+                          className="w-full py-3 text-lg"
+                        >
+                          Submit Pick
+                        </BrutalButton>
                       </div>
                     </div>
-                  ) : draft.draftState === 'completed' ? (
-                    <div className="border-2 border-border bg-card p-12 text-center">
-                      <p className="text-2xl font-bold mb-2 text-foreground">
-                        Draft Complete!
-                      </p>
-                      <p className="text-muted-foreground">
-                        All {picks.length} picks have been made
-                      </p>
-                    </div>
-                  ) : draft.draftState === 'active' ? (
-                    <div className="border-2 border-border border-dashed p-12 text-center">
-                      <p className="text-lg text-muted-foreground mb-2">
-                        Draft in Progress
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Waiting for{' '}
-                        {participants.find(
-                          p => p.position === draft.currentPositionOnClock
-                        )?.name || 'next player'}{' '}
-                        to pick...
-                      </p>
-                      <div className="mt-6 flex justify-center">
-                        <DraftTimer
-                          turnStartedAt={draft.turnStartedAt}
-                          secondsPerRound={parseInt(draft.secPerRound)}
-                          isPaused={draft.timerPaused}
-                          variant="compact"
-                        />
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            )}
-
-          {/* Challenge Button - Hidden for now */}
-          {/* {isJoined && 
-           currentUser && 
-           challengeTimeLeft !== null && 
-           challengeTimeLeft > 0 && 
-           draft.draftState === 'active' && (
-            <div className="py-8">
-              <div className="max-w-2xl mx-auto">
-                <div className="bg-card border-2 border-border p-8 relative overflow-hidden">
-                  <GeometricBackground variant="diagonal" opacity={0.05} />
-                  <div className="relative z-10 text-center">
-                    <div className="flex items-center justify-center gap-2 mb-6">
-                      <Clock className="w-5 h-5 text-muted-foreground" />
-                      <span className="text-sm font-medium text-muted-foreground">
-                        Challenge window: {challengeTimeLeft}s remaining
-                      </span>
-                    </div>
-                    <BrutalButton
-                      onClick={handleChallenge}
-                      variant="default"
-                      className="w-full py-3 text-lg"
-                    >
-                      Challenge Last Pick
-                    </BrutalButton>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Dispute the validity of the previous selection
+                  </div>
+                ) : draft.draftState === 'completed' ? (
+                  <div className="border-2 border-border bg-card p-12 text-center">
+                    <p className="text-2xl font-bold mb-2 text-foreground">
+                      Draft Complete!
                     </p>
+                    <p className="text-muted-foreground">
+                      All {picks.length} picks have been made
+                    </p>
+                  </div>
+                ) : draft.draftState === 'active' && justSubmittedPick ? (
+                  <div className="border-2 border-border border-dashed p-12 text-center">
+                    <p className="text-lg text-muted-foreground mb-2">
+                      Processing your pick...
+                    </p>
+                    <div className="mt-6 flex justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-muted-foreground"></div>
+                    </div>
+                  </div>
+                ) : draft.draftState === 'active' ? (
+                  <div className="border-2 border-border border-dashed p-12 text-center">
+                    <p className="text-lg text-muted-foreground mb-2">
+                      Draft in Progress
+                    </p>
+                    {isOrderFinalized ? (
+                      <>
+                        <p className="text-sm text-muted-foreground">
+                          Waiting for{' '}
+                          {participants.find(
+                            p => p.position === draft.currentPositionOnClock
+                          )?.name || 'next player'}{' '}
+                          to pick...
+                        </p>
+                        <div className="mt-6 flex justify-center">
+                          <DraftTimer
+                            turnStartedAt={draft.turnStartedAt}
+                            secondsPerRound={parseInt(draft.secPerRound)}
+                            isPaused={draft.timerPaused ?? undefined}
+                            variant="compact"
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-muted-foreground">
+                          Setting up draft order...
+                        </p>
+                        <div className="mt-6 flex justify-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-muted-foreground"></div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          }
+
+          {/* Challenge Button */}
+          {isJoined &&
+            currentUser &&
+            challengeTimeLeft !== null &&
+            challengeTimeLeft > 0 &&
+            draft.draftState === 'active' && (
+              <div className="py-8">
+                <div className="max-w-2xl mx-auto">
+                  <div className="bg-card border-2 border-border p-8 relative overflow-hidden">
+                    <GeometricBackground variant="diagonal" opacity={0.05} />
+                    <div className="relative z-10 text-center">
+                      <div className="flex items-center justify-center gap-2 mb-6">
+                        <Clock className="w-5 h-5 text-muted-foreground" />
+                        <span className="text-sm font-medium text-muted-foreground">
+                          Challenge window: {challengeTimeLeft}s remaining
+                        </span>
+                      </div>
+                      <BrutalButton
+                        onClick={handleChallenge}
+                        variant="default"
+                        className="w-full py-3 text-lg"
+                      >
+                        Challenge Last Pick
+                      </BrutalButton>
+                      <p className="text-xs text-muted-foreground mt-4">
+                        Dispute the validity of the previous selection
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )} */}
+            )}
 
           {/* Challenge Voting UI */}
           {draft.draftState === 'challenge' && currentChallenge && (
@@ -860,10 +978,35 @@ export default function DraftPage() {
                     <h2 className="text-2xl font-bold text-foreground mb-4">
                       Challenge in Progress
                     </h2>
-                    <p className="text-muted-foreground mb-6">
-                      Pick #{currentChallenge.challengedPickNumber} is being
-                      challenged
-                    </p>
+
+                    {/* Find the challenged pick */}
+                    {(() => {
+                      const challengedPick = picks.find(
+                        p =>
+                          p.pickNumber === currentChallenge.challengedPickNumber
+                      )
+                      return (
+                        <div className="mb-6">
+                          <p className="text-muted-foreground mb-2">
+                            Pick #{currentChallenge.challengedPickNumber} is
+                            being challenged
+                          </p>
+                          {challengedPick && (
+                            <div className="bg-muted p-4 rounded-lg border border-border">
+                              <div className="text-sm text-muted-foreground mb-1">
+                                Challenged Pick:
+                              </div>
+                              <div className="text-lg font-medium text-foreground">
+                                "{challengedPick.payload}"
+                              </div>
+                              <div className="text-xs text-muted-foreground mt-1">
+                                by {challengedPick.clientName}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })()}
 
                     {/* Vote Counts */}
                     {voteCounts && (
@@ -871,7 +1014,7 @@ export default function DraftPage() {
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
                             <div className="font-medium text-foreground">
-                              Valid Challenge
+                              Redo Pick
                             </div>
                             <div className="text-2xl font-bold text-green-600">
                               {voteCounts.validVotes}
@@ -879,7 +1022,7 @@ export default function DraftPage() {
                           </div>
                           <div>
                             <div className="font-medium text-foreground">
-                              Invalid Challenge
+                              Keep Pick
                             </div>
                             <div className="text-2xl font-bold text-red-600">
                               {voteCounts.invalidVotes}
@@ -905,7 +1048,7 @@ export default function DraftPage() {
                     !hasVoted ? (
                       <div className="space-y-4">
                         <p className="text-sm text-muted-foreground">
-                          Vote on whether this pick should be removed:
+                          Vote on whether this pick should be redone:
                         </p>
                         <div className="flex gap-4 justify-center">
                           <BrutalButton
@@ -913,14 +1056,14 @@ export default function DraftPage() {
                             variant="filled"
                             className="px-8 py-3"
                           >
-                            Valid Challenge
+                            Redo Pick
                           </BrutalButton>
                           <BrutalButton
                             onClick={() => handleVote(false)}
                             variant="default"
                             className="px-8 py-3"
                           >
-                            Invalid Challenge
+                            Keep Pick
                           </BrutalButton>
                         </div>
                       </div>
@@ -1122,33 +1265,49 @@ export default function DraftPage() {
           )}
 
           {/* Turn Order */}
-          {draft.draftState === 'active' && !isReloadingAfterDraftStart && (
+          {draft.draftState === 'active' && (
             <BrutalSection title="Order" contentClassName="p-4">
-              <div className="space-y-1">
-                {[...participants]
-                  .sort((a, b) => a.position! - b.position!)
-                  .map((participant, index) => {
-                    const isCurrentTurn =
-                      participant.position === draft.currentPositionOnClock
-                    return (
+              {isOrderFinalized ? (
+                <div className="space-y-1">
+                  {[...participants]
+                    .sort((a, b) => a.position! - b.position!)
+                    .map((participant, index) => {
+                      const isCurrentTurn =
+                        participant.position === draft.currentPositionOnClock
+                      return (
+                        <div
+                          key={participant.id}
+                          className={`px-3 py-2 text-sm font-medium flex items-center justify-between ${
+                            isCurrentTurn
+                              ? 'bg-accent text-accent-foreground'
+                              : 'text-muted-foreground'
+                          }`}
+                        >
+                          <span>
+                            {participant.position}. {participant.name}
+                          </span>
+                          {isCurrentTurn && (
+                            <span className="font-bold">NOW</span>
+                          )}
+                        </div>
+                      )
+                    })}
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {Array.from({ length: participants.length }).map(
+                    (_, index) => (
                       <div
-                        key={participant.id}
-                        className={`px-3 py-2 text-sm font-medium flex items-center justify-between ${
-                          isCurrentTurn
-                            ? 'bg-accent text-accent-foreground'
-                            : 'text-muted-foreground'
-                        }`}
+                        key={index}
+                        className="px-3 py-2 text-sm font-medium flex items-center justify-between text-muted-foreground"
                       >
-                        <span>
-                          {participant.position}. {participant.name}
-                        </span>
-                        {isCurrentTurn && (
-                          <span className="font-bold">NOW</span>
-                        )}
+                        <span className="animate-pulse bg-muted h-4 w-16 rounded"></span>
+                        <span className="animate-pulse bg-muted h-4 w-8 rounded"></span>
                       </div>
                     )
-                  })}
-              </div>
+                  )}
+                </div>
+              )}
             </BrutalSection>
           )}
 

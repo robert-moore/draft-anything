@@ -1,8 +1,8 @@
 import { draftsInDa, draftUsersInDa } from '@/drizzle/schema'
+import { getDraftByGuid, parseDraftGuid } from '@/lib/api/draft-guid-helpers'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
 import { getUtcNow } from '@/lib/time-utils'
-import { parseDraftId } from '@/lib/api/route-helpers'
 import { and, count, eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -20,16 +20,13 @@ export async function POST(
       )
     }
 
-    // Validate draft ID
-    const idResult = await parseDraftId({ params })
-    if (!idResult.success) return idResult.error
-    const { draftId } = idResult
+    // Validate draft GUID
+    const guidResult = await parseDraftGuid({ params })
+    if (!guidResult.success) return guidResult.error
+    const { draftGuid } = guidResult
 
     // Check if draft exists and is in setting_up state
-    const [draft] = await db
-      .select()
-      .from(draftsInDa)
-      .where(eq(draftsInDa.id, draftId))
+    const draft = await getDraftByGuid(draftGuid)
 
     if (!draft) {
       return NextResponse.json({ error: 'Draft not found' }, { status: 404 })
@@ -46,7 +43,7 @@ export async function POST(
     const [participantCount] = await db
       .select({ count: count() })
       .from(draftUsersInDa)
-      .where(eq(draftUsersInDa.draftId, draftId))
+      .where(eq(draftUsersInDa.draftId, draft.id))
 
     if (participantCount.count < 2) {
       return NextResponse.json(
@@ -61,7 +58,7 @@ export async function POST(
         userId: draftUsersInDa.userId
       })
       .from(draftUsersInDa)
-      .where(eq(draftUsersInDa.draftId, draftId))
+      .where(eq(draftUsersInDa.draftId, draft.id))
 
     // Randomize order, filtering out null userIds
     const shuffled = participants
@@ -76,7 +73,7 @@ export async function POST(
         .set({ position: i + 1 })
         .where(
           and(
-            eq(draftUsersInDa.draftId, draftId),
+            eq(draftUsersInDa.draftId, draft.id),
             eq(draftUsersInDa.userId, shuffled[i])
           )
         )
@@ -90,7 +87,7 @@ export async function POST(
       turnStartedAt: getUtcNow()
     }
 
-    await db.update(draftsInDa).set(updates).where(eq(draftsInDa.id, draftId))
+    await db.update(draftsInDa).set(updates).where(eq(draftsInDa.id, draft.id))
 
     return NextResponse.json({
       message: 'Draft started successfully',

@@ -1,5 +1,7 @@
 export interface Draft {
-  id: number
+  id: number // Internal serial ID
+  guid: string // External UUID for APIs and URLs
+  adminUserId: string | null
   name: string
   draftState:
     | 'setting_up'
@@ -12,10 +14,9 @@ export interface Draft {
   maxDrafters: number
   secPerRound: string
   numRounds: number
-  startTime: string
   currentPositionOnClock: number | null
   turnStartedAt: string | null
-  timerPaused: boolean
+  timerPaused: boolean | null
   createdAt: string
 }
 
@@ -24,6 +25,7 @@ export interface Participant {
   name: string
   position: number | null
   isReady: boolean
+  createdAt: string
 }
 
 export interface DraftPick {

@@ -3,15 +3,15 @@ import {
   draftUsersInDa,
   profilesInDa
 } from '@/drizzle/schema'
+import { parseDraftGuid } from '@/lib/api/draft-guid-helpers'
 import {
   calculateNextDrafter,
-  getCurrentPickNumber,
-  getParticipantCount,
-  getUsedPayloads,
-  updateDraftAfterPick,
-  validateAndFetchDraft
+  getCurrentPickNumberByGuid,
+  getParticipantCountByGuid,
+  getUsedPayloadsByGuid,
+  updateDraftAfterPickByGuid,
+  validateAndFetchDraftByGuid
 } from '@/lib/api/draft-helpers'
-import { parseDraftId } from '@/lib/api/route-helpers'
 import { parseJsonRequest } from '@/lib/api/validation'
 import { db } from '@/lib/db'
 import { getElapsedSeconds, getUtcNow } from '@/lib/time-utils'
@@ -29,10 +29,10 @@ export async function POST(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Validate draft ID
-    const idResult = await parseDraftId(context)
-    if (!idResult.success) return idResult.error
-    const { draftId } = idResult
+    // Validate draft GUID
+    const guidResult = await parseDraftGuid(context)
+    if (!guidResult.success) return guidResult.error
+    const { draftGuid } = guidResult
 
     // Validate request body
     const bodyResult = await parseJsonRequest(request, autoPickSchema)
@@ -40,7 +40,7 @@ export async function POST(
     const { expectedPickNumber } = bodyResult.data
 
     // Validate and fetch draft
-    const draftResult = await validateAndFetchDraft(draftId)
+    const draftResult = await validateAndFetchDraftByGuid(draftGuid)
     if (!draftResult.success) return draftResult.error
     const { draft } = draftResult
 
@@ -80,7 +80,7 @@ export async function POST(
       .from(draftUsersInDa)
       .where(
         and(
-          eq(draftUsersInDa.draftId, draftId),
+          eq(draftUsersInDa.draftId, draft.id),
           eq(draftUsersInDa.position, draft.currentPositionOnClock)
         )
       )
@@ -93,7 +93,7 @@ export async function POST(
     }
 
     // Get current pick number
-    const currentPickNumber = await getCurrentPickNumber(draftId)
+    const currentPickNumber = await getCurrentPickNumberByGuid(draftGuid)
 
     // Check if the expected pick number matches (if provided)
     if (expectedPickNumber && expectedPickNumber < currentPickNumber) {
@@ -108,14 +108,14 @@ export async function POST(
     }
 
     // Get used payloads and generate auto-pick
-    const usedPayloads = await getUsedPayloads(draftId)
+    const usedPayloads = await getUsedPayloadsByGuid(draftGuid)
     const autoPickPayload = generateAutoPick(usedPayloads)
 
     // Insert the auto-pick - database will enforce unique constraint on pickNumber
     const nowStr = getUtcNow()
     try {
       await db.insert(draftSelectionsInDa).values({
-        draftId,
+        draftId: draft.id,
         userId: currentPlayer.userId,
         pickNumber: currentPickNumber,
         payload: autoPickPayload,
@@ -141,7 +141,7 @@ export async function POST(
     }
 
     // Get participant count and calculate next drafter
-    const numParticipants = await getParticipantCount(draftId)
+    const numParticipants = await getParticipantCountByGuid(draftGuid)
     const { nextPosition, isDraftCompleted } = calculateNextDrafter(
       currentPickNumber,
       numParticipants,
@@ -149,8 +149,8 @@ export async function POST(
     )
 
     // Update draft state
-    await updateDraftAfterPick(
-      draftId,
+    await updateDraftAfterPickByGuid(
+      draftGuid,
       nextPosition,
       isDraftCompleted,
       secPerRound > 0 // only reset timer if timer is enabled

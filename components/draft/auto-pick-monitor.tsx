@@ -4,7 +4,7 @@ import { useDraftTimer } from '@/hooks/use-draft-timer'
 import { useEffect, useRef } from 'react'
 
 interface AutoPickMonitorProps {
-  draftId: number
+  draftId: string
   turnStartedAt: string | null
   secondsPerRound: number
   isMyTurn: boolean

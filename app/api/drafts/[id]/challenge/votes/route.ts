@@ -3,6 +3,7 @@ import {
   draftChallengeVotesInDa,
   draftUsersInDa
 } from '@/drizzle/schema'
+import { getDraftByGuid, parseDraftGuid } from '@/lib/api/draft-guid-helpers'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
 import { and, count, eq } from 'drizzle-orm'
@@ -18,10 +19,15 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const resolvedParams = await params
-    const draftId = parseInt(resolvedParams.id)
-    if (isNaN(draftId)) {
-      return NextResponse.json({ error: 'Invalid draft ID' }, { status: 400 })
+    // Validate draft GUID
+    const guidResult = await parseDraftGuid({ params })
+    if (!guidResult.success) return guidResult.error
+    const { draftGuid } = guidResult
+
+    // Get the draft
+    const draft = await getDraftByGuid(draftGuid)
+    if (!draft) {
+      return NextResponse.json({ error: 'Draft not found' }, { status: 404 })
     }
 
     // Get the active challenge
@@ -30,7 +36,7 @@ export async function GET(
       .from(draftChallengesInDa)
       .where(
         and(
-          eq(draftChallengesInDa.draftId, draftId),
+          eq(draftChallengesInDa.draftId, draft.id),
           eq(draftChallengesInDa.status, 'pending')
         )
       )
@@ -47,7 +53,7 @@ export async function GET(
     const totalParticipants = await db
       .select({ count: count() })
       .from(draftUsersInDa)
-      .where(eq(draftUsersInDa.draftId, draftId))
+      .where(eq(draftUsersInDa.draftId, draft.id))
 
     const eligibleVoters = totalParticipants[0].count - 1 // -1 for challenged player
 

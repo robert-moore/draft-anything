@@ -4,9 +4,10 @@ import {
   draftsInDa,
   draftUsersInDa
 } from '@/drizzle/schema'
+import { getDraftByGuid, parseDraftGuid } from '@/lib/api/draft-guid-helpers'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
-import { and, eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(
@@ -19,32 +20,27 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const resolvedParams = await params
-    const draftId = parseInt(resolvedParams.id)
-    if (isNaN(draftId)) {
-      return NextResponse.json({ error: 'Invalid draft ID' }, { status: 400 })
-    }
+    // Validate draft GUID
+    const guidResult = await parseDraftGuid({ params })
+    if (!guidResult.success) return guidResult.error
+    const { draftGuid } = guidResult
 
     // Get the draft and verify it's active
-    const draft = await db
-      .select()
-      .from(draftsInDa)
-      .where(eq(draftsInDa.id, draftId))
-      .limit(1)
+    const draft = await getDraftByGuid(draftGuid)
 
-    if (!draft.length || draft[0].draftState !== 'active') {
+    if (!draft || draft.draftState !== 'active') {
       return NextResponse.json(
         { error: 'Draft not found or not active' },
         { status: 400 }
       )
     }
 
-    // Get the most recent pick
+    // Get the most recent pick (highest pick number)
     const lastPick = await db
       .select()
       .from(draftSelectionsInDa)
-      .where(eq(draftSelectionsInDa.draftId, draftId))
-      .orderBy(draftSelectionsInDa.pickNumber)
+      .where(eq(draftSelectionsInDa.draftId, draft.id))
+      .orderBy(desc(draftSelectionsInDa.pickNumber))
       .limit(1)
 
     if (!lastPick.length) {
@@ -71,7 +67,7 @@ export async function POST(
       .from(draftUsersInDa)
       .where(
         and(
-          eq(draftUsersInDa.draftId, draftId),
+          eq(draftUsersInDa.draftId, draft.id),
           eq(draftUsersInDa.userId, user.id)
         )
       )
@@ -98,7 +94,7 @@ export async function POST(
       .from(draftChallengesInDa)
       .where(
         and(
-          eq(draftChallengesInDa.draftId, draftId),
+          eq(draftChallengesInDa.draftId, draft.id),
           eq(draftChallengesInDa.status, 'pending')
         )
       )
@@ -112,10 +108,17 @@ export async function POST(
     }
 
     // Create the challenge
+    if (!draft.id) {
+      return NextResponse.json(
+        { error: 'Invalid draft state' },
+        { status: 500 }
+      )
+    }
+
     const [challenge] = await db
       .insert(draftChallengesInDa)
       .values({
-        draftId,
+        draftId: Number(draft.id),
         challengedPickNumber: pickToChallenge.pickNumber,
         challengedUserId: pickToChallenge.userId,
         challengerUserId: user.id,
@@ -127,7 +130,7 @@ export async function POST(
     await db
       .update(draftsInDa)
       .set({ draftState: 'challenge' })
-      .where(eq(draftsInDa.id, draftId))
+      .where(eq(draftsInDa.id, draft.id))
 
     return NextResponse.json({ challenge })
   } catch (error) {
@@ -149,10 +152,15 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const resolvedParams = await params
-    const draftId = parseInt(resolvedParams.id)
-    if (isNaN(draftId)) {
-      return NextResponse.json({ error: 'Invalid draft ID' }, { status: 400 })
+    // Validate draft GUID
+    const guidResult = await parseDraftGuid({ params })
+    if (!guidResult.success) return guidResult.error
+    const { draftGuid } = guidResult
+
+    // Get the draft
+    const draft = await getDraftByGuid(draftGuid)
+    if (!draft) {
+      return NextResponse.json({ error: 'Draft not found' }, { status: 404 })
     }
 
     // Get active challenge for this draft
@@ -161,7 +169,7 @@ export async function GET(
       .from(draftChallengesInDa)
       .where(
         and(
-          eq(draftChallengesInDa.draftId, draftId),
+          eq(draftChallengesInDa.draftId, draft.id),
           eq(draftChallengesInDa.status, 'pending')
         )
       )

@@ -1,9 +1,6 @@
-import { draftsInDa } from '@/drizzle/schema'
+import { getDraftByGuid, parseDraftGuid } from '@/lib/api/draft-guid-helpers'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
-import { db } from '@/lib/db'
-import { parseDraftId } from '@/lib/api/route-helpers'
 import { getAppUrl } from '@/lib/utils/get-app-url'
-import { eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(
@@ -20,16 +17,13 @@ export async function POST(
       )
     }
 
-    // Validate draft ID
-    const idResult = await parseDraftId({ params })
-    if (!idResult.success) return idResult.error
-    const { draftId } = idResult
+    // Validate draft GUID
+    const guidResult = await parseDraftGuid({ params })
+    if (!guidResult.success) return guidResult.error
+    const { draftGuid } = guidResult
 
     // Check if draft exists
-    const [draft] = await db
-      .select()
-      .from(draftsInDa)
-      .where(eq(draftsInDa.id, draftId))
+    const draft = await getDraftByGuid(draftGuid)
 
     if (!draft) {
       return NextResponse.json({ error: 'Draft not found' }, { status: 404 })
@@ -37,11 +31,11 @@ export async function POST(
 
     // For now, just return the direct link
     // In the future, you could add invite tokens to the database
-    const inviteLink = `${getAppUrl()}/drafts/${draftId}`
+    const inviteLink = `${getAppUrl()}/drafts/${draftGuid}`
 
     return NextResponse.json({
       inviteLink,
-      draftId,
+      draftId: draft.id,
       draftName: draft.name
     })
   } catch (error) {

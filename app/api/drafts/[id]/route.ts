@@ -1,12 +1,11 @@
 import {
   draftSelectionsInDa,
-  draftsInDa,
   draftUsersInDa,
   profilesInDa
 } from '@/drizzle/schema'
+import { getDraftByGuid, parseDraftGuid } from '@/lib/api/draft-guid-helpers'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
-import { parseDraftId } from '@/lib/api/route-helpers'
 import { eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -24,16 +23,13 @@ export async function GET(
       )
     }
 
-    // Validate draft ID
-    const idResult = await parseDraftId({ params })
-    if (!idResult.success) return idResult.error
-    const { draftId } = idResult
+    // Validate draft GUID
+    const guidResult = await parseDraftGuid({ params })
+    if (!guidResult.success) return guidResult.error
+    const { draftGuid } = guidResult
 
-    // Get draft details
-    const [draft] = await db
-      .select()
-      .from(draftsInDa)
-      .where(eq(draftsInDa.id, draftId))
+    // Get draft details by GUID
+    const draft = await getDraftByGuid(draftGuid)
 
     if (!draft) {
       return NextResponse.json({ error: 'Draft not found' }, { status: 404 })
@@ -52,7 +48,7 @@ export async function GET(
       })
       .from(draftUsersInDa)
       .innerJoin(profilesInDa, eq(draftUsersInDa.userId, profilesInDa.id))
-      .where(eq(draftUsersInDa.draftId, draftId))
+      .where(eq(draftUsersInDa.draftId, draft.id))
 
     // Get draft picks with user names in a single query
     const picksQuery = await db
@@ -67,7 +63,7 @@ export async function GET(
       })
       .from(draftSelectionsInDa)
       .innerJoin(profilesInDa, eq(draftSelectionsInDa.userId, profilesInDa.id))
-      .where(eq(draftSelectionsInDa.draftId, draftId))
+      .where(eq(draftSelectionsInDa.draftId, draft.id))
 
     // Transform picks to include clientId and clientName for backward compatibility
     const picks = picksQuery.map(pick => ({

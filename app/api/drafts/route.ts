@@ -1,7 +1,8 @@
 import { draftsInDa } from '@/drizzle/schema'
+import { parseJsonRequest } from '@/lib/api/validation'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
-import { parseJsonRequest } from '@/lib/api/validation'
+import { randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -28,11 +29,13 @@ export async function POST(req: NextRequest) {
     // Validate request body
     const bodyResult = await parseJsonRequest(req, createDraftSchema)
     if (!bodyResult.success) return bodyResult.error
-    const { name, draftState, maxDrafters, secPerRound, numRounds } = bodyResult.data
+    const { name, draftState, maxDrafters, secPerRound, numRounds } =
+      bodyResult.data
 
     const [newDraft] = await db
       .insert(draftsInDa)
       .values({
+        guid: randomUUID(),
         name,
         adminUserId: user.id,
         draftState: draftState || 'setting_up',

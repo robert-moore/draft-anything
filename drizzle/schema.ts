@@ -23,27 +23,6 @@ export const draftStateInDa = da.enum('draft_state', [
   'challenge'
 ])
 
-export const draftSelectionsInDa = da.table(
-  'draft_selections',
-  {
-    draftId: integer('draft_id'),
-    userId: uuid('user_id'),
-    pickNumber: smallint('pick_number').notNull(),
-    createdAt: timestamp('created_at', { mode: 'string' }).notNull(),
-    payload: text().notNull(),
-    wasAutoPick: boolean('was_auto_pick').default(false),
-    timeTakenSeconds: numeric('time_taken_seconds')
-  },
-  table => [
-    foreignKey({
-      columns: [table.userId],
-      foreignColumns: [profilesInDa.id],
-      name: 'draft_selections_user_id_fkey'
-    }),
-    unique('unique_draft_pick_number').on(table.draftId, table.pickNumber)
-  ]
-)
-
 export const profilesInDa = da.table('profiles', {
   id: uuid().primaryKey().notNull(),
   name: text().notNull(),
@@ -52,6 +31,7 @@ export const profilesInDa = da.table('profiles', {
 
 export const draftsInDa = da.table('drafts', {
   id: serial().primaryKey().notNull(),
+  guid: uuid('guid').notNull().unique(),
   adminUserId: uuid('admin_user_id'),
   name: text().notNull(),
   draftState: draftStateInDa('draft_state').notNull(),
@@ -76,6 +56,11 @@ export const draftUsersInDa = da.table(
   },
   table => [
     foreignKey({
+      columns: [table.draftId],
+      foreignColumns: [draftsInDa.id],
+      name: 'draft_users_draft_id_fkey'
+    }),
+    foreignKey({
       columns: [table.userId],
       foreignColumns: [profilesInDa.id],
       name: 'draft_users_user_id_fkey'
@@ -83,27 +68,29 @@ export const draftUsersInDa = da.table(
   ]
 )
 
-export const draftChallengeVotesInDa = da.table(
-  'draft_challenge_votes',
+export const draftSelectionsInDa = da.table(
+  'draft_selections',
   {
-    id: serial().primaryKey().notNull(),
-    challengeId: integer('challenge_id').notNull(),
-    voterUserId: uuid('voter_user_id').notNull(),
-    vote: boolean().notNull(), // true = valid challenge, false = invalid
-    createdAt: timestamp('created_at', { mode: 'string' }).notNull()
+    draftId: integer('draft_id'),
+    userId: uuid('user_id'),
+    pickNumber: smallint('pick_number').notNull(),
+    createdAt: timestamp('created_at', { mode: 'string' }).notNull(),
+    payload: text().notNull(),
+    wasAutoPick: boolean('was_auto_pick').default(false),
+    timeTakenSeconds: numeric('time_taken_seconds')
   },
   table => [
     foreignKey({
-      columns: [table.challengeId],
-      foreignColumns: [draftChallengesInDa.id],
-      name: 'draft_challenge_votes_challenge_id_fkey'
+      columns: [table.draftId],
+      foreignColumns: [draftsInDa.id],
+      name: 'draft_selections_draft_id_fkey'
     }),
     foreignKey({
-      columns: [table.voterUserId],
+      columns: [table.userId],
       foreignColumns: [profilesInDa.id],
-      name: 'draft_challenge_votes_voter_user_id_fkey'
+      name: 'draft_selections_user_id_fkey'
     }),
-    unique('unique_challenge_vote').on(table.challengeId, table.voterUserId)
+    unique('unique_draft_pick_number').on(table.draftId, table.pickNumber)
   ]
 )
 
@@ -135,5 +122,29 @@ export const draftChallengesInDa = da.table(
       foreignColumns: [profilesInDa.id],
       name: 'draft_challenges_challenger_user_id_fkey'
     })
+  ]
+)
+
+export const draftChallengeVotesInDa = da.table(
+  'draft_challenge_votes',
+  {
+    id: serial().primaryKey().notNull(),
+    challengeId: integer('challenge_id').notNull(),
+    voterUserId: uuid('voter_user_id').notNull(),
+    vote: boolean().notNull(), // true = valid challenge, false = invalid
+    createdAt: timestamp('created_at', { mode: 'string' }).notNull()
+  },
+  table => [
+    foreignKey({
+      columns: [table.challengeId],
+      foreignColumns: [draftChallengesInDa.id],
+      name: 'draft_challenge_votes_challenge_id_fkey'
+    }),
+    foreignKey({
+      columns: [table.voterUserId],
+      foreignColumns: [profilesInDa.id],
+      name: 'draft_challenge_votes_voter_user_id_fkey'
+    }),
+    unique('unique_challenge_vote').on(table.challengeId, table.voterUserId)
   ]
 )

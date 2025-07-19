@@ -31,27 +31,26 @@ export default function NewDraftPage() {
     try {
       const response = await fetch('/api/drafts', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name,
           maxDrafters,
-          secPerRound: timerMode === 'untimed' ? 0 : secPerRound,
+          secPerRound,
           numRounds
         })
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to create draft')
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to create draft')
       }
 
-      const data = await response.json()
+      const { draft } = await response.json()
 
-      router.push(`/drafts/${data.draft.id}`)
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'An error occurred')
+      // Redirect to the draft using the GUID
+      router.push(`/drafts/${draft.guid}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create draft')
     } finally {
       setIsLoading(false)
     }
@@ -132,7 +131,7 @@ export default function NewDraftPage() {
                   <div className="grid grid-cols-2 gap-6">
                     <NumberInput
                       id="maxDrafters"
-                      label="Players"
+                      label="Max Players"
                       value={maxDrafters}
                       onChange={setMaxDrafters}
                       min={2}

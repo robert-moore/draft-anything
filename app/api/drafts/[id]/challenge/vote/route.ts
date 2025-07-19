@@ -5,6 +5,7 @@ import {
   draftsInDa,
   draftUsersInDa
 } from '@/drizzle/schema'
+import { getDraftByGuid, parseDraftGuid } from '@/lib/api/draft-guid-helpers'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
 import { and, count, eq } from 'drizzle-orm'
@@ -20,15 +21,20 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const resolvedParams = await params
-    const draftId = parseInt(resolvedParams.id)
-    if (isNaN(draftId)) {
-      return NextResponse.json({ error: 'Invalid draft ID' }, { status: 400 })
-    }
+    // Validate draft GUID
+    const guidResult = await parseDraftGuid({ params })
+    if (!guidResult.success) return guidResult.error
+    const { draftGuid } = guidResult
 
     const { vote } = await request.json()
     if (typeof vote !== 'boolean') {
       return NextResponse.json({ error: 'Invalid vote value' }, { status: 400 })
+    }
+
+    // Get the draft
+    const draft = await getDraftByGuid(draftGuid)
+    if (!draft) {
+      return NextResponse.json({ error: 'Draft not found' }, { status: 404 })
     }
 
     // Get the active challenge
@@ -37,7 +43,7 @@ export async function POST(
       .from(draftChallengesInDa)
       .where(
         and(
-          eq(draftChallengesInDa.draftId, draftId),
+          eq(draftChallengesInDa.draftId, draft.id),
           eq(draftChallengesInDa.status, 'pending')
         )
       )
@@ -56,7 +62,7 @@ export async function POST(
       .from(draftUsersInDa)
       .where(
         and(
-          eq(draftUsersInDa.draftId, draftId),
+          eq(draftUsersInDa.draftId, draft.id),
           eq(draftUsersInDa.userId, user.id)
         )
       )
@@ -105,7 +111,7 @@ export async function POST(
     const totalParticipants = await db
       .select({ count: count() })
       .from(draftUsersInDa)
-      .where(eq(draftUsersInDa.draftId, draftId))
+      .where(eq(draftUsersInDa.draftId, draft.id))
 
     const totalVotes = await db
       .select({ count: count() })
@@ -148,7 +154,7 @@ export async function POST(
           .delete(draftSelectionsInDa)
           .where(
             and(
-              eq(draftSelectionsInDa.draftId, draftId),
+              eq(draftSelectionsInDa.draftId, draft.id),
               eq(draftSelectionsInDa.pickNumber, challenge.challengedPickNumber)
             )
           )
@@ -159,26 +165,27 @@ export async function POST(
           .from(draftUsersInDa)
           .where(
             and(
-              eq(draftUsersInDa.draftId, draftId),
+              eq(draftUsersInDa.draftId, draft.id),
               eq(draftUsersInDa.userId, challenge.challengedUserId)
             )
           )
           .limit(1)
 
-        // Set the draft back to the challenged player's turn
+        // Set the draft back to the challenged player's turn and restart timer
         await db
           .update(draftsInDa)
           .set({
             draftState: 'active',
-            currentPositionOnClock: challengedPlayer?.position || 1
+            currentPositionOnClock: challengedPlayer?.position || 1,
+            turnStartedAt: new Date().toISOString() // Restart timer for redo
           })
-          .where(eq(draftsInDa.id, draftId))
+          .where(eq(draftsInDa.id, draft.id))
       } else {
         // Challenge failed, continue to next player
         await db
           .update(draftsInDa)
           .set({ draftState: 'active' })
-          .where(eq(draftsInDa.id, draftId))
+          .where(eq(draftsInDa.id, draft.id))
       }
     }
 
