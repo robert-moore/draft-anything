@@ -7,6 +7,7 @@ import {
 import { getDraftByGuid, parseDraftGuid } from '@/lib/api/draft-guid-helpers'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
+import { getUtcNow } from '@/lib/time-utils'
 import { and, desc, eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -122,7 +123,8 @@ export async function POST(
         challengedPickNumber: pickToChallenge.pickNumber,
         challengedUserId: pickToChallenge.userId,
         challengerUserId: user.id,
-        status: 'pending'
+        status: 'pending',
+        createdAt: getUtcNow()
       })
       .returning()
 
@@ -179,7 +181,37 @@ export async function GET(
       return NextResponse.json({ challenge: null })
     }
 
-    return NextResponse.json({ challenge: challenge[0] })
+    // Get the challenger's name
+    const [challenger] = await db
+      .select({ name: draftUsersInDa.draftUsername })
+      .from(draftUsersInDa)
+      .where(
+        and(
+          eq(draftUsersInDa.draftId, draft.id),
+          eq(draftUsersInDa.userId, challenge[0].challengerUserId)
+        )
+      )
+      .limit(1)
+
+    // Get the challenged user's name
+    const [challengedUser] = await db
+      .select({ name: draftUsersInDa.draftUsername })
+      .from(draftUsersInDa)
+      .where(
+        and(
+          eq(draftUsersInDa.draftId, draft.id),
+          eq(draftUsersInDa.userId, challenge[0].challengedUserId)
+        )
+      )
+      .limit(1)
+
+    const challengeWithNames = {
+      ...challenge[0],
+      challengerName: challenger?.name || 'Unknown',
+      challengedUserName: challengedUser?.name || 'Unknown'
+    }
+
+    return NextResponse.json({ challenge: challengeWithNames })
   } catch (error) {
     console.error('Challenge retrieval error:', error)
     return NextResponse.json(

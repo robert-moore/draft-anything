@@ -13,7 +13,7 @@ import { GeometricBackground } from '@/components/ui/geometric-background'
 import { NumberBox } from '@/components/ui/number-box'
 import { createClient } from '@/lib/supabase/client'
 import type { Draft, DraftPick, Participant } from '@/types/draft'
-import { AlertCircle, Clock } from 'lucide-react'
+import { AlertCircle, Clock, Share } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
@@ -53,6 +53,7 @@ export default function DraftPage() {
   } | null>(null)
   const [justSubmittedPick, setJustSubmittedPick] = useState(false)
   const [isOrderFinalized, setIsOrderFinalized] = useState(false)
+  const [showLoading, setShowLoading] = useState(true)
 
   const participantsRef = useRef<Participant[]>([])
 
@@ -148,10 +149,16 @@ export default function DraftPage() {
       if (data.draft.draftState !== 'setting_up') {
         setIsOrderFinalized(true)
       }
+
+      // Ensure loading animation completes before hiding loading state
+      setTimeout(() => {
+        setIsLoading(false)
+        setShowLoading(false)
+      }, 1000)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load draft')
-    } finally {
       setIsLoading(false)
+      setShowLoading(false)
     }
   }
 
@@ -442,6 +449,22 @@ export default function DraftPage() {
       if (!response.ok) throw new Error('Failed to join draft')
 
       const newParticipant = await response.json()
+
+      // Immediately add the new participant to local state
+      setParticipants(prev => {
+        if (prev.some(p => p.id === newParticipant.id)) return prev
+        return [
+          ...prev,
+          {
+            id: newParticipant.id,
+            name: newParticipant.name,
+            position: newParticipant.position,
+            isReady: newParticipant.isReady,
+            createdAt: newParticipant.createdAt
+          }
+        ]
+      })
+
       setIsJoined(true)
       setPlayerName('')
     } catch (err) {
@@ -601,7 +624,7 @@ export default function DraftPage() {
     }
   }
 
-  if (isLoading) {
+  if (showLoading) {
     return (
       <div className="min-h-screen bg-background">
         <div className="flex items-center justify-center py-32">
@@ -614,12 +637,34 @@ export default function DraftPage() {
               <div className="font-mono text-lg font-bold mb-4 text-foreground">
                 Loading draft data...
               </div>
-              <div className="text-sm opacity-70">
-                {'[' + '█'.repeat(10) + '▒'.repeat(20) + '] 33%'}
+              <div className="w-full bg-muted h-2 border-2 border-border mb-2 overflow-hidden">
+                <div
+                  className="bg-foreground h-full transition-all duration-1000 ease-out"
+                  style={{
+                    width: '0%',
+                    animation: 'progressBar 1s ease-out forwards'
+                  }}
+                ></div>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Connecting to draft server
               </div>
             </div>
           </BrutalSection>
         </div>
+        <style jsx>{`
+          @keyframes progressBar {
+            0% {
+              width: 0%;
+            }
+            50% {
+              width: 40%;
+            }
+            100% {
+              width: 100%;
+            }
+          }
+        `}</style>
       </div>
     )
   }
@@ -722,18 +767,18 @@ export default function DraftPage() {
               </h1>
               <NumberBox
                 number={stateInfo.label}
-                size="sm"
+                size="md"
                 variant={stateInfo.variant}
-                className="px-4"
+                className="px-8"
               />
               {/* Mobile Share Button - Only visible on small screens */}
               <div className="lg:hidden ml-auto">
                 <BrutalButton
                   variant="default"
                   onClick={handleShareDraft}
-                  className="text-sm px-4 py-2"
+                  className="text-sm px-3 py-2"
                 >
-                  Share Draft
+                  <Share className="w-4 h-4" />
                 </BrutalButton>
               </div>
             </div>
@@ -743,6 +788,12 @@ export default function DraftPage() {
                   <span className="font-bold text-foreground">PLAYERS</span>
                   <span className="font-mono text-foreground">
                     {participants.length}/{draft.maxDrafters}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-foreground">ROUNDS</span>
+                  <span className="font-mono text-foreground">
+                    {draft.numRounds}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1003,7 +1054,8 @@ export default function DraftPage() {
                         <div className="mb-6">
                           <p className="text-muted-foreground mb-2">
                             Pick #{currentChallenge.challengedPickNumber} is
-                            being challenged
+                            being challenged by{' '}
+                            {currentChallenge.challengerName || 'Unknown'}
                           </p>
                           {challengedPick && (
                             <div className="bg-muted p-4 rounded-lg border border-border">

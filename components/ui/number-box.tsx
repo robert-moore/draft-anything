@@ -16,17 +16,15 @@ export function NumberBox({
   className
 }: NumberBoxProps) {
   const sizeClasses = {
-    xs: 'min-w-[1.25rem] h-5 text-xs px-1',
-    sm: 'min-w-[1.5rem] h-6 text-xs px-2',
-    md: 'min-w-[2rem] h-8 text-sm px-3',
-    lg: 'min-w-[2.5rem] h-10 text-base px-4'
+    xs: 'w-[1.25rem] h-5 text-xs px-1',
+    sm: 'w-[2rem] h-6 text-xs px-2',
+    md: 'w-[2.5rem] h-8 text-sm px-3',
+    lg: 'w-[3rem] h-10 text-base px-4'
   }
 
   const variantClasses = {
-    default:
-      'border-2 border-border bg-card text-foreground',
-    filled:
-      'border-2 border-border bg-accent text-accent-foreground',
+    default: 'border-2 border-border bg-card text-foreground',
+    filled: 'border-2 border-border bg-accent text-accent-foreground',
     minimal: 'bg-transparent text-foreground'
   }
 
