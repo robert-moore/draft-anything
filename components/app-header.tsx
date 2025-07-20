@@ -103,8 +103,8 @@ export function AppHeader() {
             <ThemeToggle />
             <Link href="/new">
               <BrutalistButton variant="primary" className="px-4 py-2">
-                <Plus className="w-4 h-4 mr-2" />
-                New Draft
+                <Plus className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">New Draft</span>
               </BrutalistButton>
             </Link>
 
