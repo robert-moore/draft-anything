@@ -109,6 +109,11 @@ export default function NewDraftPage() {
               Draft Settings
             </h2>
 
+            <div className="text-base text-muted-foreground mb-6">
+              This is a snake draft - the order will be randomized when the
+              draft starts.
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Topic Input */}
               <div>
