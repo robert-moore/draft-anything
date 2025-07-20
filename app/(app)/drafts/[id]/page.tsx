@@ -1,6 +1,7 @@
 'use client'
 
 import { AutoPickMonitor } from '@/components/draft/auto-pick-monitor'
+import { ChallengeWindowTimer } from '@/components/draft/challenge-window-timer'
 import { DraftMetadata } from '@/components/draft/draft-metadata'
 import { DraftPickGrid } from '@/components/draft/draft-pick-grid'
 import { DraftTimer } from '@/components/draft/draft-timer'
@@ -337,6 +338,14 @@ export default function DraftPage() {
               setCurrentChallenge(null)
               setHasVoted(false)
               await loadDraft()
+            } else if (updatedState === 'challenge_window') {
+              // Entered challenge window, no action needed as timer will handle
+            } else if (
+              prevState === 'challenge_window' &&
+              updatedState === 'completed'
+            ) {
+              // Challenge window ended, draft completed
+              await loadDraft()
             }
           }
         )
@@ -613,6 +622,11 @@ export default function DraftPage() {
           label: 'LIVE',
           variant: 'filled' as const
         }
+      case 'challenge_window':
+        return {
+          label: 'FINISHING',
+          variant: 'filled' as const
+        }
       case 'completed':
         return {
           label: 'DONE',
@@ -734,6 +748,24 @@ export default function DraftPage() {
   const getCurrentRoundInfo = () => {
     const totalPicks = picks.length
     const picksPerRound = participants.length
+
+    // During challenge window, show the last pick that was made
+    if (draft.draftState === 'challenge_window') {
+      const lastPickNumber = totalPicks
+      const lastPickRound = Math.min(
+        draft.numRounds,
+        Math.floor((lastPickNumber - 1) / picksPerRound) + 1
+      )
+      const lastPickInRound = ((lastPickNumber - 1) % picksPerRound) + 1
+
+      return {
+        currentRound: lastPickRound,
+        pickInRound: lastPickInRound,
+        totalPicks
+      }
+    }
+
+    // Normal calculation for next pick
     const currentRound = Math.min(
       draft.numRounds,
       Math.floor(totalPicks / picksPerRound) + 1
@@ -811,12 +843,12 @@ export default function DraftPage() {
                 number={stateInfo.label}
                 size="md"
                 variant={stateInfo.variant}
-                className="px-8"
+                className="px-8 w-auto min-w-[6rem]"
               />
               {/* Mobile Share Button - Only visible on small screens */}
               <div className="lg:hidden ml-auto">
                 <BrutalButton
-                  variant="default"
+                  variant="text"
                   onClick={handleShareDraft}
                   className="text-sm px-3 py-2"
                 >
@@ -860,6 +892,36 @@ export default function DraftPage() {
               />
             )}
           </div>
+
+          {/* Challenge Window Timer - Only for person who made the last pick */}
+          {draft.draftState === 'challenge_window' &&
+            draft.turnStartedAt &&
+            picks.length > 0 &&
+            picks[picks.length - 1]?.clientId === currentUser?.id && (
+              <div className="py-8">
+                <ChallengeWindowTimer
+                  startTime={draft.turnStartedAt}
+                  durationSeconds={30}
+                  isLastPickByCurrentUser={true}
+                  onTimeout={async () => {
+                    try {
+                      const response = await fetch(
+                        `/api/drafts/${draftId}/end-challenge-window`,
+                        {
+                          method: 'POST'
+                        }
+                      )
+                      if (!response.ok) {
+                        console.error('Failed to end challenge window')
+                      }
+                    } catch (error) {
+                      console.error('Error ending challenge window:', error)
+                    }
+                  }}
+                />
+              </div>
+            )}
+
           {/* Join Draft */}
           {!isJoined && draft.draftState === 'setting_up' && (
             <div className="py-8">
@@ -907,25 +969,31 @@ export default function DraftPage() {
             )}
 
           {/* Current Pick - Primary Focus Area */}
-          {
+          {draft.draftState === 'completed' && picks.length > 0 && (
             <div className="py-8">
               <div className="max-w-2xl mx-auto">
-                {draft.draftState === 'completed' && picks.length > 0 ? (
-                  <div className="border-2 border-border bg-card p-12 text-center">
-                    <p className="text-2xl font-bold mb-2 text-foreground">
-                      Draft Complete!
-                    </p>
-                    <p className="text-muted-foreground">
-                      All {picks.length} picks have been made
-                    </p>
-                  </div>
-                ) : draft.draftState === 'active' &&
-                  isJoined &&
-                  currentUser &&
-                  isOrderFinalized &&
-                  participants.find(p => p.id === currentUser?.id)?.position ===
-                    draft.currentPositionOnClock &&
-                  !justSubmittedPick ? (
+                <div className="border-2 border-border bg-card p-12 text-center">
+                  <p className="text-2xl font-bold mb-2 text-foreground">
+                    Draft Complete!
+                  </p>
+                  <p className="text-muted-foreground">
+                    All {picks.length} picks have been made
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Active Pick Input */}
+          {draft.draftState === 'active' &&
+            isJoined &&
+            currentUser &&
+            isOrderFinalized &&
+            participants.find(p => p.id === currentUser?.id)?.position ===
+              draft.currentPositionOnClock &&
+            !justSubmittedPick && (
+              <div className="py-8">
+                <div className="max-w-2xl mx-auto">
                   <div className="bg-card border-2 border-border p-8 relative overflow-hidden">
                     <GeometricBackground variant="diagonal" opacity={0.05} />
                     <div className="relative z-10">
@@ -995,25 +1063,36 @@ export default function DraftPage() {
                       </div>
                     </div>
                   </div>
-                ) : draft.draftState === 'completed' ? (
-                  <div className="border-2 border-border bg-card p-12 text-center">
-                    <p className="text-2xl font-bold mb-2 text-foreground">
-                      Draft Complete!
-                    </p>
-                    <p className="text-muted-foreground">
-                      All {picks.length} picks have been made
-                    </p>
+                </div>
+              </div>
+            )}
+
+          {/* Processing Pick */}
+          {draft.draftState === 'active' && justSubmittedPick && (
+            <div className="py-8">
+              <div className="max-w-2xl mx-auto">
+                <div className="border-2 border-border border-dashed p-12 text-center">
+                  <p className="text-lg text-muted-foreground mb-2">
+                    Processing your pick...
+                  </p>
+                  <div className="mt-6 flex justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-muted-foreground"></div>
                   </div>
-                ) : draft.draftState === 'active' && justSubmittedPick ? (
-                  <div className="border-2 border-border border-dashed p-12 text-center">
-                    <p className="text-lg text-muted-foreground mb-2">
-                      Processing your pick...
-                    </p>
-                    <div className="mt-6 flex justify-center">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-muted-foreground"></div>
-                    </div>
-                  </div>
-                ) : draft.draftState === 'active' ? (
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Waiting for Other Players */}
+          {draft.draftState === 'active' &&
+            !justSubmittedPick &&
+            (!isJoined ||
+              !currentUser ||
+              !isOrderFinalized ||
+              participants.find(p => p.id === currentUser?.id)?.position !==
+                draft.currentPositionOnClock) && (
+              <div className="py-8">
+                <div className="max-w-2xl mx-auto">
                   <div className="border-2 border-border border-dashed p-12 text-center">
                     <p className="text-lg text-muted-foreground mb-2">
                       Draft in Progress
@@ -1047,29 +1126,41 @@ export default function DraftPage() {
                       </>
                     )}
                   </div>
-                ) : null}
+                </div>
               </div>
-            </div>
-          }
+            )}
 
           {/* Challenge Button */}
           {isJoined &&
             currentUser &&
             challengeTimeLeft !== null &&
             challengeTimeLeft > 0 &&
-            draft.draftState === 'active' &&
+            (draft.draftState === 'active' ||
+              draft.draftState === 'challenge_window') &&
             draft.isFreeform && (
               <div className="py-8">
                 <div className="max-w-2xl mx-auto">
                   <div className="bg-card border-2 border-border p-8 relative overflow-hidden">
                     <GeometricBackground variant="diagonal" opacity={0.05} />
                     <div className="relative z-10 text-center">
-                      <div className="flex items-center justify-center gap-2 mb-6">
-                        <Clock className="w-5 h-5 text-muted-foreground" />
-                        <span className="text-sm font-medium text-muted-foreground">
-                          Challenge window: {challengeTimeLeft}s remaining
-                        </span>
-                      </div>
+                      {draft.draftState === 'challenge_window' && (
+                        <>
+                          <div className="flex items-center justify-center gap-2 mb-4">
+                            <Clock className="w-5 h-5 text-muted-foreground" />
+                            <span className="text-sm font-medium text-muted-foreground">
+                              Challenge window: {challengeTimeLeft}s remaining
+                            </span>
+                          </div>
+                          <div className="w-full bg-muted h-2 border-2 border-border mb-6 overflow-hidden">
+                            <div
+                              className="bg-primary h-full transition-all duration-1000 ease-linear"
+                              style={{
+                                width: `${(challengeTimeLeft / 30) * 100}%`
+                              }}
+                            />
+                          </div>
+                        </>
+                      )}
                       <BrutalButton
                         onClick={handleChallenge}
                         variant="default"

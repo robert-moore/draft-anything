@@ -29,7 +29,10 @@ export async function POST(
     // Get the draft and verify it's active
     const draft = await getDraftByGuid(draftGuid)
 
-    if (!draft || draft.draftState !== 'active') {
+    if (
+      !draft ||
+      (draft.draftState !== 'active' && draft.draftState !== 'challenge_window')
+    ) {
       return NextResponse.json(
         { error: 'Draft not found or not active' },
         { status: 400 }

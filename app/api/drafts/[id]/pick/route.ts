@@ -1,6 +1,7 @@
 import {
   draftCuratedOptionsInDa,
   draftSelectionsInDa,
+  draftsInDa,
   profilesInDa
 } from '@/drizzle/schema'
 import { parseDraftGuid } from '@/lib/api/draft-guid-helpers'
@@ -144,13 +145,29 @@ export async function POST(
       draft.numRounds
     )
 
-    // Update draft state (always reset timer for next player)
-    await updateDraftAfterPickByGuid(
-      draftGuid,
-      nextPosition,
-      isDraftCompleted,
-      true
-    )
+    // Check if this is the last pick and we should enter challenge window
+    const shouldEnterChallengeWindow = isDraftCompleted && draft.isFreeform
+
+    // Update draft state
+    if (shouldEnterChallengeWindow) {
+      // Enter challenge window instead of completing immediately
+      await db
+        .update(draftsInDa)
+        .set({
+          currentPositionOnClock: null,
+          draftState: 'challenge_window',
+          turnStartedAt: getUtcNow() // Use this to track challenge window start time
+        })
+        .where(eq(draftsInDa.guid, draftGuid))
+    } else {
+      // Normal pick flow
+      await updateDraftAfterPickByGuid(
+        draftGuid,
+        nextPosition,
+        isDraftCompleted,
+        true
+      )
+    }
 
     // Get profile name
     const [profile] = await db

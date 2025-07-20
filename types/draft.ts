@@ -11,6 +11,7 @@ export interface Draft {
     | 'paused'
     | 'canceled'
     | 'challenge'
+    | 'challenge_window'
   maxDrafters: number
   secPerRound: string
   numRounds: number

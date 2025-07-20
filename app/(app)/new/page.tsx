@@ -101,7 +101,7 @@ export default function NewDraftPage() {
         subtitle="Turn any topic into a ranking"
       />
 
-      <div className="px-6 py-12 bg-background">
+      <div className="px-6 pb-12 bg-background">
         <div className="max-w-3xl mx-auto">
           {/* Core Form */}
           <div className="border-2 border-border bg-card p-8 mb-8">
@@ -191,7 +191,7 @@ export default function NewDraftPage() {
                     </div>
 
                     {selectionType === 'curated' && (
-                      <div className="space-y-3">
+                      <div className="space-y-2">
                         <Label
                           htmlFor="curatedOptions"
                           className="text-sm font-bold"
@@ -296,7 +296,7 @@ export default function NewDraftPage() {
                             label="Seconds per pick"
                             value={secPerRound}
                             onChange={setSecPerRound}
-                            min={5}
+                            min={30}
                             max={300}
                           />
                         </div>

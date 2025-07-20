@@ -20,7 +20,8 @@ export const draftStateInDa = da.enum('draft_state', [
   'errored',
   'paused',
   'canceled',
-  'challenge'
+  'challenge',
+  'challenge_window'
 ])
 
 export const profilesInDa = da.table('profiles', {
