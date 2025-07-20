@@ -7,7 +7,7 @@ import { NumberBox } from './number-box'
 interface BrutalListItemProps {
   number: number | string
   children: ReactNode
-  variant?: 'default' | 'minimal' | 'empty' | 'active'
+  variant?: 'default' | 'minimal' | 'empty' | 'active' | 'highlighted'
   onClick?: () => void
   className?: string
   disabled?: boolean
@@ -22,13 +22,12 @@ export function BrutalListItem({
   disabled = false
 }: BrutalListItemProps) {
   const variantClasses = {
-    default:
-      'border-2 border-border bg-card text-foreground hover:bg-muted',
-    minimal: 'bg-card text-foreground',
-    empty:
-      'border-2 border-border border-dashed bg-muted',
-    active:
-      'border-2 border-border bg-accent text-accent-foreground'
+    default: 'border-2 border-border bg-card text-foreground hover:bg-muted',
+    minimal: 'bg-background text-foreground',
+    empty: 'border-2 border-border border-dashed bg-muted',
+    active: 'border-2 border-border bg-accent text-accent-foreground',
+    highlighted:
+      'border-2 border-border bg-primary/20 text-foreground hover:bg-primary/30'
   }
 
   const Component = onClick ? 'button' : 'div'

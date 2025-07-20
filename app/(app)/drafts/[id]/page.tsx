@@ -9,6 +9,7 @@ import { BrutalButton } from '@/components/ui/brutal-button'
 import { BrutalInput } from '@/components/ui/brutal-input'
 import { BrutalListItem } from '@/components/ui/brutal-list-item'
 import { BrutalSection } from '@/components/ui/brutal-section'
+import { CuratedOptionsDropdown } from '@/components/ui/curated-options-dropdown'
 import { GeometricBackground } from '@/components/ui/geometric-background'
 import { NumberBox } from '@/components/ui/number-box'
 import { createClient } from '@/lib/supabase/client'
@@ -53,6 +54,13 @@ export default function DraftPage() {
   } | null>(null)
   const [justSubmittedPick, setJustSubmittedPick] = useState(false)
   const [isOrderFinalized, setIsOrderFinalized] = useState(false)
+  const [curatedOptions, setCuratedOptions] = useState<
+    Array<{
+      id: number
+      optionText: string
+      isUsed: boolean
+    }>
+  >([])
   const [showLoading, setShowLoading] = useState(true)
 
   const participantsRef = useRef<Participant[]>([])
@@ -130,6 +138,7 @@ export default function DraftPage() {
       setPicks(data.picks || [])
       setCurrentUser(data.currentUser)
       setIsAdmin(data.isAdmin || false)
+      setCuratedOptions(data.curatedOptions || [])
 
       if (
         data.currentUser &&
@@ -241,8 +250,25 @@ export default function DraftPage() {
             table: 'draft_selections',
             filter: `draft_id=eq.${draft.id}`
           },
-          payload => {
+          async payload => {
             const newPick = payload.new
+
+            // For curated options, fetch the option text from local state
+            let pickPayload = newPick.payload
+            if (newPick.curated_option_id && !newPick.payload) {
+              const curatedOption = curatedOptions.find(
+                option => option.id === newPick.curated_option_id
+              )
+              if (curatedOption) {
+                pickPayload = curatedOption.optionText
+                console.log('Found curated option text locally:', pickPayload)
+              } else {
+                console.error(
+                  'Could not find curated option with ID:',
+                  newPick.curated_option_id
+                )
+              }
+            }
 
             setPicks(prev => {
               if (
@@ -263,7 +289,7 @@ export default function DraftPage() {
                   clientName:
                     participantsRef.current.find(p => p.id === newPick.user_id)
                       ?.name ?? 'Unknown',
-                  payload: newPick.payload,
+                  payload: pickPayload,
                   createdAt: newPick.created_at
                 }
               ]
@@ -487,15 +513,31 @@ export default function DraftPage() {
   }
 
   const handleMakePick = async () => {
-    if (!currentPick.trim()) return
+    if (!currentPick.trim() || !draft) return
 
     try {
       setJustSubmittedPick(true)
+
+      // For curated options, find the option ID
+      let payload = currentPick.trim()
+      let curatedOptionId: number | undefined
+
+      if (!draft.isFreeform) {
+        const selectedOption = curatedOptions.find(
+          option => option.optionText === currentPick.trim()
+        )
+        if (selectedOption) {
+          curatedOptionId = selectedOption.id
+          payload = '' // Clear payload for curated options
+        }
+      }
+
       const response = await fetch(`/api/drafts/${draftId}/pick`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          payload: currentPick.trim()
+          payload,
+          curatedOptionId
         })
       })
 
@@ -905,25 +947,35 @@ export default function DraftPage() {
                       </div>
                       <div className="space-y-4">
                         <div>
-                          <BrutalInput
-                            placeholder="Enter your pick..."
-                            value={currentPick}
-                            onChange={e => {
-                              setCurrentPick(e.target.value)
-                              checkSimilarPick(e.target.value)
-                            }}
-                            onKeyDown={e =>
-                              e.key === 'Enter' && handleMakePick()
-                            }
-                            variant="boxed"
-                            className={`w-full bg-card text-foreground text-lg py-3 ${
-                              similarPick
-                                ? 'border-orange-500 dark:border-orange-400 border-2'
-                                : ''
-                            }`}
-                            autoFocus
-                          />
-                          {similarPick && (
+                          {draft.isFreeform ? (
+                            <BrutalInput
+                              placeholder="Enter your pick..."
+                              value={currentPick}
+                              onChange={e => {
+                                setCurrentPick(e.target.value)
+                                checkSimilarPick(e.target.value)
+                              }}
+                              onKeyDown={e =>
+                                e.key === 'Enter' && handleMakePick()
+                              }
+                              variant="boxed"
+                              className={`w-full bg-card text-foreground text-lg py-3 ${
+                                similarPick
+                                  ? 'border-orange-500 dark:border-orange-400 border-2'
+                                  : ''
+                              }`}
+                              autoFocus
+                            />
+                          ) : (
+                            <CuratedOptionsDropdown
+                              options={curatedOptions}
+                              value={currentPick}
+                              onValueChange={setCurrentPick}
+                              placeholder="Select your pick..."
+                              disabled={false}
+                            />
+                          )}
+                          {similarPick && draft.isFreeform && (
                             <div className="mt-2 p-3 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
                               <div className="text-sm text-orange-700 dark:text-orange-300 font-medium">
                                 ⚠️ Note that "{similarPick.pick}" has already
@@ -1005,7 +1057,8 @@ export default function DraftPage() {
             currentUser &&
             challengeTimeLeft !== null &&
             challengeTimeLeft > 0 &&
-            draft.draftState === 'active' && (
+            draft.draftState === 'active' &&
+            draft.isFreeform && (
               <div className="py-8">
                 <div className="max-w-2xl mx-auto">
                   <div className="bg-card border-2 border-border p-8 relative overflow-hidden">
@@ -1189,22 +1242,25 @@ export default function DraftPage() {
                           Round {roundIndex + 1}
                         </h3>
                         <div className="space-y-2">
-                          {round.map(pick => (
-                            <BrutalListItem
-                              key={pick.pickNumber}
-                              number={pick.pickNumber}
-                              variant="default"
-                            >
-                              <div className="flex-1">
-                                <div className="font-medium text-foreground">
-                                  {pick.payload}
+                          {round.map(pick => {
+                            const isMyPick = currentUser?.id === pick.clientId
+                            return (
+                              <BrutalListItem
+                                key={pick.pickNumber}
+                                number={pick.pickNumber}
+                                variant={isMyPick ? 'highlighted' : 'default'}
+                              >
+                                <div className="flex-1">
+                                  <div className="font-medium text-foreground">
+                                    {pick.payload}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    by {pick.clientName}
+                                  </div>
                                 </div>
-                                <div className="text-xs text-muted-foreground">
-                                  by {pick.clientName}
-                                </div>
-                              </div>
-                            </BrutalListItem>
-                          ))}
+                              </BrutalListItem>
+                            )
+                          })}
                         </div>
                       </div>
                     ))}
@@ -1235,6 +1291,7 @@ export default function DraftPage() {
                                     key={pickIndex}
                                     pickNumber={pickNumber}
                                     pick={pick}
+                                    currentUserId={currentUser?.id}
                                   />
                                 )
                               }
@@ -1249,42 +1306,53 @@ export default function DraftPage() {
                 {/* By Drafter View */}
                 {viewMode === 'by-drafter' && (
                   <div className="space-y-8">
-                    {drafterData.map(drafter => (
-                      <div key={drafter.name}>
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="font-bold text-sm text-foreground">
-                            {drafter.name}
-                          </h3>
-                          <span className="text-xs text-muted-foreground">
-                            {drafter.picks.length} pick
-                            {drafter.picks.length !== 1 ? 's' : ''}
-                          </span>
-                        </div>
-                        <div className="space-y-2">
-                          {drafter.picks.map(pick => {
-                            const roundNum = Math.ceil(
-                              pick.pickNumber / participants.length
-                            )
-                            return (
-                              <BrutalListItem
-                                key={pick.pickNumber}
-                                number={pick.pickNumber}
-                                variant="minimal"
-                              >
-                                <div className="flex-1">
-                                  <div className="font-medium text-foreground">
-                                    {pick.payload}
+                    {drafterData.map(drafter => {
+                      // Check if any of the drafter's picks belong to the current user
+                      const isMyDrafter = drafter.picks.some(
+                        pick => pick.clientId === currentUser?.id
+                      )
+
+                      return (
+                        <div key={drafter.name}>
+                          <div className="flex items-center justify-between mb-3">
+                            <h3
+                              className={`font-bold text-sm flex items-center gap-2 ${
+                                isMyDrafter ? 'text-primary' : 'text-foreground'
+                              }`}
+                            >
+                              {drafter.name}
+                            </h3>
+                            <span className="text-xs text-muted-foreground">
+                              {drafter.picks.length} pick
+                              {drafter.picks.length !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+                          <div className="space-y-2">
+                            {drafter.picks.map(pick => {
+                              const roundNum = Math.ceil(
+                                pick.pickNumber / participants.length
+                              )
+                              return (
+                                <BrutalListItem
+                                  key={pick.pickNumber}
+                                  number={pick.pickNumber}
+                                  variant="minimal"
+                                >
+                                  <div className="flex-1">
+                                    <div className="font-medium text-foreground">
+                                      {pick.payload}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      Round {roundNum}
+                                    </div>
                                   </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    Round {roundNum}
-                                  </div>
-                                </div>
-                              </BrutalListItem>
-                            )
-                          })}
+                                </BrutalListItem>
+                              )
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </div>

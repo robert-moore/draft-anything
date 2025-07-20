@@ -17,6 +17,7 @@ export interface Draft {
   currentPositionOnClock: number | null
   turnStartedAt: string | null
   timerPaused: boolean | null
+  isFreeform: boolean
   createdAt: string
 }
 

@@ -1,4 +1,8 @@
-import { draftSelectionsInDa, profilesInDa } from '@/drizzle/schema'
+import {
+  draftCuratedOptionsInDa,
+  draftSelectionsInDa,
+  profilesInDa
+} from '@/drizzle/schema'
 import { parseDraftGuid } from '@/lib/api/draft-guid-helpers'
 import {
   calculateNextDrafter,
@@ -17,9 +21,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 // Schema for making a pick
-const makePickSchema = z.object({
-  payload: z.string().trim().min(1, 'Pick content is required').max(200)
-})
+const makePickSchema = z
+  .object({
+    payload: z.string().optional(),
+    curatedOptionId: z.number().optional()
+  })
+  .refine(data => data.payload || data.curatedOptionId, {
+    message: 'Either payload or curatedOptionId must be provided'
+  })
 
 export async function POST(
   request: NextRequest,
@@ -43,7 +52,7 @@ export async function POST(
     // Validate request body
     const bodyResult = await parseJsonRequest(request, makePickSchema)
     if (!bodyResult.success) return bodyResult.error
-    const { payload } = bodyResult.data
+    const { payload, curatedOptionId } = bodyResult.data
 
     // Validate and fetch draft
     const draftResult = await validateAndFetchDraftByGuid(draftGuid)
@@ -86,13 +95,42 @@ export async function POST(
     // Get current pick number
     const currentPickNumber = await getCurrentPickNumberByGuid(draftGuid)
 
+    // Validate curated option if provided
+    if (curatedOptionId) {
+      const [curatedOption] = await db
+        .select()
+        .from(draftCuratedOptionsInDa)
+        .where(eq(draftCuratedOptionsInDa.id, curatedOptionId))
+
+      if (!curatedOption) {
+        return NextResponse.json(
+          { error: 'Invalid curated option ID' },
+          { status: 400 }
+        )
+      }
+
+      if (curatedOption.isUsed) {
+        return NextResponse.json(
+          { error: 'This option has already been selected' },
+          { status: 400 }
+        )
+      }
+
+      // Mark the option as used
+      await db
+        .update(draftCuratedOptionsInDa)
+        .set({ isUsed: true })
+        .where(eq(draftCuratedOptionsInDa.id, curatedOptionId))
+    }
+
     // Insert the pick
     const now = getUtcNow()
     await db.insert(draftSelectionsInDa).values({
       draftId: draft.id,
       userId: user.id,
       pickNumber: currentPickNumber,
-      payload: payload,
+      payload: payload || null,
+      curatedOptionId: curatedOptionId || null,
       createdAt: now,
       wasAutoPick: false,
       timeTakenSeconds: timeTakenSeconds?.toString() || null
@@ -120,13 +158,23 @@ export async function POST(
       .from(profilesInDa)
       .where(eq(profilesInDa.id, user.id))
 
+    // Get curated option text if applicable
+    let finalPayload = payload
+    if (curatedOptionId) {
+      const [curatedOption] = await db
+        .select({ optionText: draftCuratedOptionsInDa.optionText })
+        .from(draftCuratedOptionsInDa)
+        .where(eq(draftCuratedOptionsInDa.id, curatedOptionId))
+      finalPayload = curatedOption?.optionText || payload
+    }
+
     return NextResponse.json(
       {
         pickNumber: currentPickNumber,
         userId: user.id,
         clientId: user.id,
         clientName: profile?.name || 'Unknown',
-        payload: payload,
+        payload: finalPayload,
         createdAt: now
       },
       { status: 201 }

@@ -41,8 +41,27 @@ export const draftsInDa = da.table('drafts', {
   currentPositionOnClock: smallint('current_position_on_clock'),
   turnStartedAt: timestamp('turn_started_at', { mode: 'string' }),
   timerPaused: boolean('timer_paused').default(false),
+  isFreeform: boolean('is_freeform').notNull().default(true),
   createdAt: timestamp('created_at', { mode: 'string' }).notNull()
 })
+
+export const draftCuratedOptionsInDa = da.table(
+  'draft_curated_options',
+  {
+    id: serial().primaryKey().notNull(),
+    draftId: integer('draft_id').notNull(),
+    optionText: text('option_text').notNull(),
+    isUsed: boolean('is_used').notNull().default(false),
+    createdAt: timestamp('created_at', { mode: 'string' }).notNull()
+  },
+  table => [
+    foreignKey({
+      columns: [table.draftId],
+      foreignColumns: [draftsInDa.id],
+      name: 'draft_curated_options_draft_id_fkey'
+    })
+  ]
+)
 
 export const draftUsersInDa = da.table(
   'draft_users',
@@ -75,7 +94,8 @@ export const draftSelectionsInDa = da.table(
     userId: uuid('user_id'),
     pickNumber: smallint('pick_number').notNull(),
     createdAt: timestamp('created_at', { mode: 'string' }).notNull(),
-    payload: text().notNull(),
+    payload: text(), // Can be null for curated options
+    curatedOptionId: integer('curated_option_id'), // Reference to curated option
     wasAutoPick: boolean('was_auto_pick').default(false),
     timeTakenSeconds: numeric('time_taken_seconds')
   },
@@ -89,6 +109,11 @@ export const draftSelectionsInDa = da.table(
       columns: [table.userId],
       foreignColumns: [profilesInDa.id],
       name: 'draft_selections_user_id_fkey'
+    }),
+    foreignKey({
+      columns: [table.curatedOptionId],
+      foreignColumns: [draftCuratedOptionsInDa.id],
+      name: 'draft_selections_curated_option_id_fkey'
     }),
     unique('unique_draft_pick_number').on(table.draftId, table.pickNumber)
   ]

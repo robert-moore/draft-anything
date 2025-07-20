@@ -1,4 +1,5 @@
 import {
+  draftCuratedOptionsInDa,
   draftSelectionsInDa,
   draftUsersInDa,
   profilesInDa
@@ -109,7 +110,48 @@ export async function POST(
 
     // Get used payloads and generate auto-pick
     const usedPayloads = await getUsedPayloadsByGuid(draftGuid)
-    const autoPickPayload = generateAutoPick(usedPayloads)
+
+    let autoPickPayload: string
+    let curatedOptionId: number | null = null
+
+    if (draft.isFreeform) {
+      // For freeform drafts, generate generic auto-pick
+      autoPickPayload = generateAutoPick(usedPayloads)
+    } else {
+      // For curated drafts, select a random available option
+      const availableOptions = await db
+        .select({
+          id: draftCuratedOptionsInDa.id,
+          optionText: draftCuratedOptionsInDa.optionText
+        })
+        .from(draftCuratedOptionsInDa)
+        .where(
+          and(
+            eq(draftCuratedOptionsInDa.draftId, draft.id),
+            eq(draftCuratedOptionsInDa.isUsed, false)
+          )
+        )
+
+      if (availableOptions.length === 0) {
+        return NextResponse.json(
+          { error: 'No more curated options available for auto-pick' },
+          { status: 400 }
+        )
+      }
+
+      // Select a random available option
+      const randomIndex = Math.floor(Math.random() * availableOptions.length)
+      const selectedOption = availableOptions[randomIndex]
+
+      autoPickPayload = selectedOption.optionText
+      curatedOptionId = selectedOption.id
+
+      // Mark the option as used
+      await db
+        .update(draftCuratedOptionsInDa)
+        .set({ isUsed: true })
+        .where(eq(draftCuratedOptionsInDa.id, selectedOption.id))
+    }
 
     // Insert the auto-pick - database will enforce unique constraint on pickNumber
     const nowStr = getUtcNow()
@@ -118,7 +160,8 @@ export async function POST(
         draftId: draft.id,
         userId: currentPlayer.userId,
         pickNumber: currentPickNumber,
-        payload: autoPickPayload,
+        payload: draft.isFreeform ? autoPickPayload : null,
+        curatedOptionId: curatedOptionId,
         createdAt: nowStr,
         wasAutoPick: true,
         timeTakenSeconds: elapsedSeconds.toString()

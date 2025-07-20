@@ -1,4 +1,5 @@
 import {
+  draftCuratedOptionsInDa,
   draftSelectionsInDa,
   draftUsersInDa,
   profilesInDa
@@ -59,7 +60,8 @@ export async function GET(
         createdAt: draftSelectionsInDa.createdAt,
         userName: draftUsersInDa.draftUsername,
         wasAutoPick: draftSelectionsInDa.wasAutoPick,
-        timeTakenSeconds: draftSelectionsInDa.timeTakenSeconds
+        timeTakenSeconds: draftSelectionsInDa.timeTakenSeconds,
+        curatedOptionId: draftSelectionsInDa.curatedOptionId
       })
       .from(draftSelectionsInDa)
       .innerJoin(
@@ -73,24 +75,55 @@ export async function GET(
         )
       )
 
+    // Get curated options if draft is not freeform
+    let curatedOptions: Array<{
+      id: number
+      optionText: string
+      isUsed: boolean
+    }> = []
+    if (!draft.isFreeform) {
+      curatedOptions = await db
+        .select({
+          id: draftCuratedOptionsInDa.id,
+          optionText: draftCuratedOptionsInDa.optionText,
+          isUsed: draftCuratedOptionsInDa.isUsed
+        })
+        .from(draftCuratedOptionsInDa)
+        .where(eq(draftCuratedOptionsInDa.draftId, draft.id))
+    }
+
     // Transform picks to include clientId and clientName for backward compatibility
-    const picks = picksQuery.map(pick => ({
-      pickNumber: pick.pickNumber,
-      userId: pick.userId,
-      payload: pick.payload,
-      createdAt: pick.createdAt,
-      clientId: pick.userId, // For backward compatibility
-      clientName: pick.userName || 'Unknown',
-      wasAutoPick: pick.wasAutoPick,
-      timeTakenSeconds: pick.timeTakenSeconds
-    }))
+    const picks = picksQuery.map(pick => {
+      // For curated options, resolve the option text
+      let finalPayload = pick.payload
+      if (pick.curatedOptionId && !pick.payload) {
+        const curatedOption = curatedOptions.find(
+          option => option.id === pick.curatedOptionId
+        )
+        if (curatedOption) {
+          finalPayload = curatedOption.optionText
+        }
+      }
+
+      return {
+        pickNumber: pick.pickNumber,
+        userId: pick.userId,
+        payload: finalPayload,
+        createdAt: pick.createdAt,
+        clientId: pick.userId, // For backward compatibility
+        clientName: pick.userName || 'Unknown',
+        wasAutoPick: pick.wasAutoPick,
+        timeTakenSeconds: pick.timeTakenSeconds
+      }
+    })
 
     return NextResponse.json({
       draft,
       participants: participantsQuery,
       picks: picks.sort((a, b) => a.pickNumber - b.pickNumber),
       currentUser: user,
-      isAdmin
+      isAdmin,
+      curatedOptions
     })
   } catch (error) {
     console.error('Error fetching draft:', error)

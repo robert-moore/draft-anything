@@ -22,6 +22,7 @@ export default function NewDraftPage() {
   const [selectionType, setSelectionType] = useState<'freeform' | 'curated'>(
     'freeform'
   )
+  const [curatedOptions, setCuratedOptions] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -39,7 +40,10 @@ export default function NewDraftPage() {
           name,
           maxDrafters,
           secPerRound: timerMode === 'untimed' ? 0 : secPerRound,
-          numRounds
+          numRounds,
+          isFreeform: selectionType === 'freeform',
+          curatedOptions:
+            selectionType === 'curated' ? curatedOptions : undefined
         })
       })
 
@@ -143,7 +147,7 @@ export default function NewDraftPage() {
                       value={numRounds}
                       onChange={setNumRounds}
                       min={1}
-                      max={10}
+                      max={20}
                     />
                   </div>
                 </div>
@@ -161,33 +165,96 @@ export default function NewDraftPage() {
                       }
                     >
                       <RadioGroupSegmentedItem value="freeform" icon={Edit}>
-                        Freeform
+                        Freeform Selections
                       </RadioGroupSegmentedItem>
-                      <RadioGroupSegmentedItem
-                        value="curated"
-                        icon={List}
-                        disabled
-                      >
-                        Curated
+                      <RadioGroupSegmentedItem value="curated" icon={List}>
+                        Curated Options
                       </RadioGroupSegmentedItem>
                     </RadioGroupSegmented>
 
                     <div className="text-xs text-muted-foreground space-y-2">
-                      <p>
-                        <strong>Freeform:</strong> Players can pick any item
-                        they want during their turn.
-                      </p>
-                      <p>
-                        <strong>Curated:</strong> Players select from a
-                        predefined list of items. (Coming soon)
-                      </p>
-                      <p className="text-primary font-medium">
-                        Challenge mechanism: Other players can challenge picks
-                        within 30 seconds if they think the pick is invalid or
-                        inappropriate. If at least 50% of eligible voters agree,
-                        the pick is removed and the player must choose again.
-                      </p>
+                      {selectionType === 'freeform' && (
+                        <>
+                          <p>
+                            <strong>Freeform Selections:</strong> Players can
+                            pick any item they want during their turn.
+                          </p>
+                          <p className="text-primary font-medium">
+                            Challenge mechanism: Other players can challenge
+                            picks within 30 seconds if they think the pick is
+                            invalid or inappropriate. If at least 50% of
+                            eligible voters agree, the pick is removed and the
+                            player must choose again.
+                          </p>
+                        </>
+                      )}
                     </div>
+
+                    {selectionType === 'curated' && (
+                      <div className="space-y-3">
+                        <Label
+                          htmlFor="curatedOptions"
+                          className="text-sm font-bold"
+                        >
+                          Draft Options (one per line, max 1000)
+                        </Label>
+                        <textarea
+                          id="curatedOptions"
+                          value={curatedOptions}
+                          onChange={e => setCuratedOptions(e.target.value)}
+                          placeholder="Enter your draft options here, one per line..."
+                          className="w-full h-32 p-3 border-2 border-border bg-card text-foreground placeholder:text-muted-foreground resize-none"
+                          maxLength={50000} // Reasonable limit for 1000 items
+                        />
+                        <div className="text-xs text-muted-foreground flex justify-between items-center">
+                          <span>
+                            {
+                              curatedOptions
+                                .split('\n')
+                                .filter(line => line.trim()).length
+                            }{' '}
+                            option
+                            {curatedOptions
+                              .split('\n')
+                              .filter(line => line.trim()).length !== 1
+                              ? 's'
+                              : ''}
+                          </span>
+                          {curatedOptions
+                            .split('\n')
+                            .filter(line => line.trim()).length > 0 &&
+                            (() => {
+                              const optionCount = curatedOptions
+                                .split('\n')
+                                .filter(line => line.trim()).length
+                              const totalPicks = maxDrafters * numRounds
+                              const longOptions = curatedOptions
+                                .split('\n')
+                                .filter(line => line.trim())
+                                .filter(line => line.length > 200)
+
+                              if (longOptions.length > 0) {
+                                return (
+                                  <span className="text-primary font-medium">
+                                    <span className="mr-1">⚠</span>️ Options
+                                    must be fewer than 200 characters
+                                  </span>
+                                )
+                              }
+                              if (optionCount < totalPicks) {
+                                return (
+                                  <span className="text-primary font-medium">
+                                    <span className="mr-1">⚠</span>️ Need at
+                                    least {totalPicks} options for {maxDrafters}{' '}
+                                    players × {numRounds} rounds
+                                  </span>
+                                )
+                              }
+                              return null
+                            })()}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -258,7 +325,13 @@ export default function NewDraftPage() {
                   !name.trim() ||
                   maxDrafters < 2 ||
                   (timerMode === 'timed' && secPerRound < 5) ||
-                  numRounds < 1
+                  numRounds < 1 ||
+                  (selectionType === 'curated' && !curatedOptions.trim()) ||
+                  (selectionType === 'curated' &&
+                    curatedOptions
+                      .split('\n')
+                      .filter(line => line.trim())
+                      .some(line => line.length > 200))
                 }
               >
                 {isLoading ? 'Creating...' : 'Create Draft'}

@@ -1,4 +1,4 @@
-import { draftsInDa } from '@/drizzle/schema'
+import { draftCuratedOptionsInDa, draftsInDa } from '@/drizzle/schema'
 import { parseJsonRequest } from '@/lib/api/validation'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
@@ -12,6 +12,8 @@ const createDraftSchema = z.object({
   maxDrafters: z.number().int().min(2).max(20),
   secPerRound: z.number().int().min(0).max(300),
   numRounds: z.number().int().min(1).max(10),
+  isFreeform: z.boolean().default(true),
+  curatedOptions: z.string().optional(),
   draftState: z.enum(['setting_up', 'active', 'completed', 'paused']).optional()
 })
 
@@ -29,8 +31,52 @@ export async function POST(req: NextRequest) {
     // Validate request body
     const bodyResult = await parseJsonRequest(req, createDraftSchema)
     if (!bodyResult.success) return bodyResult.error
-    const { name, draftState, maxDrafters, secPerRound, numRounds } =
-      bodyResult.data
+    const {
+      name,
+      draftState,
+      maxDrafters,
+      secPerRound,
+      numRounds,
+      isFreeform,
+      curatedOptions
+    } = bodyResult.data
+
+    // Validate curated options if provided
+    if (!isFreeform && curatedOptions) {
+      const options = curatedOptions.split('\n').filter(line => line.trim())
+      if (options.length === 0) {
+        return NextResponse.json(
+          { error: 'At least one curated option is required' },
+          { status: 400 }
+        )
+      }
+      if (options.length > 1000) {
+        return NextResponse.json(
+          { error: 'Maximum 1000 curated options allowed' },
+          { status: 400 }
+        )
+      }
+      // Check character limit for each option (let's say 200 chars)
+      for (const option of options) {
+        if (option.length > 200) {
+          return NextResponse.json(
+            { error: 'Each option must be 200 characters or less' },
+            { status: 400 }
+          )
+        }
+      }
+
+      // Check if there are enough options for the draft
+      const totalPicks = maxDrafters * numRounds
+      if (options.length < totalPicks) {
+        return NextResponse.json(
+          {
+            error: `Not enough options. You need at least ${totalPicks} options for ${maxDrafters} players × ${numRounds} rounds, but only provided ${options.length} options.`
+          },
+          { status: 400 }
+        )
+      }
+    }
 
     const [newDraft] = await db
       .insert(draftsInDa)
@@ -42,9 +88,22 @@ export async function POST(req: NextRequest) {
         maxDrafters,
         secPerRound: secPerRound.toString(),
         numRounds,
+        isFreeform,
         createdAt: new Date().toISOString()
       })
       .returning()
+
+    // Create curated options if provided
+    if (!isFreeform && curatedOptions) {
+      const options = curatedOptions.split('\n').filter(line => line.trim())
+      const curatedOptionsData = options.map(option => ({
+        draftId: newDraft.id,
+        optionText: option.trim(),
+        createdAt: new Date().toISOString()
+      }))
+
+      await db.insert(draftCuratedOptionsInDa).values(curatedOptionsData)
+    }
 
     return NextResponse.json({ draft: newDraft }, { status: 201 })
   } catch (err) {
