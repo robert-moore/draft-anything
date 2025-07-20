@@ -627,6 +627,11 @@ export default function DraftPage() {
           label: 'FINISHING',
           variant: 'filled' as const
         }
+      case 'challenge':
+        return {
+          label: 'CHALLENGE',
+          variant: 'filled' as const
+        }
       case 'completed':
         return {
           label: 'DONE',
@@ -749,23 +754,7 @@ export default function DraftPage() {
     const totalPicks = picks.length
     const picksPerRound = participants.length
 
-    // During challenge window, show the last pick that was made
-    if (draft.draftState === 'challenge_window') {
-      const lastPickNumber = totalPicks
-      const lastPickRound = Math.min(
-        draft.numRounds,
-        Math.floor((lastPickNumber - 1) / picksPerRound) + 1
-      )
-      const lastPickInRound = ((lastPickNumber - 1) % picksPerRound) + 1
-
-      return {
-        currentRound: lastPickRound,
-        pickInRound: lastPickInRound,
-        totalPicks
-      }
-    }
-
-    // Normal calculation for next pick
+    // Always show the next pick that would be made (never changes when hitting challenge)
     const currentRound = Math.min(
       draft.numRounds,
       Math.floor(totalPicks / picksPerRound) + 1
@@ -879,7 +868,9 @@ export default function DraftPage() {
                   </span>
                 </div>
               </div>
-            ) : (
+            ) : draft.draftState !== 'completed' &&
+              draft.draftState !== 'challenge_window' &&
+              draft.draftState !== 'challenge' ? (
               <DraftMetadata
                 players={{
                   current: participants.length,
@@ -890,7 +881,7 @@ export default function DraftPage() {
                 round={{ current: currentRound, total: draft.numRounds }}
                 pick={{ current: pickInRound, perRound: participants.length }}
               />
-            )}
+            ) : null}
           </div>
 
           {/* Challenge Window Timer - Only for person who made the last pick */}
@@ -1226,7 +1217,7 @@ export default function DraftPage() {
                             <div className="font-medium text-foreground">
                               Redo Pick
                             </div>
-                            <div className="text-2xl font-bold text-green-600">
+                            <div className="text-2xl font-bold text-red-600">
                               {voteCounts.validVotes}
                             </div>
                           </div>
@@ -1234,7 +1225,7 @@ export default function DraftPage() {
                             <div className="font-medium text-foreground">
                               Keep Pick
                             </div>
-                            <div className="text-2xl font-bold text-red-600">
+                            <div className="text-2xl font-bold text-green-600">
                               {voteCounts.invalidVotes}
                             </div>
                           </div>
@@ -1270,8 +1261,8 @@ export default function DraftPage() {
                           </BrutalButton>
                           <BrutalButton
                             onClick={() => handleVote(true)}
-                            variant="filled"
-                            className="px-8 py-3 text-lg font-bold"
+                            variant="default"
+                            className="px-6 py-2 text-sm"
                           >
                             Redo Pick
                           </BrutalButton>

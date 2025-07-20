@@ -181,25 +181,12 @@ export async function POST(
           })
           .where(eq(draftsInDa.id, draft.id))
       } else {
-        // Challenge failed, continue to next player
-        // Get the current player's position to restore their full timer
-        const [currentPlayer] = await db
-          .select({ position: draftUsersInDa.position })
-          .from(draftUsersInDa)
-          .where(
-            and(
-              eq(draftUsersInDa.draftId, draft.id),
-              eq(draftUsersInDa.userId, challenge.challengedUserId)
-            )
-          )
-          .limit(1)
-
+        // Challenge failed, the last pick is defended - end the draft
         await db
           .update(draftsInDa)
           .set({
-            draftState: 'active',
-            currentPositionOnClock: currentPlayer?.position || 1,
-            turnStartedAt: new Date().toISOString() // Restore full timer
+            draftState: 'completed',
+            currentPositionOnClock: null
           })
           .where(eq(draftsInDa.id, draft.id))
       }
