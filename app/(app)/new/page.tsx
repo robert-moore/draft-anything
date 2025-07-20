@@ -38,7 +38,7 @@ export default function NewDraftPage() {
         body: JSON.stringify({
           name,
           maxDrafters,
-          secPerRound,
+          secPerRound: timerMode === 'untimed' ? 0 : secPerRound,
           numRounds
         })
       })
