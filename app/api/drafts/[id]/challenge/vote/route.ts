@@ -181,14 +181,39 @@ export async function POST(
           })
           .where(eq(draftsInDa.id, draft.id))
       } else {
-        // Challenge failed, the last pick is defended - end the draft
-        await db
-          .update(draftsInDa)
-          .set({
-            draftState: 'completed',
-            currentPositionOnClock: null
-          })
-          .where(eq(draftsInDa.id, draft.id))
+        // Challenge failed - check if this was during the final challenge window
+        // Only end the draft if this was the final challenge window
+        if (draft.draftState === 'challenge_window') {
+          await db
+            .update(draftsInDa)
+            .set({
+              draftState: 'completed',
+              currentPositionOnClock: null
+            })
+            .where(eq(draftsInDa.id, draft.id))
+        } else {
+          // Challenge failed during active state - just continue the draft
+          // Get the challenged player's position to continue their turn
+          const [challengedPlayer] = await db
+            .select({ position: draftUsersInDa.position })
+            .from(draftUsersInDa)
+            .where(
+              and(
+                eq(draftUsersInDa.draftId, draft.id),
+                eq(draftUsersInDa.userId, challenge.challengedUserId)
+              )
+            )
+            .limit(1)
+
+          await db
+            .update(draftsInDa)
+            .set({
+              draftState: 'active',
+              currentPositionOnClock: challengedPlayer?.position || 1,
+              turnStartedAt: new Date().toISOString() // Continue their turn
+            })
+            .where(eq(draftsInDa.id, draft.id))
+        }
       }
     }
 
