@@ -22,7 +22,8 @@ export function EmojiReactionsRow({
   inline = false,
   maxEmojis,
   pickNumber,
-  pickerName
+  pickerName,
+  pickContent
 }: {
   reactions: Reaction[]
   currentUserId: string
@@ -34,6 +35,7 @@ export function EmojiReactionsRow({
   maxEmojis?: number
   pickNumber?: number
   pickerName?: string
+  pickContent?: string
 }) {
   // Group reactions by emoji, filtering out null/empty
   const grouped = reactions
@@ -168,7 +170,11 @@ export function EmojiReactionsRow({
                     type="button"
                   >
                     <span
-                      style={{ fontSize: '1em', lineHeight: 1 }}
+                      style={{
+                        fontSize: '1em',
+                        lineHeight: 1,
+                        marginRight: '0.5rem'
+                      }}
                       className={popCounts[emoji] ? 'bounce-emoji' : ''}
                     >
                       {emoji}
@@ -237,6 +243,14 @@ export function EmojiReactionsRow({
             >
               ✕
             </button>
+            {/* Pick content at the top of the modal, if provided */}
+            {pickContent && (
+              <div className="mb-2 text-center">
+                <div className="text-xs font-semibold text-foreground">
+                  {pickContent}
+                </div>
+              </div>
+            )}
             {/* Modal Title with Pick Number and Picker Name (no 'Pick Info' string) */}
             <div className="mb-4 text-center">
               {pickNumber !== undefined && pickerName ? (

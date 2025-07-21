@@ -1767,6 +1767,7 @@ export default function DraftPage() {
                                     maxEmojis={5}
                                     pickNumber={pick.pickNumber}
                                     pickerName={pick.clientName}
+                                    pickContent={pick.payload}
                                   />
                                 </div>
                                 <div className="flex items-center gap-6 pr-16 sm:pr-12">
@@ -1843,6 +1844,7 @@ export default function DraftPage() {
                                           maxEmojis={3}
                                           pickNumber={pick.pickNumber}
                                           pickerName={pick.clientName}
+                                          pickContent={pick.payload}
                                         />
                                       </div>
                                     )}
@@ -1914,6 +1916,7 @@ export default function DraftPage() {
                                       maxEmojis={5}
                                       pickNumber={pick.pickNumber}
                                       pickerName={pick.clientName}
+                                      pickContent={pick.payload}
                                     />
                                   </div>
                                   <div className="flex items-center gap-6 pr-16 sm:pr-12">
