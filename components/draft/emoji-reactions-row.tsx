@@ -173,7 +173,7 @@ export function EmojiReactionsRow({
                       style={{
                         fontSize: '1em',
                         lineHeight: 1,
-                        marginRight: '0.5rem'
+                        marginRight: '0.3rem'
                       }}
                       className={popCounts[emoji] ? 'bounce-emoji' : ''}
                     >
@@ -246,7 +246,7 @@ export function EmojiReactionsRow({
             {/* Pick content at the top of the modal, if provided */}
             {pickContent && (
               <div className="mb-2 text-center">
-                <div className="text-xs font-semibold text-foreground">
+                <div className="text-base font-semibold text-foreground">
                   {pickContent}
                 </div>
               </div>
