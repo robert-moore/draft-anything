@@ -196,13 +196,21 @@ export default function NewDraftPage() {
                     </div>
 
                     {selectionType === 'curated' && (
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="curatedOptions"
-                          className="text-sm font-bold"
-                        >
-                          Draft Options (one per line, max 1000)
-                        </Label>
+                      <div className="space-y-4">
+                        <div className="text-xs text-muted-foreground space-y-2">
+                          <p>
+                            <strong>Curated Selections:</strong> Players choose
+                            from a predefined list of options you provide.
+                          </p>
+                        </div>
+                        <div className="mt-6">
+                          <Label
+                            htmlFor="curatedOptions"
+                            className="text-sm font-bold"
+                          >
+                            Draft Options (one per line, max 1000)
+                          </Label>
+                        </div>
                         <textarea
                           id="curatedOptions"
                           value={curatedOptions}
@@ -211,7 +219,7 @@ export default function NewDraftPage() {
                           className="w-full h-32 p-3 border-2 border-border bg-card text-foreground placeholder:text-muted-foreground resize-none"
                           maxLength={50000} // Reasonable limit for 1000 items
                         />
-                        <div className="text-xs text-muted-foreground flex justify-between items-center">
+                        <div className="text-xs text-muted-foreground flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                           <span>
                             {
                               curatedOptions
