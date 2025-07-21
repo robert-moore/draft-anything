@@ -314,7 +314,9 @@ export default function NewDraftPage() {
                           />
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          Auto-pick activates when time expires
+                          {selectionType === 'curated'
+                            ? 'A random option will be selected when time expires'
+                            : 'Auto-pick activates when time expires'}
                         </p>
                       </div>
                     )}

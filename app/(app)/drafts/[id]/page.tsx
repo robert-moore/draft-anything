@@ -69,8 +69,12 @@ export default function DraftPage() {
   const [challengeWindowTimeLeft, setChallengeWindowTimeLeft] = useState<
     number | null
   >(null)
+  const [shouldHideChallengeButtonOnLoad, setShouldHideChallengeButtonOnLoad] =
+    useState(false)
 
   const participantsRef = useRef<Participant[]>([])
+  const prevPicksLength = useRef<null | number>(null)
+  const hasLoadedInitially = useRef(false)
 
   // Function to check for similar picks
   const checkSimilarPick = (input: string) => {
@@ -186,6 +190,10 @@ export default function DraftPage() {
       if (data.draft.draftState !== 'setting_up') {
         setIsOrderFinalized(true)
       }
+
+      setShouldHideChallengeButtonOnLoad(
+        !!data.hasPreviousPickAlreadyBeenChallenged
+      )
 
       // Ensure loading animation completes before hiding loading state
       setTimeout(() => {
@@ -336,6 +344,7 @@ export default function DraftPage() {
                 }
               ]
             })
+            setShouldHideChallengeButtonOnLoad(false)
           }
         )
         .on(
@@ -601,6 +610,9 @@ export default function DraftPage() {
   // Function to check if challenge button should be shown
   const shouldShowChallengeButton = () => {
     const shouldShow = !challengeResolvedAfterLastPick
+    if (shouldHideChallengeButtonOnLoad) {
+      return false
+    }
     return shouldShow
   }
 

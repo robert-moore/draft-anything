@@ -3,12 +3,12 @@
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger,
+  PopoverTrigger
 } from '@/components/ui/popover'
-import { Monitor, Moon, Sun, ChevronDown, Palette } from 'lucide-react'
-import { useTheme } from 'next-themes'
 import { useColorTheme } from '@/lib/theme/color-theme-context'
 import { ColorTheme } from '@/lib/theme/color-themes'
+import { ChevronDown, Monitor, Moon, Sun } from 'lucide-react'
+import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
 import { Button } from './button'
 
@@ -16,7 +16,9 @@ export function ThemeToggle() {
   const { theme, setTheme, resolvedTheme } = useTheme()
   const { currentTheme, setTheme: setColorTheme, themes } = useColorTheme()
   const [mounted, setMounted] = useState(false)
-  const [hoveredColorTheme, setHoveredColorTheme] = useState<ColorTheme | null>(null)
+  const [hoveredColorTheme, setHoveredColorTheme] = useState<ColorTheme | null>(
+    null
+  )
 
   useEffect(() => {
     setMounted(true)
@@ -63,7 +65,7 @@ export function ThemeToggle() {
       icon: <Sun className="h-4 w-4" />
     },
     {
-      value: 'dark', 
+      value: 'dark',
       label: 'Dark',
       icon: <Moon className="h-4 w-4" />
     },
@@ -76,12 +78,12 @@ export function ThemeToggle() {
 
   const handleColorThemeHover = (colorTheme: ColorTheme | null) => {
     setHoveredColorTheme(colorTheme)
-    
+
     // Only update CSS if we're actually changing to a different theme
     const targetTheme = colorTheme || currentTheme
     const root = document.documentElement
     const currentPrimary = root.style.getPropertyValue('--primary')
-    
+
     if (currentPrimary !== targetTheme.primary) {
       root.style.setProperty('--primary', targetTheme.primary)
       root.style.setProperty('--ring', targetTheme.primary)
@@ -107,8 +109,8 @@ export function ThemeToggle() {
           <ChevronDown className="h-3 w-3 ml-1" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent 
-        align="end" 
+      <PopoverContent
+        align="end"
         className="w-72 p-0 bg-card/95 backdrop-blur-xl border border-border/50 shadow-xl rounded-lg overflow-hidden"
         onPointerLeave={() => handleColorThemeHover(null)}
       >
@@ -121,15 +123,16 @@ export function ThemeToggle() {
             </span>
           </div>
           <div className="grid grid-cols-3 gap-2">
-            {themeOptions.map((option) => (
+            {themeOptions.map(option => (
               <button
                 key={option.value}
                 onClick={() => setTheme(option.value)}
                 className={`
                   flex flex-col items-center gap-1.5 p-3 rounded-md transition-all duration-200
-                  ${theme === option.value 
-                    ? 'bg-primary/10 text-primary border-2 border-primary/20' 
-                    : 'hover:bg-muted text-foreground border-2 border-transparent'
+                  ${
+                    theme === option.value
+                      ? 'bg-primary/10 text-primary border-2 border-primary/20'
+                      : 'hover:bg-muted text-foreground border-2 border-transparent'
                   }
                 `}
               >
@@ -148,18 +151,18 @@ export function ThemeToggle() {
               Color Theme
             </span>
           </div>
-          
+
           <div className="mb-3 text-center">
             <p className="text-sm font-medium text-foreground">
               {hoveredColorTheme?.name || currentTheme.name}
             </p>
-            <p className="text-xs text-muted-foreground">
+            {/* <p className="text-xs text-muted-foreground">
               {hoveredColorTheme?.description || currentTheme.description}
-            </p>
+            </p> */}
           </div>
-          
+
           <div className="grid grid-cols-4 gap-2.5">
-            {themes.map((colorTheme) => (
+            {themes.map(colorTheme => (
               <button
                 key={colorTheme.id}
                 onClick={() => handleColorThemeSelect(colorTheme)}
@@ -167,9 +170,10 @@ export function ThemeToggle() {
                 className={`
                   relative aspect-square rounded-lg transition-all duration-200 border-2
                   hover:scale-105 hover:shadow-lg hover:shadow-primary/20
-                  ${currentTheme.id === colorTheme.id 
-                    ? 'border-primary shadow-md scale-105 ring-2 ring-primary/20' 
-                    : 'border-border/30 hover:border-border/60'
+                  ${
+                    currentTheme.id === colorTheme.id
+                      ? 'border-primary shadow-md scale-105 ring-2 ring-primary/20'
+                      : 'border-border/30 hover:border-border/60'
                   }
                 `}
                 style={{ backgroundColor: colorTheme.primaryHex }}
@@ -183,7 +187,7 @@ export function ThemeToggle() {
               </button>
             ))}
           </div>
-          
+
           <div className="text-center pt-3 mt-3 border-t border-border/30">
             <p className="text-xs text-muted-foreground">
               Hover to preview • Click to apply
