@@ -1,4 +1,5 @@
 import {
+  draftChallengesInDa,
   draftCuratedOptionsInDa,
   draftSelectionsInDa,
   draftUsersInDa,
@@ -7,7 +8,7 @@ import {
 import { getDraftByGuid, parseDraftGuid } from '@/lib/api/draft-guid-helpers'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
-import { and, eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
@@ -92,6 +93,50 @@ export async function GET(
         .where(eq(draftCuratedOptionsInDa.draftId, draft.id))
     }
 
+    // Get the latest resolved challenge (if any)
+    const latestResolvedChallenge = await db
+      .select({
+        id: draftChallengesInDa.id,
+        resolvedAt: draftChallengesInDa.resolvedAt,
+        status: draftChallengesInDa.status
+      })
+      .from(draftChallengesInDa)
+      .where(
+        and(
+          eq(draftChallengesInDa.draftId, draft.id),
+          eq(draftChallengesInDa.status, 'resolved')
+        )
+      )
+      .orderBy(desc(draftChallengesInDa.resolvedAt))
+      .limit(1)
+
+    // Also get the latest dismissed challenge
+    const latestDismissedChallenge = await db
+      .select({
+        id: draftChallengesInDa.id,
+        resolvedAt: draftChallengesInDa.resolvedAt,
+        status: draftChallengesInDa.status
+      })
+      .from(draftChallengesInDa)
+      .where(
+        and(
+          eq(draftChallengesInDa.draftId, draft.id),
+          eq(draftChallengesInDa.status, 'dismissed')
+        )
+      )
+      .orderBy(desc(draftChallengesInDa.resolvedAt))
+      .limit(1)
+
+    // Use the most recent of either resolved or dismissed
+    const latestChallenge =
+      latestResolvedChallenge[0]?.resolvedAt &&
+      latestDismissedChallenge[0]?.resolvedAt
+        ? latestResolvedChallenge[0].resolvedAt >
+          latestDismissedChallenge[0].resolvedAt
+          ? latestResolvedChallenge[0]
+          : latestDismissedChallenge[0]
+        : latestResolvedChallenge[0] || latestDismissedChallenge[0]
+
     // Transform picks to include clientId and clientName for backward compatibility
     const picks = picksQuery.map(pick => {
       // For curated options, resolve the option text
@@ -123,7 +168,8 @@ export async function GET(
       picks: picks.sort((a, b) => a.pickNumber - b.pickNumber),
       currentUser: user,
       isAdmin,
-      curatedOptions
+      curatedOptions,
+      latestResolvedChallenge: latestChallenge || null
     })
   } catch (error) {
     console.error('Error fetching draft:', error)

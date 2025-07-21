@@ -1,7 +1,6 @@
 'use client'
 
 import { AutoPickMonitor } from '@/components/draft/auto-pick-monitor'
-import { ChallengeWindowTimer } from '@/components/draft/challenge-window-timer'
 import { DraftMetadata } from '@/components/draft/draft-metadata'
 import { DraftPickGrid } from '@/components/draft/draft-pick-grid'
 import { DraftTimer } from '@/components/draft/draft-timer'
@@ -67,6 +66,9 @@ export default function DraftPage() {
     useState(false)
   const [challengeResolvedAfterLastPick, setChallengeResolvedAfterLastPick] =
     useState(false)
+  const [challengeWindowTimeLeft, setChallengeWindowTimeLeft] = useState<
+    number | null
+  >(null)
 
   const participantsRef = useRef<Participant[]>([])
 
@@ -152,6 +154,27 @@ export default function DraftPage() {
         )
       ) {
         setIsJoined(true)
+      }
+
+      // Check if challenge button should be hidden based on timestamp comparison
+      if (data.latestResolvedChallenge && data.picks && data.picks.length > 0) {
+        const lastPick = data.picks[data.picks.length - 1]
+        const challengeResolvedAt = new Date(
+          data.latestResolvedChallenge.resolvedAt
+        ).getTime()
+        const lastPickCreatedAt = new Date(
+          lastPick.createdAt.replace(' ', 'T') + 'Z'
+        ).getTime()
+
+        // If the challenge was resolved after the last pick, hide the challenge button
+        if (challengeResolvedAt > lastPickCreatedAt) {
+          setChallengeResolvedAfterLastPick(true)
+        } else {
+          setChallengeResolvedAfterLastPick(false)
+        }
+      } else {
+        // No resolved challenge or no picks, show challenge button
+        setChallengeResolvedAfterLastPick(false)
       }
 
       // Load challenge data if draft is in challenge state
@@ -243,6 +266,21 @@ export default function DraftPage() {
             })
           }
         )
+        .on(
+          'postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'da',
+            table: 'draft_selections',
+            filter: `draft_id=eq.${draft.id}`
+          },
+          payload => {
+            // Remove the deleted pick from local state
+            setPicks(prev =>
+              prev.filter(pick => pick.pickNumber !== payload.old.pick_number)
+            )
+          }
+        )
         .subscribe()
 
       const draftSelectionsSub = supabase
@@ -298,6 +336,21 @@ export default function DraftPage() {
                 }
               ]
             })
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'da',
+            table: 'draft_selections',
+            filter: `draft_id=eq.${draft.id}`
+          },
+          payload => {
+            // Remove the deleted pick from local state
+            setPicks(prev =>
+              prev.filter(pick => pick.pickNumber !== payload.old.pick_number)
+            )
           }
         )
         .subscribe()
@@ -384,10 +437,7 @@ export default function DraftPage() {
               payload.new.status === 'resolved' ||
               payload.new.status === 'dismissed'
             ) {
-              console.warn('Challenge resolved -- hiding challenge button')
               setChallengeResolvedAfterLastPick(true)
-              // Set the challenge time left to 0
-              setChallengeTimeLeft(0)
             }
           }
         )
@@ -487,26 +537,91 @@ export default function DraftPage() {
     return () => clearInterval(interval)
   }, [picks, currentUser])
 
+  // Calculate challenge window time remaining
+  useEffect(() => {
+    if (
+      !draft ||
+      draft.draftState !== 'challenge_window' ||
+      !draft.turnStartedAt
+    ) {
+      setChallengeWindowTimeLeft(null)
+      return
+    }
+
+    const calculateTimeLeft = () => {
+      if (!draft.turnStartedAt) return 0
+
+      try {
+        let startTime: number
+
+        // Handle different timestamp formats
+        if (draft.turnStartedAt.includes('T')) {
+          // Already in ISO format (e.g., '2025-07-21T02:33:37.887+00:00')
+          startTime = new Date(draft.turnStartedAt).getTime()
+        } else {
+          // Database format (e.g., '2025-07-19 14:48:07.297')
+          startTime = new Date(
+            draft.turnStartedAt.replace(' ', 'T') + 'Z'
+          ).getTime()
+        }
+
+        // Check if startTime is valid
+        if (isNaN(startTime)) {
+          return 0
+        }
+
+        const now = Date.now()
+        const elapsed = now - startTime
+        const remaining = Math.max(0, 30 - Math.floor(elapsed / 1000))
+
+        return remaining
+      } catch (error) {
+        return 0
+      }
+    }
+
+    // Set initial time
+    const initialTime = calculateTimeLeft()
+    setChallengeWindowTimeLeft(initialTime)
+
+    // Update every second
+    const interval = setInterval(() => {
+      const timeLeft = calculateTimeLeft()
+      setChallengeWindowTimeLeft(timeLeft)
+
+      if (timeLeft <= 0) {
+        setChallengeWindowTimeLeft(null)
+        clearInterval(interval)
+      }
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [draft?.draftState, draft?.turnStartedAt])
+
   // Function to check if challenge button should be shown
   const shouldShowChallengeButton = () => {
-    return !challengeResolvedAfterLastPick
+    const shouldShow = !challengeResolvedAfterLastPick
+    return shouldShow
   }
 
   // Update challenge flag when picks change
   useEffect(() => {
-    if (picks.length > 0) {
-      // When any new pick comes in, reset the challenge flag
+    // Don't automatically reset the challenge flag when picks change
+    // It will be reset when a new pick is actually submitted
+  }, [picks])
+
+  // Reset challenge flag when draft state changes back to active after challenge
+  useEffect(() => {
+    if (draft?.draftState === 'active' && currentChallenge === null) {
+      // Draft is active and no current challenge, so we can reset the flag
+      // This happens after a challenge is resolved
       setChallengeResolvedAfterLastPick(false)
     }
-  }, [picks])
+  }, [draft?.draftState, currentChallenge])
 
   // Debug: Log when shouldShowChallengeButton result changes
   useEffect(() => {
     const shouldShow = shouldShowChallengeButton()
-    console.log('shouldShowChallengeButton changed:', shouldShow, {
-      challengeResolvedAfterLastPick,
-      picksLength: picks.length
-    })
   }, [challengeResolvedAfterLastPick, picks.length])
 
   const handleJoinDraft = async () => {
@@ -594,6 +709,9 @@ export default function DraftPage() {
       // Clear the input and similar pick warning after successful pick
       setCurrentPick('')
       setSimilarPick(null)
+
+      // Reset challenge flag since a new pick was made
+      setChallengeResolvedAfterLastPick(false)
 
       // Clear the just submitted state after a short delay to prevent layout shift
       setTimeout(() => {
@@ -926,35 +1044,6 @@ export default function DraftPage() {
             ) : null}
           </div>
 
-          {/* Challenge Window Timer - Only for person who made the last pick */}
-          {draft.draftState === 'challenge_window' &&
-            draft.turnStartedAt &&
-            picks.length > 0 &&
-            picks[picks.length - 1]?.clientId === currentUser?.id && (
-              <div className="py-8">
-                <ChallengeWindowTimer
-                  startTime={draft.turnStartedAt}
-                  durationSeconds={30}
-                  isLastPickByCurrentUser={true}
-                  onTimeout={async () => {
-                    try {
-                      const response = await fetch(
-                        `/api/drafts/${draftId}/end-challenge-window`,
-                        {
-                          method: 'POST'
-                        }
-                      )
-                      if (!response.ok) {
-                        console.error('Failed to end challenge window')
-                      }
-                    } catch (error) {
-                      console.error('Error ending challenge window:', error)
-                    }
-                  }}
-                />
-              </div>
-            )}
-
           {/* Join Draft */}
           {!isJoined && draft.draftState === 'setting_up' && (
             <div className="py-8">
@@ -1163,53 +1252,123 @@ export default function DraftPage() {
               </div>
             )}
 
-          {/* Challenge Button */}
-          {isJoined &&
-            currentUser &&
-            challengeTimeLeft !== null &&
-            challengeTimeLeft > 0 &&
-            (draft.draftState === 'active' ||
-              draft.draftState === 'challenge_window') &&
-            draft.isFreeform &&
-            shouldShowChallengeButton() && (
-              <div className="py-8">
-                <div className="max-w-2xl mx-auto">
-                  <div className="bg-card border-2 border-border p-8 relative overflow-hidden">
-                    <GeometricBackground variant="diagonal" opacity={0.05} />
-                    <div className="relative z-10 text-center">
-                      {draft.draftState === 'challenge_window' && (
-                        <>
-                          <div className="flex items-center justify-center gap-2 mb-4">
-                            <Clock className="w-5 h-5 text-muted-foreground" />
-                            <span className="text-sm font-medium text-muted-foreground">
-                              Challenge window: {challengeTimeLeft}s remaining
-                            </span>
-                          </div>
-                          <div className="w-full bg-muted h-2 border-2 border-border mb-6 overflow-hidden">
-                            <div
-                              className="bg-primary h-full transition-all duration-1000 ease-linear"
-                              style={{
-                                width: `${(challengeTimeLeft / 30) * 100}%`
-                              }}
-                            />
-                          </div>
-                        </>
-                      )}
-                      <BrutalButton
-                        onClick={handleChallenge}
-                        variant="default"
-                        className="w-full py-3 text-lg"
-                      >
-                        Challenge Last Pick
-                      </BrutalButton>
-                      <p className="text-xs text-muted-foreground mt-4">
-                        Dispute the validity of the previous selection
-                      </p>
+          {/* Challenge Button - Active State */}
+          {(() => {
+            const shouldShow =
+              isJoined &&
+              currentUser &&
+              draft.isFreeform &&
+              shouldShowChallengeButton() &&
+              draft.draftState === 'active' &&
+              picks.length > 0 &&
+              challengeTimeLeft !== null &&
+              challengeTimeLeft > 0
+
+            return shouldShow
+          })() && (
+            <div className="py-8">
+              <div className="max-w-2xl mx-auto">
+                <div className="bg-card border-2 border-border p-8 relative overflow-hidden">
+                  <GeometricBackground variant="diagonal" opacity={0.05} />
+                  <div className="relative z-10 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                      <Clock className="w-5 h-5 text-muted-foreground" />
+                      <span className="text-sm font-medium text-muted-foreground">
+                        Time to challenge: {challengeTimeLeft ?? 0}s remaining
+                      </span>
                     </div>
+                    <div className="w-full bg-muted h-2 border-2 border-border mb-6 overflow-hidden">
+                      <div
+                        className="bg-primary h-full transition-all duration-1000 ease-linear"
+                        style={{
+                          width: `${((challengeTimeLeft ?? 0) / 30) * 100}%`
+                        }}
+                      />
+                    </div>
+                    <BrutalButton
+                      onClick={handleChallenge}
+                      variant="default"
+                      className="w-full py-3 text-lg"
+                    >
+                      Challenge Last Pick
+                    </BrutalButton>
+                    <p className="text-xs text-muted-foreground mt-4">
+                      Dispute the validity of the previous selection
+                    </p>
                   </div>
                 </div>
               </div>
-            )}
+            </div>
+          )}
+
+          {/* Challenge Window - One box for everyone */}
+          {(() => {
+            const shouldShow =
+              isJoined &&
+              currentUser &&
+              draft.isFreeform &&
+              shouldShowChallengeButton() &&
+              draft.draftState === 'challenge_window' &&
+              picks.length > 0
+
+            return shouldShow
+          })() && (
+            <div className="py-8">
+              <div className="max-w-2xl mx-auto">
+                <div className="bg-card border-2 border-border p-8 relative overflow-hidden">
+                  <GeometricBackground variant="diagonal" opacity={0.05} />
+                  <div className="relative z-10 text-center">
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                      <Clock className="w-5 h-5 text-muted-foreground" />
+                      <span className="text-sm font-medium text-muted-foreground">
+                        Challenge window:{' '}
+                        {challengeWindowTimeLeft !== null &&
+                        challengeWindowTimeLeft >= 0
+                          ? `${challengeWindowTimeLeft}s`
+                          : '30s'}{' '}
+                        remaining
+                      </span>
+                    </div>
+                    <div className="w-full bg-muted h-2 border-2 border-border mb-6 overflow-hidden">
+                      <div
+                        className="bg-primary h-full transition-all duration-1000 ease-linear"
+                        style={{
+                          width: `${
+                            challengeWindowTimeLeft !== null &&
+                            challengeWindowTimeLeft >= 0
+                              ? (challengeWindowTimeLeft / 30) * 100
+                              : 100
+                          }%`
+                        }}
+                      />
+                    </div>
+                    {picks[picks.length - 1]?.clientId === currentUser.id ? (
+                      <p className="text-sm text-muted-foreground">
+                        Your pick can be challenged. The draft will end if no
+                        challenge is made.
+                      </p>
+                    ) : (
+                      <>
+                        <p className="text-sm text-muted-foreground mb-4">
+                          The last pick can still be challenged.
+                        </p>
+                        <BrutalButton
+                          onClick={handleChallenge}
+                          variant="default"
+                          className="w-full py-3 text-lg"
+                        >
+                          Challenge Last Pick
+                        </BrutalButton>
+                        <p className="text-xs text-muted-foreground mt-4">
+                          Dispute the validity of the previous selection
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Challenge Voting UI */}
           {draft.draftState === 'challenge' && currentChallenge && (
