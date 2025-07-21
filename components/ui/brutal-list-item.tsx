@@ -5,7 +5,7 @@ import { ReactNode } from 'react'
 import { NumberBox } from './number-box'
 
 interface BrutalListItemProps {
-  number: number | string
+  number?: number | string
   children: ReactNode
   variant?: 'default' | 'minimal' | 'empty' | 'active' | 'highlighted'
   onClick?: () => void
@@ -34,11 +34,13 @@ export function BrutalListItem({
 
   return (
     <div className={cn('flex items-center gap-3', className)}>
-      <NumberBox
-        number={number}
-        size="sm"
-        variant={variant === 'active' ? 'filled' : 'minimal'}
-      />
+      {number !== undefined && (
+        <NumberBox
+          number={number}
+          size="sm"
+          variant={variant === 'active' ? 'filled' : 'minimal'}
+        />
+      )}
 
       <Component
         className={cn(

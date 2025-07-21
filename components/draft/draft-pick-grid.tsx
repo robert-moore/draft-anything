@@ -6,6 +6,14 @@ interface DraftPickGridProps {
   currentUserId?: string
 }
 
+// Utility to truncate pick payload
+function truncatePickPayload(payload: string, maxLength = 150) {
+  if (payload.length > maxLength) {
+    return payload.slice(0, maxLength) + '...'
+  }
+  return payload
+}
+
 export function DraftPickGrid({
   pickNumber,
   pick,
@@ -15,7 +23,7 @@ export function DraftPickGrid({
 
   return (
     <div
-      className={`border-2 p-3 h-20 ${
+      className={`relative border-2 p-3 h-20 ${
         pick
           ? isMyPick
             ? 'bg-primary/20 border-border'
@@ -29,7 +37,7 @@ export function DraftPickGrid({
             #{pick.pickNumber}
           </div>
           <div className="text-sm font-medium truncate text-foreground">
-            {pick.payload}
+            {truncatePickPayload(pick.payload)}
           </div>
           <div className="text-xs text-muted-foreground truncate">
             {pick.clientName}

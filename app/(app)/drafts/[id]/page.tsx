@@ -4,6 +4,7 @@ import { AutoPickMonitor } from '@/components/draft/auto-pick-monitor'
 import { DraftMetadata } from '@/components/draft/draft-metadata'
 import { DraftPickGrid } from '@/components/draft/draft-pick-grid'
 import { DraftTimer } from '@/components/draft/draft-timer'
+import { EmojiReactionsRow } from '@/components/draft/emoji-reactions-row'
 import { ViewModeTabs } from '@/components/draft/view-mode-tabs'
 import { BrutalButton } from '@/components/ui/brutal-button'
 import { BrutalInput } from '@/components/ui/brutal-input'
@@ -20,7 +21,34 @@ import { useEffect, useRef, useState } from 'react'
 
 const supabase = createClient()
 
+// Utility to truncate pick payload
+function truncatePickPayload(payload: string, maxLength: number) {
+  if (payload.length > maxLength) {
+    return payload.slice(0, maxLength) + '...'
+  }
+  return payload
+}
+
+// Hook to get responsive truncation limit
+function usePickTruncateLimit() {
+  const [limit, setLimit] = useState(150)
+  useEffect(() => {
+    function updateLimit() {
+      if (window.innerWidth < 640) {
+        setLimit(50)
+      } else {
+        setLimit(80)
+      }
+    }
+    updateLimit()
+    window.addEventListener('resize', updateLimit)
+    return () => window.removeEventListener('resize', updateLimit)
+  }, [])
+  return limit
+}
+
 export default function DraftPage() {
+  const pickTruncateLimit = usePickTruncateLimit()
   const params = useParams()
   const draftId = params.id as string
 
@@ -71,6 +99,18 @@ export default function DraftPage() {
   >(null)
   const [shouldHideChallengeButtonOnLoad, setShouldHideChallengeButtonOnLoad] =
     useState(false)
+
+  // Add state for all reactions
+  type Reaction = {
+    id: number
+    draftId: number
+    pickNumber: number
+    userId: string
+    userName: string
+    emoji: string
+    createdAt?: string
+  }
+  const [reactions, setReactions] = useState<Reaction[]>([])
 
   const participantsRef = useRef<Participant[]>([])
   const prevPicksLength = useRef<null | number>(null)
@@ -150,6 +190,7 @@ export default function DraftPage() {
       setCurrentUser(data.currentUser)
       setIsAdmin(data.isAdmin || false)
       setCuratedOptions(data.curatedOptions || [])
+      setReactions(data.reactions || [])
 
       if (
         data.currentUser &&
@@ -483,6 +524,98 @@ export default function DraftPage() {
         )
         .subscribe()
 
+      const draftReactionsSub = supabase
+        .channel(`draft-reactions-${draftId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'da',
+            table: 'draft_reactions',
+            filter: `draft_id=eq.${draft.id}`
+          },
+          payload => {
+            setReactions(prev => {
+              const filtered = prev.filter(
+                r =>
+                  !(
+                    r.draftId === payload.new.draft_id &&
+                    r.pickNumber === payload.new.pick_number &&
+                    r.userId === payload.new.user_id
+                  )
+              )
+              return [
+                ...filtered,
+                {
+                  id: payload.new.id,
+                  draftId: payload.new.draft_id,
+                  pickNumber: payload.new.pick_number,
+                  userId: payload.new.user_id,
+                  userName: payload.new.user_name,
+                  emoji: payload.new.emoji,
+                  createdAt: payload.new.created_at
+                }
+              ]
+            })
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'da',
+            table: 'draft_reactions',
+            filter: `draft_id=eq.${draft.id}`
+          },
+          payload => {
+            setReactions(prev => {
+              const filtered = prev.filter(
+                r =>
+                  !(
+                    r.draftId === payload.new.draft_id &&
+                    r.pickNumber === payload.new.pick_number &&
+                    r.userId === payload.new.user_id
+                  )
+              )
+              return [
+                ...filtered,
+                {
+                  id: payload.new.id,
+                  draftId: payload.new.draft_id,
+                  pickNumber: payload.new.pick_number,
+                  userId: payload.new.user_id,
+                  userName: payload.new.user_name,
+                  emoji: payload.new.emoji,
+                  createdAt: payload.new.created_at
+                }
+              ]
+            })
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'da',
+            table: 'draft_reactions',
+            filter: `draft_id=eq.${draft.id}`
+          },
+          payload => {
+            setReactions(prev =>
+              prev.filter(
+                r =>
+                  !(
+                    r.draftId === payload.old.draft_id &&
+                    r.pickNumber === payload.old.pick_number &&
+                    r.userId === payload.old.user_id &&
+                    r.emoji === payload.old.emoji
+                  )
+              )
+            )
+          }
+        )
+        .subscribe()
+
       // Clean up on unmount
       return () => {
         supabase.removeChannel(draftUsersSub)
@@ -490,6 +623,7 @@ export default function DraftPage() {
         supabase.removeChannel(draftStateSub)
         supabase.removeChannel(challengeSub)
         supabase.removeChannel(challengeVotesSub)
+        supabase.removeChannel(draftReactionsSub)
       }
     }, 250)
 
@@ -978,6 +1112,63 @@ export default function DraftPage() {
     participants.find(p => p.id === currentUser?.id)?.position ===
       draft?.currentPositionOnClock
 
+  // Add a computed boolean for pick length
+  const isPickTooLong = currentPick.length > 300
+
+  // Helper to get reactions for a pick
+  function getPickReactions(pickNumber: number) {
+    return reactions.filter(r => r.pickNumber === pickNumber)
+  }
+  // Helper to get current user's reactions for a pick
+  function getCurrentUserReactions(pickNumber: number) {
+    return reactions
+      .filter(r => r.pickNumber === pickNumber && r.userId === currentUser?.id)
+      .map(r => r.emoji)
+  }
+  // Helper to check if user can react
+  const canReact = isJoined
+  // Handler to add/remove reaction
+  async function handleReact(
+    pickNumber: number,
+    emoji: string,
+    isActive: boolean
+  ) {
+    // Optimistically update reactions state
+    setReactions(prev => {
+      if (!currentUser) return prev
+      // Remove any previous reaction for this pick and user
+      let filtered = prev.filter(
+        r => !(r.pickNumber === pickNumber && r.userId === currentUser.id)
+      )
+      // If removing (isActive), only remove; if adding, add new reaction
+      if (!isActive) {
+        filtered = [
+          ...filtered,
+          {
+            id: Math.floor(Math.random() * 1e9), // temp id
+            draftId: draft?.id || 0,
+            pickNumber,
+            userId: currentUser.id,
+            userName: currentUser.name || '',
+            emoji,
+            createdAt: new Date().toISOString()
+          }
+        ]
+      }
+      return filtered
+    })
+    // Send to server
+    const url = `/api/drafts/${draftId}/reactions`
+    await fetch(url, {
+      method: 'POST',
+      body: JSON.stringify({ pickNumber, emoji: isActive ? null : emoji })
+    })
+    // TODO: Ignore any real-time updates for this user until next reload
+  }
+
+  // Build a userId => userName map from participants
+  const userIdToName = Object.fromEntries(participants.map(p => [p.id, p.name]))
+
   return (
     <div className="min-h-screen bg-background">
       {/* Auto-pick handler (only for timed drafts) */}
@@ -1185,10 +1376,18 @@ export default function DraftPage() {
                               </div>
                             </div>
                           )}
+                          {isPickTooLong && (
+                            <div className="mt-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
+                              <div className="text-sm text-red-700 dark:text-red-300 font-medium">
+                                ⚠️ Pick must be 300 characters or fewer (
+                                {currentPick.length}/300)
+                              </div>
+                            </div>
+                          )}
                         </div>
                         <BrutalButton
                           onClick={handleMakePick}
-                          disabled={!currentPick.trim()}
+                          disabled={!currentPick.trim() || isPickTooLong}
                           variant="filled"
                           className="w-full py-3 text-lg"
                         >
@@ -1543,15 +1742,45 @@ export default function DraftPage() {
                             return (
                               <BrutalListItem
                                 key={pick.pickNumber}
-                                number={pick.pickNumber}
                                 variant={isMyPick ? 'highlighted' : 'default'}
+                                className="relative"
                               >
-                                <div className="flex-1">
-                                  <div className="font-medium text-foreground">
-                                    {pick.payload}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    by {pick.clientName}
+                                <div className="absolute top-0 right-0 z-10">
+                                  <EmojiReactionsRow
+                                    reactions={getPickReactions(
+                                      pick.pickNumber
+                                    )}
+                                    currentUserId={currentUser?.id}
+                                    onReact={(emoji, isActive) =>
+                                      handleReact(
+                                        pick.pickNumber,
+                                        emoji,
+                                        isActive
+                                      )
+                                    }
+                                    canReact={canReact}
+                                    currentUserReactions={getCurrentUserReactions(
+                                      pick.pickNumber
+                                    )}
+                                    inline={true}
+                                    userIdToName={userIdToName}
+                                    maxEmojis={5}
+                                  />
+                                </div>
+                                <div className="flex items-center gap-6 pr-12">
+                                  <span className="font-mono text-xs text-muted-foreground">
+                                    {pick.pickNumber}
+                                  </span>
+                                  <div className="flex-1 space-y-1.5">
+                                    <div className="font-medium text-foreground flex items-center gap-1">
+                                      {truncatePickPayload(
+                                        pick.payload,
+                                        pickTruncateLimit
+                                      )}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      by {pick.clientName}
+                                    </div>
                                   </div>
                                 </div>
                               </BrutalListItem>
@@ -1572,7 +1801,7 @@ export default function DraftPage() {
                           <h3 className="font-bold text-sm mb-3 text-foreground">
                             Round {roundIndex + 1}
                           </h3>
-                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                             {Array.from({ length: participants.length }).map(
                               (_, pickIndex) => {
                                 const pickNumber =
@@ -1583,12 +1812,37 @@ export default function DraftPage() {
                                   p => p.pickNumber === pickNumber
                                 )
                                 return (
-                                  <DraftPickGrid
-                                    key={pickIndex}
-                                    pickNumber={pickNumber}
-                                    pick={pick}
-                                    currentUserId={currentUser?.id}
-                                  />
+                                  <div key={pickIndex} className="relative">
+                                    <DraftPickGrid
+                                      pickNumber={pickNumber}
+                                      pick={pick}
+                                      currentUserId={currentUser?.id}
+                                    />
+                                    {pick && (
+                                      <div className="absolute top-1 right-1 z-10">
+                                        <EmojiReactionsRow
+                                          reactions={getPickReactions(
+                                            pick.pickNumber
+                                          )}
+                                          currentUserId={currentUser?.id}
+                                          onReact={(emoji, isActive) =>
+                                            handleReact(
+                                              pick.pickNumber,
+                                              emoji,
+                                              isActive
+                                            )
+                                          }
+                                          canReact={canReact}
+                                          currentUserReactions={getCurrentUserReactions(
+                                            pick.pickNumber
+                                          )}
+                                          inline={true}
+                                          userIdToName={userIdToName}
+                                          maxEmojis={3}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
                                 )
                               }
                             )}
@@ -1601,7 +1855,7 @@ export default function DraftPage() {
 
                 {/* By Drafter View */}
                 {viewMode === 'by-drafter' && (
-                  <div className="space-y-8">
+                  <div className="space-y-8 max-w-4xl">
                     {drafterData.map(drafter => {
                       // Check if any of the drafter's picks belong to the current user
                       const isMyDrafter = drafter.picks.some(
@@ -1631,15 +1885,45 @@ export default function DraftPage() {
                               return (
                                 <BrutalListItem
                                   key={pick.pickNumber}
-                                  number={pick.pickNumber}
                                   variant="minimal"
+                                  className="relative"
                                 >
-                                  <div className="flex-1">
-                                    <div className="font-medium text-foreground">
-                                      {pick.payload}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                      Round {roundNum}
+                                  <div className="absolute top-0 right-0 z-10">
+                                    <EmojiReactionsRow
+                                      reactions={getPickReactions(
+                                        pick.pickNumber
+                                      )}
+                                      currentUserId={currentUser?.id}
+                                      onReact={(emoji, isActive) =>
+                                        handleReact(
+                                          pick.pickNumber,
+                                          emoji,
+                                          isActive
+                                        )
+                                      }
+                                      canReact={canReact}
+                                      currentUserReactions={getCurrentUserReactions(
+                                        pick.pickNumber
+                                      )}
+                                      inline={true}
+                                      userIdToName={userIdToName}
+                                      maxEmojis={5}
+                                    />
+                                  </div>
+                                  <div className="flex items-center gap-6 pr-12">
+                                    <span className="font-mono text-xs text-muted-foreground">
+                                      {pick.pickNumber}
+                                    </span>
+                                    <div className="flex-1 space-y-1.5">
+                                      <div className="font-medium text-foreground flex items-center gap-1">
+                                        {truncatePickPayload(
+                                          pick.payload,
+                                          pickTruncateLimit
+                                        )}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground">
+                                        Round {roundNum}
+                                      </div>
                                     </div>
                                   </div>
                                 </BrutalListItem>

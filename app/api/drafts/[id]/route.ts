@@ -1,6 +1,7 @@
 import {
   draftChallengesInDa,
   draftCuratedOptionsInDa,
+  draftReactionsInDa,
   draftSelectionsInDa,
   draftUsersInDa,
   profilesInDa
@@ -202,6 +203,12 @@ export async function GET(
       }
     }
 
+    // Get all reactions for the draft
+    const reactions = await db
+      .select()
+      .from(draftReactionsInDa)
+      .where(eq(draftReactionsInDa.draftId, draft.id))
+
     return NextResponse.json({
       draft,
       participants: participantsQuery,
@@ -210,7 +217,8 @@ export async function GET(
       isAdmin,
       curatedOptions,
       latestResolvedChallenge: latestChallenge || null,
-      hasPreviousPickAlreadyBeenChallenged
+      hasPreviousPickAlreadyBeenChallenged,
+      reactions // <-- add reactions to response
     })
   } catch (error) {
     console.error('Error fetching draft:', error)

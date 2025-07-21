@@ -174,3 +174,30 @@ export const draftChallengeVotesInDa = da.table(
     unique('unique_challenge_vote').on(table.challengeId, table.voterUserId)
   ]
 )
+
+export const draftReactionsInDa = da.table(
+  'draft_reactions',
+  {
+    id: serial().primaryKey().notNull(),
+    draftId: integer('draft_id').notNull(),
+    pickNumber: smallint('pick_number').notNull(),
+    userId: uuid('user_id').notNull(),
+    emoji: text('emoji'), // allow null for soft delete
+    createdAt: timestamp('created_at', { mode: 'string' })
+  },
+  table => [
+    foreignKey({
+      columns: [table.draftId, table.pickNumber],
+      foreignColumns: [
+        draftSelectionsInDa.draftId,
+        draftSelectionsInDa.pickNumber
+      ],
+      name: 'draft_reactions_selection_fkey'
+    }),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [profilesInDa.id],
+      name: 'draft_reactions_user_id_fkey'
+    })
+  ]
+)
