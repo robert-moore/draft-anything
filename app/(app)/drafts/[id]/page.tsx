@@ -35,7 +35,7 @@ function usePickTruncateLimit() {
   useEffect(() => {
     function updateLimit() {
       if (window.innerWidth < 640) {
-        setLimit(50)
+        setLimit(30)
       } else {
         setLimit(80)
       }
@@ -1765,9 +1765,11 @@ export default function DraftPage() {
                                     inline={true}
                                     userIdToName={userIdToName}
                                     maxEmojis={5}
+                                    pickNumber={pick.pickNumber}
+                                    pickerName={pick.clientName}
                                   />
                                 </div>
-                                <div className="flex items-center gap-6 pr-12">
+                                <div className="flex items-center gap-6 pr-16 sm:pr-12">
                                   <span className="font-mono text-xs text-muted-foreground">
                                     {pick.pickNumber}
                                   </span>
@@ -1839,6 +1841,8 @@ export default function DraftPage() {
                                           inline={true}
                                           userIdToName={userIdToName}
                                           maxEmojis={3}
+                                          pickNumber={pick.pickNumber}
+                                          pickerName={pick.clientName}
                                         />
                                       </div>
                                     )}
@@ -1908,9 +1912,11 @@ export default function DraftPage() {
                                       inline={true}
                                       userIdToName={userIdToName}
                                       maxEmojis={5}
+                                      pickNumber={pick.pickNumber}
+                                      pickerName={pick.clientName}
                                     />
                                   </div>
-                                  <div className="flex items-center gap-6 pr-12">
+                                  <div className="flex items-center gap-6 pr-16 sm:pr-12">
                                     <span className="font-mono text-xs text-muted-foreground">
                                       {pick.pickNumber}
                                     </span>
