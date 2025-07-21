@@ -6,6 +6,10 @@ import {
   draftUsersInDa
 } from '@/drizzle/schema'
 import { getDraftByGuid, parseDraftGuid } from '@/lib/api/draft-guid-helpers'
+import {
+  calculateNextDrafter,
+  getParticipantCountByGuid
+} from '@/lib/api/draft-helpers'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
 import { and, count, eq } from 'drizzle-orm'
@@ -192,25 +196,21 @@ export async function POST(
             })
             .where(eq(draftsInDa.id, draft.id))
         } else {
-          // Challenge failed during active state - just continue the draft
-          // Get the challenged player's position to continue their turn
-          const [challengedPlayer] = await db
-            .select({ position: draftUsersInDa.position })
-            .from(draftUsersInDa)
-            .where(
-              and(
-                eq(draftUsersInDa.draftId, draft.id),
-                eq(draftUsersInDa.userId, challenge.challengedUserId)
-              )
-            )
-            .limit(1)
+          // Challenge failed during active state - advance to next player
+          // Get participant count and calculate next drafter
+          const numParticipants = await getParticipantCountByGuid(draft.guid)
+          const { nextPosition, isDraftCompleted } = calculateNextDrafter(
+            challenge.challengedPickNumber,
+            numParticipants,
+            draft.numRounds
+          )
 
           await db
             .update(draftsInDa)
             .set({
-              draftState: 'active',
-              currentPositionOnClock: challengedPlayer?.position || 1,
-              turnStartedAt: new Date().toISOString() // Continue their turn
+              draftState: isDraftCompleted ? 'completed' : 'active',
+              currentPositionOnClock: nextPosition,
+              turnStartedAt: new Date().toISOString() // Start timer for next player
             })
             .where(eq(draftsInDa.id, draft.id))
         }

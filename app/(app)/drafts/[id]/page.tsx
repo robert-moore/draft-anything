@@ -63,6 +63,10 @@ export default function DraftPage() {
     }>
   >([])
   const [showLoading, setShowLoading] = useState(true)
+  const [hasRecentSuccessfulChallenge, setHasRecentSuccessfulChallenge] =
+    useState(false)
+  const [challengeResolvedAfterLastPick, setChallengeResolvedAfterLastPick] =
+    useState(false)
 
   const participantsRef = useRef<Participant[]>([])
 
@@ -262,7 +266,6 @@ export default function DraftPage() {
               )
               if (curatedOption) {
                 pickPayload = curatedOption.optionText
-                console.log('Found curated option text locally:', pickPayload)
               } else {
                 console.error(
                   'Could not find curated option with ID:',
@@ -376,6 +379,28 @@ export default function DraftPage() {
           },
           payload => {
             setCurrentChallenge(payload.new)
+            // Hide challenge button when any challenge is resolved (accepted or rejected)
+            if (
+              payload.new.status === 'resolved' ||
+              payload.new.status === 'dismissed'
+            ) {
+              console.warn('Challenge resolved -- hiding challenge button')
+              setChallengeResolvedAfterLastPick(true)
+              // Set the challenge time left to 0
+              setChallengeTimeLeft(0)
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'da',
+            table: 'draft_challenges',
+            filter: `draft_id=eq.${draft.id}`
+          },
+          payload => {
+            setCurrentChallenge(null)
           }
         )
         .subscribe()
@@ -443,15 +468,6 @@ export default function DraftPage() {
     const thirtySeconds = 30 * 1000
     const timeRemaining = thirtySeconds - timeSinceLastPick
 
-    // Debug logging
-    console.log('Challenge timing debug:', {
-      lastPickTime,
-      now,
-      timeSinceLastPick,
-      timeRemaining,
-      lastPickCreatedAt: lastPick.createdAt
-    })
-
     if (timeRemaining <= 0) {
       setChallengeTimeLeft(null)
       return
@@ -470,6 +486,28 @@ export default function DraftPage() {
 
     return () => clearInterval(interval)
   }, [picks, currentUser])
+
+  // Function to check if challenge button should be shown
+  const shouldShowChallengeButton = () => {
+    return !challengeResolvedAfterLastPick
+  }
+
+  // Update challenge flag when picks change
+  useEffect(() => {
+    if (picks.length > 0) {
+      // When any new pick comes in, reset the challenge flag
+      setChallengeResolvedAfterLastPick(false)
+    }
+  }, [picks])
+
+  // Debug: Log when shouldShowChallengeButton result changes
+  useEffect(() => {
+    const shouldShow = shouldShowChallengeButton()
+    console.log('shouldShowChallengeButton changed:', shouldShow, {
+      challengeResolvedAfterLastPick,
+      picksLength: picks.length
+    })
+  }, [challengeResolvedAfterLastPick, picks.length])
 
   const handleJoinDraft = async () => {
     if (!playerName.trim()) return
@@ -576,12 +614,16 @@ export default function DraftPage() {
       if (!response.ok) {
         const error = await response.json()
         setError(error.error || 'Failed to initiate challenge')
+        // Show challenge button again if challenge failed
+        setChallengeResolvedAfterLastPick(false)
         return
       }
 
       const data = await response.json()
       setCurrentChallenge(data.challenge)
       setDraft(prev => (prev ? { ...prev, draftState: 'challenge' } : null))
+
+      setChallengeResolvedAfterLastPick(true)
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Failed to initiate challenge'
@@ -1128,7 +1170,8 @@ export default function DraftPage() {
             challengeTimeLeft > 0 &&
             (draft.draftState === 'active' ||
               draft.draftState === 'challenge_window') &&
-            draft.isFreeform && (
+            draft.isFreeform &&
+            shouldShowChallengeButton() && (
               <div className="py-8">
                 <div className="max-w-2xl mx-auto">
                   <div className="bg-card border-2 border-border p-8 relative overflow-hidden">
