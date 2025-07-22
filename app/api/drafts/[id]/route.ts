@@ -17,6 +17,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    console.log('API: Draft route called')
+
     // Check authentication
     const user = await getCurrentUser()
     if (!user) {
@@ -167,8 +169,9 @@ export async function GET(
     const sortedPicks = picksQuery.sort((a, b) => b.pickNumber - a.pickNumber)
     const highestPickNumber = sortedPicks[0]?.pickNumber || 0
     let hasPreviousPickAlreadyBeenChallenged = false
+
     if (highestPickNumber > 0) {
-      // Check for any challenge (pending, resolved, or dismissed) for current pick
+      // Only hide challenge button if there's an active challenge for the current pick
       const currentPickChallenges = await db
         .select({ id: draftChallengesInDa.id })
         .from(draftChallengesInDa)
@@ -179,27 +182,17 @@ export async function GET(
           )
         )
         .limit(1)
+
+      console.log('API: Checking for active challenges:', {
+        draftId: draft.id,
+        highestPickNumber,
+        currentPickChallenges: currentPickChallenges.length,
+        hasPreviousPickAlreadyBeenChallenged
+      })
+
       if (currentPickChallenges.length > 0) {
         hasPreviousPickAlreadyBeenChallenged = true
-      } else if (highestPickNumber > 1) {
-        // Only check previous pick if no challenge for current pick
-        const previousPickResolvedChallenges = await db
-          .select({ id: draftChallengesInDa.id })
-          .from(draftChallengesInDa)
-          .where(
-            and(
-              eq(draftChallengesInDa.draftId, draft.id),
-              eq(
-                draftChallengesInDa.challengedPickNumber,
-                highestPickNumber - 1
-              ),
-              eq(draftChallengesInDa.status, 'resolved')
-            )
-          )
-          .limit(1)
-        if (previousPickResolvedChallenges.length > 0) {
-          hasPreviousPickAlreadyBeenChallenged = true
-        }
+        console.log('API: Found active challenge, hiding button')
       }
     }
 

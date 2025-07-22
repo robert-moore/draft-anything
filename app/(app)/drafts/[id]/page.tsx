@@ -16,7 +16,7 @@ import { NumberBox } from '@/components/ui/number-box'
 import { createClient } from '@/lib/supabase/client'
 import type { Draft, DraftPick, Participant } from '@/types/draft'
 import { differenceInSeconds, parseISO } from 'date-fns'
-import { AlertCircle, Clock, Share } from 'lucide-react'
+import { AlertCircle, ArrowDown, ArrowUp, Clock, Share } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
@@ -71,6 +71,7 @@ export default function DraftPage() {
   const [viewMode, setViewMode] = useState<
     'selections' | 'by-round' | 'by-drafter'
   >('selections')
+  const [isReversed, setIsReversed] = useState(false)
   const [challengeTimeLeft, setChallengeTimeLeft] = useState<number | null>(
     null
   )
@@ -426,7 +427,13 @@ export default function DraftPage() {
             // Reset justSubmittedPick state when a new pick is made
             setJustSubmittedPick(false)
 
+            console.log('New pick made - resetting challenge state:', {
+              pickNumber: newPick.pick_number,
+              userId: newPick.user_id,
+              payload: pickPayload
+            })
             setShouldHideChallengeButtonOnLoad(false)
+            setChallengeResolvedAfterLastPick(false)
           }
         )
         .on(
@@ -528,6 +535,14 @@ export default function DraftPage() {
               payload.new.status === 'resolved' ||
               payload.new.status === 'dismissed'
             ) {
+              console.log(
+                'Challenge resolved - setting challengeResolvedAfterLastPick to true:',
+                {
+                  challengeId: payload.new.id,
+                  status: payload.new.status,
+                  challengedPickNumber: payload.new.challenged_pick_number
+                }
+              )
               setChallengeResolvedAfterLastPick(true)
             }
           }
@@ -895,14 +910,33 @@ export default function DraftPage() {
     // Always show challenge button in challenge window state, except if current user's pick is the last pick
     if (draft?.draftState === 'challenge_window') {
       const lastPick = picks[picks.length - 1]
-      return lastPick && lastPick.clientId !== currentUser?.id
+      const shouldShow = lastPick && lastPick.clientId !== currentUser?.id
+      console.log('Challenge window state - shouldShowChallengeButton:', {
+        draftState: draft?.draftState,
+        lastPick,
+        currentUserId: currentUser?.id,
+        shouldShow
+      })
+      return shouldShow
     }
 
-    // For active state, use the existing logic but simplified
+    // For active state, only use real-time state, not the initial load state
     if (draft?.draftState === 'active') {
-      return !challengeResolvedAfterLastPick && !shouldHideChallengeButtonOnLoad
+      const shouldShow = !challengeResolvedAfterLastPick
+      console.log('Active state - shouldShowChallengeButton:', {
+        draftState: draft?.draftState,
+        challengeResolvedAfterLastPick,
+        shouldShow,
+        picksLength: picks.length,
+        lastPick: picks[picks.length - 1]
+      })
+      return shouldShow
     }
 
+    console.log('Other state - shouldShowChallengeButton:', {
+      draftState: draft?.draftState,
+      shouldShow: false
+    })
     return false
   }
 
@@ -1618,53 +1652,6 @@ export default function DraftPage() {
               </div>
             )}
 
-          {/* Curated Options Preview - Show when not your turn but draft is active */}
-          {draft.draftState === 'active' &&
-            !justSubmittedPick &&
-            isJoined &&
-            currentUser &&
-            isOrderFinalized &&
-            !draft.isFreeform &&
-            participants.find(p => p.id === currentUser?.id)?.position !==
-              draft.currentPositionOnClock && (
-              <div className="py-8">
-                <div className="max-w-2xl mx-auto">
-                  <div className="bg-card border-2 border-border p-8 relative overflow-hidden">
-                    <GeometricBackground variant="diagonal" opacity={0.05} />
-                    <div className="relative z-10">
-                      <div className="text-center mb-6">
-                        <h2 className="text-2xl font-bold text-foreground">
-                          Preview Options
-                        </h2>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          You can browse options, but can't submit until your
-                          turn
-                        </p>
-                      </div>
-                      <div className="space-y-4">
-                        <div>
-                          <CuratedOptionsDropdown
-                            options={curatedOptions}
-                            value={currentPick}
-                            onValueChange={setCurrentPick}
-                            placeholder="Browse options..."
-                            disabled={false}
-                          />
-                        </div>
-                        <BrutalButton
-                          disabled={true}
-                          variant="filled"
-                          className="w-full py-3 text-lg opacity-50"
-                        >
-                          Not Your Turn
-                        </BrutalButton>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
           {/* Processing Pick */}
           {draft.draftState === 'active' && justSubmittedPick && (
             <div className="py-8">
@@ -1728,6 +1715,53 @@ export default function DraftPage() {
                         </div>
                       </>
                     )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+          {/* Curated Options Preview - Show when not your turn but draft is active */}
+          {draft.draftState === 'active' &&
+            !justSubmittedPick &&
+            isJoined &&
+            currentUser &&
+            isOrderFinalized &&
+            !draft.isFreeform &&
+            participants.find(p => p.id === currentUser?.id)?.position !==
+              draft.currentPositionOnClock && (
+              <div className="py-8">
+                <div className="max-w-2xl mx-auto">
+                  <div className="bg-card border-2 border-border p-8 relative overflow-hidden">
+                    <GeometricBackground variant="diagonal" opacity={0.05} />
+                    <div className="relative z-10">
+                      <div className="text-center mb-6">
+                        <h2 className="text-2xl font-bold text-foreground">
+                          Preview Options
+                        </h2>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          You can browse options, but can't submit until your
+                          turn
+                        </p>
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <CuratedOptionsDropdown
+                            options={curatedOptions}
+                            value={currentPick}
+                            onValueChange={setCurrentPick}
+                            placeholder="Browse options..."
+                            disabled={false}
+                          />
+                        </div>
+                        <BrutalButton
+                          disabled={true}
+                          variant="filled"
+                          className="w-full py-3 text-lg opacity-50"
+                        >
+                          Not Your Turn
+                        </BrutalButton>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1804,24 +1838,27 @@ export default function DraftPage() {
                     <div className="flex items-center justify-center gap-2 mb-4">
                       <Clock className="w-5 h-5 text-muted-foreground" />
                       <span className="text-sm font-medium text-muted-foreground">
-                        Challenge window:{' '}
                         {challengeWindowTimeLeft !== null &&
-                        challengeWindowTimeLeft >= 0
-                          ? `${challengeWindowTimeLeft}s`
-                          : '30s'}{' '}
-                        remaining
+                        challengeWindowTimeLeft > 0 ? (
+                          <>
+                            Challenge window: {challengeWindowTimeLeft}s
+                            remaining
+                          </>
+                        ) : (
+                          <>
+                            Challenge window expired - checking with server...
+                          </>
+                        )}
                       </span>
                     </div>
                     <div className="w-full bg-muted h-2 border-2 border-border mb-6 overflow-hidden">
                       <div
                         className="bg-primary h-full transition-all duration-1000 ease-linear"
                         style={{
-                          width: `${
-                            challengeWindowTimeLeft !== null &&
-                            challengeWindowTimeLeft >= 0
-                              ? (challengeWindowTimeLeft / 30) * 100
-                              : 100
-                          }%`
+                          width: `${Math.max(
+                            0,
+                            ((challengeWindowTimeLeft ?? 0) / 30) * 100
+                          )}%`
                         }}
                       />
                     </div>
@@ -1979,7 +2016,21 @@ export default function DraftPage() {
               <h2 className="text-2xl font-bold text-foreground hidden sm:block">
                 Draft Board
               </h2>
-              <ViewModeTabs viewMode={viewMode} onChange={setViewMode} />
+              <div className="flex items-center gap-4">
+                {(viewMode === 'selections' || viewMode === 'by-round') && (
+                  <button
+                    onClick={() => setIsReversed(!isReversed)}
+                    className="text-xs px-3 py-1 border border-border rounded hover:bg-accent transition-colors flex items-center gap-1"
+                  >
+                    {isReversed ? (
+                      <ArrowUp className="w-3 h-3" />
+                    ) : (
+                      <ArrowDown className="w-3 h-3" />
+                    )}
+                  </button>
+                )}
+                <ViewModeTabs viewMode={viewMode} onChange={setViewMode} />
+              </div>
             </div>
             {picks.length === 0 ? (
               <div className="border-2 border-border border-dashed p-16 text-center">
@@ -2003,124 +2054,70 @@ export default function DraftPage() {
                 {/* Selections View */}
                 {viewMode === 'selections' && (
                   <div className="space-y-8">
-                    {roundsData.map((round, roundIndex) => (
-                      <div key={roundIndex}>
-                        <h3 className="font-bold text-sm mb-3 text-foreground">
-                          Round {roundIndex + 1}
-                        </h3>
-                        <div className="space-y-2">
-                          {round.map(pick => {
-                            const isMyPick = currentUser?.id === pick.clientId
-                            return (
-                              <BrutalListItem
-                                key={pick.pickNumber}
-                                variant={isMyPick ? 'highlighted' : 'default'}
-                                className="relative"
-                              >
-                                <div className="absolute top-0 right-0 z-10">
-                                  <EmojiReactionsRow
-                                    reactions={getPickReactions(
-                                      pick.pickNumber
-                                    )}
-                                    currentUserId={currentUser?.id}
-                                    onReact={(emoji, isActive) =>
-                                      handleReact(
-                                        pick.pickNumber,
-                                        emoji,
-                                        isActive
-                                      )
-                                    }
-                                    canReact={canReact}
-                                    currentUserReactions={getCurrentUserReactions(
-                                      pick.pickNumber
-                                    )}
-                                    inline={true}
-                                    userIdToName={userIdToName}
-                                    maxEmojis={5}
-                                    pickNumber={pick.pickNumber}
-                                    pickerName={pick.clientName}
-                                    pickContent={pick.payload}
-                                  />
-                                </div>
-                                <div className="flex items-center gap-6 pr-16 sm:pr-12">
-                                  <span className="font-mono text-xs text-muted-foreground w-6 text-right">
-                                    {pick.pickNumber}
-                                  </span>
-                                  <div className="flex-1 space-y-1.5">
-                                    <div className="font-medium text-foreground flex items-center gap-1">
-                                      {truncatePickPayload(
-                                        pick.payload,
-                                        pickTruncateLimit
-                                      )}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                      by {pick.clientName}
-                                    </div>
-                                  </div>
-                                </div>
-                              </BrutalListItem>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* By Round View */}
-                {viewMode === 'by-round' && (
-                  <div className="space-y-8">
-                    {Array.from({ length: draft.numRounds }).map(
-                      (_, roundIndex) => (
+                    {(isReversed ? [...roundsData].reverse() : roundsData).map(
+                      (round, roundIndex) => (
                         <div key={roundIndex}>
                           <h3 className="font-bold text-sm mb-3 text-foreground">
-                            Round {roundIndex + 1}
+                            Round{' '}
+                            {isReversed
+                              ? roundsData.length - roundIndex
+                              : roundIndex + 1}
                           </h3>
-                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                            {Array.from({ length: participants.length }).map(
-                              (_, pickIndex) => {
-                                const pickNumber =
-                                  roundIndex * participants.length +
-                                  pickIndex +
-                                  1
-                                const pick = picks.find(
-                                  p => p.pickNumber === pickNumber
-                                )
+                          <div className="space-y-2">
+                            {(isReversed ? [...round].reverse() : round).map(
+                              pick => {
+                                const isMyPick =
+                                  currentUser?.id === pick.clientId
                                 return (
-                                  <div key={pickIndex} className="relative">
-                                    <DraftPickGrid
-                                      pickNumber={pickNumber}
-                                      pick={pick}
-                                      currentUserId={currentUser?.id}
-                                    />
-                                    {pick && (
-                                      <div className="absolute top-0 right-0 z-10">
-                                        <EmojiReactionsRow
-                                          reactions={getPickReactions(
-                                            pick.pickNumber
+                                  <BrutalListItem
+                                    key={pick.pickNumber}
+                                    variant={
+                                      isMyPick ? 'highlighted' : 'default'
+                                    }
+                                    className="relative"
+                                  >
+                                    <div className="absolute top-0 right-0 z-10">
+                                      <EmojiReactionsRow
+                                        reactions={getPickReactions(
+                                          pick.pickNumber
+                                        )}
+                                        currentUserId={currentUser?.id}
+                                        onReact={(emoji, isActive) =>
+                                          handleReact(
+                                            pick.pickNumber,
+                                            emoji,
+                                            isActive
+                                          )
+                                        }
+                                        canReact={canReact}
+                                        currentUserReactions={getCurrentUserReactions(
+                                          pick.pickNumber
+                                        )}
+                                        inline={true}
+                                        userIdToName={userIdToName}
+                                        maxEmojis={5}
+                                        pickNumber={pick.pickNumber}
+                                        pickerName={pick.clientName}
+                                        pickContent={pick.payload}
+                                      />
+                                    </div>
+                                    <div className="flex items-center gap-6 pr-16 sm:pr-12">
+                                      <span className="font-mono text-xs text-muted-foreground w-6 text-right">
+                                        {pick.pickNumber}
+                                      </span>
+                                      <div className="flex-1 space-y-1.5">
+                                        <div className="font-medium text-foreground flex items-center gap-1">
+                                          {truncatePickPayload(
+                                            pick.payload,
+                                            pickTruncateLimit
                                           )}
-                                          currentUserId={currentUser?.id}
-                                          onReact={(emoji, isActive) =>
-                                            handleReact(
-                                              pick.pickNumber,
-                                              emoji,
-                                              isActive
-                                            )
-                                          }
-                                          canReact={canReact}
-                                          currentUserReactions={getCurrentUserReactions(
-                                            pick.pickNumber
-                                          )}
-                                          inline={true}
-                                          userIdToName={userIdToName}
-                                          maxEmojis={1}
-                                          pickNumber={pick.pickNumber}
-                                          pickerName={pick.clientName}
-                                          pickContent={pick.payload}
-                                        />
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                          by {pick.clientName}
+                                        </div>
                                       </div>
-                                    )}
-                                  </div>
+                                    </div>
+                                  </BrutalListItem>
                                 )
                               }
                             )}
@@ -2128,6 +2125,77 @@ export default function DraftPage() {
                         </div>
                       )
                     )}
+                  </div>
+                )}
+
+                {/* By Round View */}
+                {viewMode === 'by-round' && (
+                  <div className="space-y-8">
+                    {(isReversed
+                      ? Array.from({ length: draft.numRounds }).reverse()
+                      : Array.from({ length: draft.numRounds })
+                    ).map((_, roundIndex) => (
+                      <div key={roundIndex}>
+                        <h3 className="font-bold text-sm mb-3 text-foreground">
+                          Round{' '}
+                          {isReversed
+                            ? draft.numRounds - roundIndex
+                            : roundIndex + 1}
+                        </h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                          {Array.from({ length: participants.length }).map(
+                            (_, pickIndex) => {
+                              const actualRoundIndex = isReversed
+                                ? draft.numRounds - 1 - roundIndex
+                                : roundIndex
+                              const pickNumber =
+                                actualRoundIndex * participants.length +
+                                pickIndex +
+                                1
+                              const pick = picks.find(
+                                p => p.pickNumber === pickNumber
+                              )
+                              return (
+                                <div key={pickIndex} className="relative">
+                                  <DraftPickGrid
+                                    pickNumber={pickNumber}
+                                    pick={pick}
+                                    currentUserId={currentUser?.id}
+                                  />
+                                  {pick && (
+                                    <div className="absolute top-0 right-0 z-10">
+                                      <EmojiReactionsRow
+                                        reactions={getPickReactions(
+                                          pick.pickNumber
+                                        )}
+                                        currentUserId={currentUser?.id}
+                                        onReact={(emoji, isActive) =>
+                                          handleReact(
+                                            pick.pickNumber,
+                                            emoji,
+                                            isActive
+                                          )
+                                        }
+                                        canReact={canReact}
+                                        currentUserReactions={getCurrentUserReactions(
+                                          pick.pickNumber
+                                        )}
+                                        inline={true}
+                                        userIdToName={userIdToName}
+                                        maxEmojis={1}
+                                        pickNumber={pick.pickNumber}
+                                        pickerName={pick.clientName}
+                                        pickContent={pick.payload}
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            }
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
 
