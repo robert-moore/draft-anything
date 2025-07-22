@@ -162,12 +162,16 @@ export function EmojiReactionsRow({
                           ? 'bg-primary/10 ring-1 ring-primary/30 px-2'
                           : 'hover:bg-accent px-1'
                       }
+                      ${!canReact ? 'cursor-default' : ''}
                     `}
                     style={{ border: 'none', background: 'none' }}
-                    onClick={() =>
-                      onReact(emoji, isActive && emoji ? true : false)
-                    }
+                    onClick={() => {
+                      if (canReact) {
+                        onReact(emoji, isActive && emoji ? true : false)
+                      }
+                    }}
                     type="button"
+                    disabled={!canReact}
                   >
                     <span
                       style={{
