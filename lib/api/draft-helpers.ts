@@ -325,7 +325,10 @@ export async function getUsedPayloadsByGuid(
     .from(draftSelectionsInDa)
     .where(eq(draftSelectionsInDa.draftId, draft.id))
 
-  return previousPicks.map(p => p.payload.toLowerCase())
+  return previousPicks
+    .map(p => p.payload)
+    .filter((payload): payload is string => payload !== null)
+    .map(payload => payload.toLowerCase())
 }
 
 /**
@@ -337,5 +340,8 @@ export async function getUsedPayloads(draftId: number): Promise<string[]> {
     .from(draftSelectionsInDa)
     .where(eq(draftSelectionsInDa.draftId, draftId))
 
-  return previousPicks.map(p => p.payload.toLowerCase())
+  return previousPicks
+    .map(p => p.payload)
+    .filter((payload): payload is string => payload !== null)
+    .map(payload => payload.toLowerCase())
 }

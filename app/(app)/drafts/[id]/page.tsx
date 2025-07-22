@@ -1,6 +1,5 @@
 'use client'
 
-import { AutoPickMonitor } from '@/components/draft/auto-pick-monitor'
 import { DraftMetadata } from '@/components/draft/draft-metadata'
 import { DraftPickGrid } from '@/components/draft/draft-pick-grid'
 import { DraftTimer } from '@/components/draft/draft-timer'
@@ -62,6 +61,7 @@ export default function DraftPage() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [currentTurn, setCurrentTurn] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState<number | null>(null)
+  const [isTimerExpired, setIsTimerExpired] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showInviteLink, setShowInviteLink] = useState(false)
@@ -772,6 +772,24 @@ export default function DraftPage() {
     }
   }, [draft?.draftState, draft?.turnStartedAt])
 
+  // --- Timer/expired state logic ---
+  // Helper: is it my turn?
+  const isMyTurn =
+    isJoined &&
+    currentUser &&
+    participants.find(p => p.id === currentUser?.id)?.position ===
+      draft?.currentPositionOnClock
+
+  // Reset timer expired state when turn changes or draft state changes
+  useEffect(() => {
+    setIsTimerExpired(false)
+  }, [draft?.currentPositionOnClock, draft?.draftState, picks.length])
+
+  // Timer expired handler
+  const handleTimerExpired = () => {
+    setIsTimerExpired(true)
+  }
+
   // Function to check if challenge button should be shown
   const shouldShowChallengeButton = () => {
     // Always show challenge button in challenge window state, except if current user's pick is the last pick
@@ -1155,12 +1173,6 @@ export default function DraftPage() {
   const roundsData = getPicksByRounds()
   const drafterData = getPicksByDrafter()
 
-  const isMyTurn =
-    isJoined &&
-    currentUser &&
-    participants.find(p => p.id === currentUser?.id)?.position ===
-      draft?.currentPositionOnClock
-
   // Add a computed boolean for pick length
   const isPickTooLong = currentPick.length > 300
 
@@ -1220,17 +1232,6 @@ export default function DraftPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Auto-pick handler (only for timed drafts) */}
-      {draft && parseInt(draft.secPerRound) > 0 && (
-        <AutoPickMonitor
-          draftId={draft.guid}
-          turnStartedAt={draft.turnStartedAt}
-          secondsPerRound={parseInt(draft.secPerRound)}
-          isMyTurn={isMyTurn}
-          currentPickNumber={picks.length + 1}
-        />
-      )}
-
       <div className="max-w-7xl mx-auto flex pb-8">
         {/* Main Content */}
         <main className="flex-1 px-6 pt-6 bg-background">
@@ -1384,6 +1385,7 @@ export default function DraftPage() {
                             secondsPerRound={parseInt(draft.secPerRound)}
                             isPaused={draft.timerPaused ?? undefined}
                             variant="full"
+                            onExpired={handleTimerExpired}
                           />
                         </div>
                       </div>
@@ -1436,11 +1438,17 @@ export default function DraftPage() {
                         </div>
                         <BrutalButton
                           onClick={handleMakePick}
-                          disabled={!currentPick.trim() || isPickTooLong}
+                          disabled={
+                            !currentPick.trim() ||
+                            isPickTooLong ||
+                            isTimerExpired
+                          }
                           variant="filled"
                           className="w-full py-3 text-lg"
                         >
-                          Submit Pick
+                          {isTimerExpired
+                            ? 'Time Expired - Auto-picking...'
+                            : 'Submit Pick'}
                         </BrutalButton>
                       </div>
                     </div>
@@ -1482,11 +1490,14 @@ export default function DraftPage() {
                     {isOrderFinalized ? (
                       <>
                         <p className="text-sm text-muted-foreground">
-                          Waiting for{' '}
-                          {participants.find(
-                            p => p.position === draft.currentPositionOnClock
-                          )?.name || 'next player'}{' '}
-                          to pick...
+                          {isTimerExpired
+                            ? 'Auto-picking...'
+                            : `Waiting for ${
+                                participants.find(
+                                  p =>
+                                    p.position === draft.currentPositionOnClock
+                                )?.name || 'next player'
+                              } to pick...`}
                         </p>
                         <div className="mt-6 flex justify-center">
                           <DraftTimer
@@ -1494,6 +1505,7 @@ export default function DraftPage() {
                             secondsPerRound={parseInt(draft.secPerRound)}
                             isPaused={draft.timerPaused ?? undefined}
                             variant="compact"
+                            onExpired={handleTimerExpired}
                           />
                         </div>
                       </>
@@ -1522,7 +1534,8 @@ export default function DraftPage() {
               draft.draftState === 'active' &&
               picks.length > 0 &&
               challengeTimeLeft !== null &&
-              challengeTimeLeft > 0
+              challengeTimeLeft > 0 &&
+              !isTimerExpired
 
             return shouldShow
           })() && (

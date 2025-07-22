@@ -47,7 +47,17 @@ export async function POST(
 
     // Check if timer is enabled and expired
     const secPerRound = parseInt(draft.secPerRound)
+    console.log(
+      'Auto-pick: Timer check - secPerRound:',
+      secPerRound,
+      'turnStartedAt:',
+      draft.turnStartedAt,
+      'timerPaused:',
+      draft.timerPaused
+    )
+
     if (secPerRound === 0 || !draft.turnStartedAt || draft.timerPaused) {
+      console.log('Auto-pick: Timer not enabled or paused')
       return NextResponse.json(
         { error: 'Timer is not enabled or is paused' },
         { status: 400 }
@@ -55,9 +65,16 @@ export async function POST(
     }
 
     const elapsedSeconds = getElapsedSeconds(draft.turnStartedAt)
+    console.log(
+      'Auto-pick: Elapsed seconds:',
+      elapsedSeconds,
+      'secPerRound:',
+      secPerRound
+    )
 
     // Allow auto-pick if time is up or within 1 second of expiring (to handle race conditions)
     if (elapsedSeconds < secPerRound - 1) {
+      console.log('Auto-pick: Timer has not expired yet')
       return NextResponse.json(
         {
           error: `Timer has not expired. ${

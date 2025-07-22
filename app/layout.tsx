@@ -1,6 +1,7 @@
 import { ThemeProvider } from '@/components/theme-provider'
-import { ColorThemeProvider } from '@/lib/theme/color-theme-context'
 import { Toaster } from '@/components/ui/sonner'
+import { autoPickScheduler } from '@/lib/auto-pick-scheduler'
+import { ColorThemeProvider } from '@/lib/theme/color-theme-context'
 import { cn } from '@/lib/utils'
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
@@ -49,6 +50,12 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  // Start the auto-pick scheduler on the server side
+  if (typeof window === 'undefined') {
+    // Only start on server side
+    autoPickScheduler.start()
+  }
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body

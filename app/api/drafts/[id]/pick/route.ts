@@ -31,6 +31,18 @@ const makePickSchema = z
     message: 'Either payload or curatedOptionId must be provided'
   })
 
+// Schema for making a pick (with internal autopick support)
+const makePickSchemaWithInternal = z
+  .object({
+    payload: z.string().optional(),
+    curatedOptionId: z.number().optional(),
+    wasAutoPick: z.boolean().optional(),
+    userId: z.string().optional()
+  })
+  .refine(data => data.payload || data.curatedOptionId, {
+    message: 'Either payload or curatedOptionId must be provided'
+  })
+
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -41,19 +53,50 @@ export async function POST(
     if (!guidResult.success) return guidResult.error
     const { draftGuid } = guidResult
 
-    // Check authentication
-    const user = await getCurrentUser()
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
+    // --- Internal auto-pick support ---
+    const secret = process.env.INTERNAL_AUTOPICK_SECRET
+    const internalSecret = request.headers.get('x-internal-autopick-secret')
+    let user = null
+    let isInternalAutoPick = false
+    let wasAutoPick = false
+    let userIdFromBody = null
 
-    // Validate request body
-    const bodyResult = await parseJsonRequest(request, makePickSchema)
+    // Validate request body (early, so we can get userId if internal)
+    const bodyResult = await parseJsonRequest(
+      request,
+      makePickSchemaWithInternal
+    )
     if (!bodyResult.success) return bodyResult.error
-    const { payload, curatedOptionId } = bodyResult.data
+    const {
+      payload,
+      curatedOptionId,
+      wasAutoPick: wasAutoPickBody,
+      userId
+    } = bodyResult.data as z.infer<typeof makePickSchemaWithInternal>
+
+    if (secret && internalSecret && internalSecret === secret) {
+      // Internal auto-pick call
+      isInternalAutoPick = true
+      wasAutoPick = wasAutoPickBody ?? true
+      userIdFromBody = userId
+      if (!userIdFromBody) {
+        return NextResponse.json(
+          { error: 'Internal auto-pick missing userId' },
+          { status: 400 }
+        )
+      }
+      user = { id: userIdFromBody }
+    } else {
+      // Normal authentication
+      user = await getCurrentUser()
+      if (!user) {
+        return NextResponse.json(
+          { error: 'Authentication required' },
+          { status: 401 }
+        )
+      }
+      wasAutoPick = false
+    }
 
     // Validate and fetch draft
     const draftResult = await validateAndFetchDraftByGuid(draftGuid)
@@ -83,7 +126,8 @@ export async function POST(
       timeTakenSeconds = getElapsedSeconds(draft.turnStartedAt)
 
       // Add 1 second grace period to handle network latency
-      if (timeTakenSeconds > secPerRound + 1) {
+      // Skip timer check for internal auto-pick calls
+      if (!isInternalAutoPick && timeTakenSeconds > secPerRound + 1) {
         return NextResponse.json(
           {
             error: `Time expired. You had ${secPerRound} seconds to make your pick.`
@@ -133,7 +177,7 @@ export async function POST(
       payload: payload || null,
       curatedOptionId: curatedOptionId || null,
       createdAt: now,
-      wasAutoPick: false,
+      wasAutoPick,
       timeTakenSeconds: timeTakenSeconds?.toString() || null
     })
 

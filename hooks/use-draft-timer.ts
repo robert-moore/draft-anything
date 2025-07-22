@@ -6,9 +6,9 @@ interface UseDraftTimerProps {
   isPaused?: boolean
 }
 
-export function useDraftTimer({ 
-  turnStartedAt, 
-  secondsPerRound, 
+export function useDraftTimer({
+  turnStartedAt,
+  secondsPerRound,
   isPaused = false
 }: UseDraftTimerProps) {
   const [seconds, setSeconds] = useState(0)
@@ -20,8 +20,10 @@ export function useDraftTimer({
     }
 
     const calculateTime = () => {
-      const elapsed = Math.floor((Date.now() - new Date(turnStartedAt).getTime()) / 1000)
-      
+      const elapsed = Math.floor(
+        (Date.now() - new Date(turnStartedAt).getTime()) / 1000
+      )
+
       if (isUntimed) {
         // Count up for untimed drafts
         return elapsed
@@ -38,11 +40,8 @@ export function useDraftTimer({
     const interval = setInterval(() => {
       const time = calculateTime()
       setSeconds(time)
-      
-      // Stop countdown at 0 for timed drafts
-      if (!isUntimed && time === 0) {
-        clearInterval(interval)
-      }
+
+      // Don't clear interval for timed drafts - let it continue to track expiration
     }, 100)
 
     return () => clearInterval(interval)

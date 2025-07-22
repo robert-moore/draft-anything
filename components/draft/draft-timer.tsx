@@ -1,8 +1,9 @@
 'use client'
 
 import { useDraftTimer } from '@/hooks/use-draft-timer'
-import { Timer, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Clock, Timer } from 'lucide-react'
+import React from 'react'
 
 interface DraftTimerProps {
   turnStartedAt: string | null
@@ -10,26 +11,40 @@ interface DraftTimerProps {
   isPaused?: boolean
   variant?: 'compact' | 'full'
   className?: string
+  onExpired?: () => void
 }
 
-export function DraftTimer({ 
-  turnStartedAt, 
-  secondsPerRound, 
+export function DraftTimer({
+  turnStartedAt,
+  secondsPerRound,
   isPaused = false,
   variant = 'compact',
-  className 
+  className,
+  onExpired
 }: DraftTimerProps) {
-  const { formatted, color, percentage, secondsLeft, isUntimed } = useDraftTimer({
-    turnStartedAt,
-    secondsPerRound,
-    isPaused
-  })
+  const { formatted, color, percentage, secondsLeft, isUntimed, isExpired } =
+    useDraftTimer({
+      turnStartedAt,
+      secondsPerRound,
+      isPaused
+    })
+
+  // Track previous expired state to only call onExpired on transition
+  const wasExpiredRef = React.useRef(isExpired)
+
+  // Call onExpired when timer expires (only on transition from not expired to expired)
+  React.useEffect(() => {
+    if (isExpired && !wasExpiredRef.current && onExpired) {
+      onExpired()
+    }
+    wasExpiredRef.current = isExpired
+  }, [isExpired, onExpired])
 
   if (!turnStartedAt) return null
 
   const colorClasses: Record<string, string> = {
     red: 'text-red-500',
-    yellow: 'text-yellow-500', 
+    yellow: 'text-yellow-500',
     green: 'text-green-500',
     default: 'text-muted-foreground'
   }
@@ -82,7 +97,12 @@ export function DraftTimer({
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
-            <div className={cn('text-2xl font-bold font-mono', colorClasses[color])}>
+            <div
+              className={cn(
+                'text-2xl font-bold font-mono',
+                colorClasses[color]
+              )}
+            >
               {formatted}
             </div>
             {secondsLeft <= 10 && secondsLeft > 0 && (
@@ -98,15 +118,18 @@ export function DraftTimer({
 
   // Full variant for untimed drafts (simpler display)
   return (
-    <div className={cn('border-2 border-muted-foreground/20 rounded-lg p-4 inline-flex items-center gap-3', className)}>
+    <div
+      className={cn(
+        'border-2 border-muted-foreground/20 rounded-lg p-4 inline-flex items-center gap-3',
+        className
+      )}
+    >
       <Clock className="w-6 h-6 text-muted-foreground" />
       <div>
         <div className="text-2xl font-bold font-mono text-muted-foreground">
           {formatted}
         </div>
-        <div className="text-xs text-muted-foreground">
-          Elapsed
-        </div>
+        <div className="text-xs text-muted-foreground">Elapsed</div>
       </div>
     </div>
   )
