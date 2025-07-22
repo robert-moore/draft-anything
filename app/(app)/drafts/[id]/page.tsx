@@ -116,6 +116,9 @@ export default function DraftPage() {
   const prevPicksLength = useRef<null | number>(null)
   const hasLoadedInitially = useRef(false)
 
+  // Track if subscriptions are already set up to prevent duplicate subscriptions
+  const subscriptionsSetUpRef = useRef(false)
+
   // Function to check for similar picks
   const checkSimilarPick = (input: string) => {
     if (!input.trim()) {
@@ -287,6 +290,10 @@ export default function DraftPage() {
     const timeout = setTimeout(() => {
       // Only set up subscriptions if we have the draft data with numeric ID
       if (!draft?.id) return
+
+      // Prevent duplicate subscriptions
+      if (subscriptionsSetUpRef.current) return
+      subscriptionsSetUpRef.current = true
 
       const draftUsersSub = supabase
         .channel(`draft-users-${draftId}`)
@@ -624,6 +631,7 @@ export default function DraftPage() {
         supabase.removeChannel(challengeSub)
         supabase.removeChannel(challengeVotesSub)
         supabase.removeChannel(draftReactionsSub)
+        subscriptionsSetUpRef.current = false
       }
     }, 250)
 
@@ -634,6 +642,24 @@ export default function DraftPage() {
   useEffect(() => {
     loadDraft()
   }, [draftId])
+
+  // Reload draft data when tab becomes visible (in case real-time updates were missed)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && draft?.id) {
+        // Small delay to ensure the tab is fully active
+        setTimeout(() => {
+          loadDraft()
+        }, 100)
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [draft?.id])
 
   // Calculate challenge time remaining
   useEffect(() => {
@@ -2004,6 +2030,28 @@ export default function DraftPage() {
                     })}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Mobile Players List - Only show during setup phase on mobile */}
+            {draft.draftState === 'setting_up' && (
+              <div className="lg:hidden mt-8">
+                <div className="text-center">
+                  <h3 className="text-sm font-bold text-foreground mb-3">
+                    PLAYERS: {participants.length}/{draft.maxDrafters}
+                  </h3>
+                  {participants.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                      Waiting for players...
+                    </p>
+                  ) : (
+                    <p className="text-sm text-foreground">
+                      {participants
+                        .map(participant => participant.name)
+                        .join(', ')}
+                    </p>
+                  )}
+                </div>
               </div>
             )}
           </div>
