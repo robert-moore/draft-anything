@@ -1414,54 +1414,64 @@ export default function DraftPage() {
                             onExpired={handleTimerExpired}
                           />
                         </div>
+                        {/* Autopick delay message */}
+                        {parseInt(draft.secPerRound) > 0 && !isTimerExpired && (
+                          <div className="mt-2 text-xs text-muted-foreground">
+                            If you don't pick in time, an auto-pick will be
+                            made. This may take up to a minute.
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-4">
-                        <div>
-                          {draft.isFreeform ? (
-                            <BrutalInput
-                              placeholder="Enter your pick..."
-                              value={currentPick}
-                              onChange={e => {
-                                setCurrentPick(e.target.value)
-                                checkSimilarPick(e.target.value)
-                              }}
-                              onKeyDown={e =>
-                                e.key === 'Enter' && handleMakePick()
-                              }
-                              variant="boxed"
-                              className={`w-full bg-card text-foreground text-lg py-3 ${
-                                similarPick
-                                  ? 'border-orange-500 dark:border-orange-400 border-2'
-                                  : ''
-                              }`}
-                              autoFocus
-                            />
-                          ) : (
-                            <CuratedOptionsDropdown
-                              options={curatedOptions}
-                              value={currentPick}
-                              onValueChange={setCurrentPick}
-                              placeholder="Select your pick..."
-                              disabled={false}
-                            />
-                          )}
-                          {similarPick && draft.isFreeform && (
-                            <div className="mt-2 p-3 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
-                              <div className="text-sm text-orange-700 dark:text-orange-300 font-medium">
-                                ⚠️ Note that "{similarPick.pick}" has already
-                                been picked by {similarPick.player}
+                        {/* Hide input if timer expired */}
+                        {!isTimerExpired && (
+                          <div>
+                            {draft.isFreeform ? (
+                              <BrutalInput
+                                placeholder="Enter your pick..."
+                                value={currentPick}
+                                onChange={e => {
+                                  setCurrentPick(e.target.value)
+                                  checkSimilarPick(e.target.value)
+                                }}
+                                onKeyDown={e =>
+                                  e.key === 'Enter' && handleMakePick()
+                                }
+                                variant="boxed"
+                                className={`w-full bg-card text-foreground text-lg py-3 ${
+                                  similarPick
+                                    ? 'border-orange-500 dark:border-orange-400 border-2'
+                                    : ''
+                                }`}
+                                autoFocus
+                              />
+                            ) : (
+                              <CuratedOptionsDropdown
+                                options={curatedOptions}
+                                value={currentPick}
+                                onValueChange={setCurrentPick}
+                                placeholder="Select your pick..."
+                                disabled={false}
+                              />
+                            )}
+                            {similarPick && draft.isFreeform && (
+                              <div className="mt-2 p-3 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                                <div className="text-sm text-orange-700 dark:text-orange-300 font-medium">
+                                  ⚠️ Note that "{similarPick.pick}" has already
+                                  been picked by {similarPick.player}
+                                </div>
                               </div>
-                            </div>
-                          )}
-                          {isPickTooLong && (
-                            <div className="mt-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
-                              <div className="text-sm text-red-700 dark:text-red-300 font-medium">
-                                ⚠️ Pick must be 300 characters or fewer (
-                                {currentPick.length}/300)
+                            )}
+                            {isPickTooLong && (
+                              <div className="mt-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
+                                <div className="text-sm text-red-700 dark:text-red-300 font-medium">
+                                  ⚠️ Pick must be 300 characters or fewer (
+                                  {currentPick.length}/300)
+                                </div>
                               </div>
-                            </div>
-                          )}
-                        </div>
+                            )}
+                          </div>
+                        )}
                         <BrutalButton
                           onClick={handleMakePick}
                           disabled={
@@ -1476,6 +1486,12 @@ export default function DraftPage() {
                             ? 'Time Expired - Auto-picking...'
                             : 'Submit Pick'}
                         </BrutalButton>
+                        {/* Show autopick delay message when timer expired */}
+                        {isTimerExpired && (
+                          <div className="mt-2 text-xs text-muted-foreground text-center">
+                            This may take up to a minute.
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1517,7 +1533,7 @@ export default function DraftPage() {
                       <>
                         <p className="text-sm text-muted-foreground">
                           {isTimerExpired
-                            ? 'Auto-picking...'
+                            ? 'Autopicking... this may take up to a minute'
                             : `Waiting for ${
                                 participants.find(
                                   p =>

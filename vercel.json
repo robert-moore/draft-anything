@@ -1,0 +1,8 @@
+{
+  "cron": [
+    {
+      "path": "/api/cron/auto-pick",
+      "schedule": "*/1 * * * *"
+    }
+  ]
+}
