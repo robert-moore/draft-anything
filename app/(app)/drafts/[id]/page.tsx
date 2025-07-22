@@ -14,6 +14,7 @@ import { GeometricBackground } from '@/components/ui/geometric-background'
 import { NumberBox } from '@/components/ui/number-box'
 import { createClient } from '@/lib/supabase/client'
 import type { Draft, DraftPick, Participant } from '@/types/draft'
+import { differenceInSeconds, parseISO } from 'date-fns'
 import { AlertCircle, Clock, Share } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
@@ -194,6 +195,20 @@ export default function DraftPage() {
       setIsAdmin(data.isAdmin || false)
       setCuratedOptions(data.curatedOptions || [])
       setReactions(data.reactions || [])
+
+      // Immediately check if timer is expired ---
+      if (
+        data.draft &&
+        data.draft.draftState === 'active' &&
+        data.draft.turnStartedAt &&
+        parseInt(data.draft.secPerRound) > 0
+      ) {
+        const started = parseISO(data.draft.turnStartedAt)
+        const elapsed = differenceInSeconds(new Date(), started)
+        if (elapsed >= parseInt(data.draft.secPerRound)) {
+          setIsTimerExpired(true)
+        }
+      }
 
       if (
         data.currentUser &&
@@ -808,7 +823,19 @@ export default function DraftPage() {
 
   // Reset timer expired state when turn changes or draft state changes
   useEffect(() => {
-    setIsTimerExpired(false)
+    if (
+      draft?.draftState === 'active' &&
+      draft?.turnStartedAt &&
+      parseInt(draft?.secPerRound) > 0
+    ) {
+      const started = parseISO(draft.turnStartedAt)
+      const elapsed = differenceInSeconds(new Date(), started)
+      if (elapsed < parseInt(draft.secPerRound)) {
+        setIsTimerExpired(false)
+      }
+    } else {
+      setIsTimerExpired(false)
+    }
   }, [draft?.currentPositionOnClock, draft?.draftState, picks.length])
 
   // Timer expired handler
@@ -1322,6 +1349,16 @@ export default function DraftPage() {
               />
             ) : null}
           </div>
+
+          {/* Last Pick display */}
+          {picks.length > 0 && (
+            <div className="w-full flex justify-center pt-4 mb-4">
+              <span className="text-sm font-medium text-muted-foreground text-center">
+                Last Pick: {picks[picks.length - 1].payload} by{' '}
+                {picks[picks.length - 1].clientName}
+              </span>
+            </div>
+          )}
 
           {/* Join Draft */}
           {!isJoined && draft.draftState === 'setting_up' && (
