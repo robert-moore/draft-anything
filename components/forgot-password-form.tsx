@@ -1,6 +1,5 @@
 'use client'
 
-import { getAppUrl } from '@/lib/utils/get-app-url'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -13,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuthRedirect } from '@/lib/hooks/use-auth-redirect'
 import { createClient } from '@/lib/supabase/client'
+import { getAppUrl } from '@/lib/utils/get-app-url'
 import { cn } from '@/lib/utils/index'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -87,7 +87,13 @@ export function ForgotPasswordForm({
                     onChange={e => setEmail(e.target.value)}
                   />
                 </div>
-                {error && <p className="text-sm text-red-500">{error}</p>}
+                {error && (
+                  <p className="text-sm text-red-500">
+                    {error}
+                    <br />
+                    <span className="text-xs">Try refreshing the page.</span>
+                  </p>
+                )}
                 <Button type="submit" className="w-full" disabled={isLoading}>
                   {isLoading ? 'Sending...' : 'Send reset email'}
                 </Button>

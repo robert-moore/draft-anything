@@ -2,11 +2,10 @@
 
 import { BrutalButton } from '@/components/ui/brutal-button'
 import { BrutalInput } from '@/components/ui/brutal-input'
-import { BrutalSection } from '@/components/ui/brutal-section'
 import { useAuthRedirect } from '@/lib/hooks/use-auth-redirect'
 import { createClient } from '@/lib/supabase/client'
-import { cn } from '@/lib/utils/index'
 import { getAppUrl } from '@/lib/utils/get-app-url'
+import { cn } from '@/lib/utils/index'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
@@ -37,7 +36,9 @@ export function LoginForm({
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${getAppUrl()}/auth/callback?next=${encodeURIComponent(redirectTo)}`
+          emailRedirectTo: `${getAppUrl()}/auth/callback?next=${encodeURIComponent(
+            redirectTo
+          )}`
         }
       })
       if (error) throw error
@@ -61,8 +62,8 @@ export function LoginForm({
             <span className="text-foreground">Welcome back</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            {isEmailSent 
-              ? 'Check your email for the magic link!' 
+            {isEmailSent
+              ? 'Check your email for the magic link!'
               : 'Sign in to your account with a magic link'}
           </p>
         </div>
@@ -73,7 +74,8 @@ export function LoginForm({
                 We&apos;ve sent a magic link to <strong>{email}</strong>
               </p>
               <p className="text-sm text-muted-foreground">
-                Click the link in your email to sign in. You can close this window.
+                Click the link in your email to sign in. You can close this
+                window.
               </p>
               <BrutalButton
                 variant="default"
@@ -89,7 +91,12 @@ export function LoginForm({
           ) : (
             <form onSubmit={handleMagicLink} className="flex flex-col gap-4">
               <div className="grid gap-2">
-                <label htmlFor="email" className="text-sm font-medium text-foreground">Email</label>
+                <label
+                  htmlFor="email"
+                  className="text-sm font-medium text-foreground"
+                >
+                  Email
+                </label>
                 <BrutalInput
                   id="email"
                   type="email"
@@ -100,16 +107,32 @@ export function LoginForm({
                   variant="boxed"
                 />
               </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <BrutalButton type="submit" variant="filled" className="w-full" disabled={isLoading}>
+              {error && (
+                <p className="text-sm text-red-500">
+                  {error}
+                  <br />
+                  <span className="text-xs">Try refreshing the page.</span>
+                </p>
+              )}
+              <BrutalButton
+                type="submit"
+                variant="filled"
+                className="w-full"
+                disabled={isLoading}
+              >
                 {isLoading ? 'Sending magic link...' : 'Send magic link'}
               </BrutalButton>
             </form>
           )}
           {!isEmailSent && (
             <div className="mt-6 text-center text-sm">
-              <span className="text-foreground">Don&apos;t have an account?</span>{' '}
-              <Link href="/auth/sign-up" className="underline underline-offset-4 hover:no-underline text-foreground font-medium">
+              <span className="text-foreground">
+                Don&apos;t have an account?
+              </span>{' '}
+              <Link
+                href="/auth/sign-up"
+                className="underline underline-offset-4 hover:no-underline text-foreground font-medium"
+              >
                 Sign Up
               </Link>
             </div>

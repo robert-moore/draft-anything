@@ -15,9 +15,9 @@ import { useState } from 'react'
 
 export default function NewDraftPage() {
   const [name, setName] = useState('')
-  const [maxDrafters, setMaxDrafters] = useState(4)
-  const [secPerRound, setSecPerRound] = useState(60)
-  const [numRounds, setNumRounds] = useState(3)
+  const [maxDrafters, setMaxDrafters] = useState<number | null>(4)
+  const [secPerRound, setSecPerRound] = useState<number | null>(60)
+  const [numRounds, setNumRounds] = useState<number | null>(3)
   const [timerMode, setTimerMode] = useState<'timed' | 'untimed'>('timed')
   const [selectionType, setSelectionType] = useState<'freeform' | 'curated'>(
     'freeform'
@@ -32,6 +32,33 @@ export default function NewDraftPage() {
     setIsLoading(true)
     setError(null)
 
+    // Validate required fields
+    if (!name.trim()) {
+      setError('Draft name is required')
+      setIsLoading(false)
+      return
+    }
+    if (maxDrafters === null || maxDrafters < 2) {
+      setError('Max players must be at least 2')
+      setIsLoading(false)
+      return
+    }
+    if (numRounds === null || numRounds < 1) {
+      setError('Number of rounds must be at least 1')
+      setIsLoading(false)
+      return
+    }
+    if (timerMode === 'timed' && (secPerRound === null || secPerRound < 30)) {
+      setError('Seconds per pick must be at least 30 for timed drafts')
+      setIsLoading(false)
+      return
+    }
+    if (selectionType === 'curated' && !curatedOptions.trim()) {
+      setError('Curated options are required when using curated selection type')
+      setIsLoading(false)
+      return
+    }
+
     try {
       const response = await fetch('/api/drafts', {
         method: 'POST',
@@ -39,7 +66,7 @@ export default function NewDraftPage() {
         body: JSON.stringify({
           name,
           maxDrafters,
-          secPerRound: timerMode === 'untimed' ? 0 : secPerRound,
+          secPerRound: timerMode === 'untimed' ? 0 : secPerRound || 0,
           numRounds,
           isFreeform: selectionType === 'freeform',
           curatedOptions:
@@ -129,7 +156,9 @@ export default function NewDraftPage() {
                   value={name}
                   onChange={e => setName(e.target.value)}
                   required
-                  className="text-xl py-4 rounded-none border-2 border-border w-full bg-card text-foreground placeholder:text-muted-foreground focus:border-border"
+                  className={`text-xl py-4 rounded-none border-2 w-full bg-card text-foreground placeholder:text-muted-foreground focus:border-border ${
+                    !name.trim() ? 'border-primary' : 'border-border'
+                  }`}
                 />
               </div>
 
@@ -145,6 +174,7 @@ export default function NewDraftPage() {
                       onChange={setMaxDrafters}
                       min={2}
                       max={20}
+                      required={true}
                     />
                     <NumberInput
                       id="numRounds"
@@ -153,6 +183,7 @@ export default function NewDraftPage() {
                       onChange={setNumRounds}
                       min={1}
                       max={20}
+                      required={true}
                     />
                   </div>
                 </div>
@@ -240,7 +271,8 @@ export default function NewDraftPage() {
                               const optionCount = curatedOptions
                                 .split('\n')
                                 .filter(line => line.trim()).length
-                              const totalPicks = maxDrafters * numRounds
+                              const totalPicks =
+                                (maxDrafters || 0) * (numRounds || 0)
                               const longOptions = curatedOptions
                                 .split('\n')
                                 .filter(line => line.trim())
@@ -258,8 +290,9 @@ export default function NewDraftPage() {
                                 return (
                                   <span className="text-primary font-medium">
                                     <span className="mr-1">⚠</span>️ Need at
-                                    least {totalPicks} options for {maxDrafters}{' '}
-                                    players × {numRounds} rounds
+                                    least {totalPicks} options for{' '}
+                                    {maxDrafters || '?'} players ×{' '}
+                                    {numRounds || '?'} rounds
                                   </span>
                                 )
                               }
@@ -311,6 +344,7 @@ export default function NewDraftPage() {
                             onChange={setSecPerRound}
                             min={30}
                             max={300}
+                            required={true}
                           />
                         </div>
                         <p className="text-xs text-muted-foreground">
@@ -327,6 +361,9 @@ export default function NewDraftPage() {
               {error && (
                 <div className="border-2 border-destructive bg-destructive/10 p-4">
                   <p className="text-destructive font-medium">{error}</p>
+                  <p className="text-destructive/70 text-sm mt-1">
+                    Try refreshing the page.
+                  </p>
                 </div>
               )}
 
@@ -338,9 +375,12 @@ export default function NewDraftPage() {
                 disabled={
                   isLoading ||
                   !name.trim() ||
+                  maxDrafters === null ||
                   maxDrafters < 2 ||
-                  (timerMode === 'timed' && secPerRound < 5) ||
+                  numRounds === null ||
                   numRounds < 1 ||
+                  (timerMode === 'timed' &&
+                    (secPerRound === null || secPerRound < 30)) ||
                   (selectionType === 'curated' && !curatedOptions.trim()) ||
                   (selectionType === 'curated' &&
                     curatedOptions

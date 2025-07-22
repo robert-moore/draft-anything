@@ -6,10 +6,11 @@ import { Label } from '@/components/ui/label'
 interface NumberInputProps {
   id: string
   label: string
-  value: number
-  onChange: (value: number) => void
+  value: number | null
+  onChange: (value: number | null) => void
   min?: number
   max?: number
+  required?: boolean
 }
 
 export function NumberInput({
@@ -18,9 +19,12 @@ export function NumberInput({
   value,
   onChange,
   min,
-  max
+  max,
+  required = false
 }: NumberInputProps) {
   const handleBlur = () => {
+    if (value === null) return
+
     let newValue = value
     if (min !== undefined && value < min) {
       newValue = min
@@ -33,6 +37,21 @@ export function NumberInput({
     }
   }
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value
+    if (inputValue === '') {
+      onChange(null)
+    } else {
+      const numValue = Number(inputValue)
+      if (!isNaN(numValue)) {
+        onChange(numValue)
+      }
+    }
+  }
+
+  const isEmpty = value === null
+  const showError = required && isEmpty
+
   return (
     <div>
       <Label
@@ -41,17 +60,22 @@ export function NumberInput({
       >
         {label}
       </Label>
-      <div className="border-2 border-border bg-card h-16 flex items-center justify-center">
+      <div
+        className={`border-2 bg-card h-16 flex items-center justify-center ${
+          showError ? 'border-primary' : 'border-border'
+        }`}
+      >
         <Input
           id={id}
           type="number"
           min={min}
           max={max}
-          value={value}
-          onChange={e => onChange(Number(e.target.value))}
+          value={value === null ? '' : value}
+          onChange={handleChange}
           onBlur={handleBlur}
-          required
+          required={required}
           className="text-center text-2xl font-bold border-0 bg-transparent focus:outline-none p-0 text-foreground"
+          placeholder={required ? 'Required' : ''}
         />
       </div>
     </div>

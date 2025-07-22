@@ -8,9 +8,14 @@ export default function AuthCodeError() {
           Authentication Error
         </h1>
         <p className="text-white/70 mb-6">
-          Sorry, we couldn't sign you in. The authentication link may have expired or been used already.
+          Sorry, we couldn't sign you in. The authentication link may have
+          expired or been used already.
+          <br />
+          <span className="text-xs text-white/50">
+            Try refreshing the page.
+          </span>
         </p>
-        <Link 
+        <Link
           href="/auth/login"
           className="inline-block px-6 py-3 bg-white/10 hover:bg-white/20 rounded-lg text-white font-medium transition-colors backdrop-blur-sm border border-white/20"
         >

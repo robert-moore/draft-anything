@@ -28,6 +28,10 @@ export default async function Page({
             ) : (
               <>An unexpected error occurred. Please try again.</>
             )}
+            <br />
+            <span className="text-xs text-white/40">
+              Try refreshing the page.
+            </span>
           </p>
 
           <div className="space-y-3">

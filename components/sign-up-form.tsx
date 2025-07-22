@@ -2,11 +2,10 @@
 
 import { BrutalButton } from '@/components/ui/brutal-button'
 import { BrutalInput } from '@/components/ui/brutal-input'
-import { BrutalSection } from '@/components/ui/brutal-section'
 import { useAuthRedirect } from '@/lib/hooks/use-auth-redirect'
 import { createClient } from '@/lib/supabase/client'
-import { cn } from '@/lib/utils/index'
 import { getAppUrl } from '@/lib/utils/get-app-url'
+import { cn } from '@/lib/utils/index'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
@@ -35,7 +34,9 @@ export function SignUpForm({
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${getAppUrl()}/auth/callback?next=${encodeURIComponent('/new')}`
+          emailRedirectTo: `${getAppUrl()}/auth/callback?next=${encodeURIComponent(
+            '/new'
+          )}`
         }
       })
       if (error) throw error
@@ -59,8 +60,8 @@ export function SignUpForm({
             <span className="text-foreground">Create an account</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            {isEmailSent 
-              ? 'Check your email for the magic link!' 
+            {isEmailSent
+              ? 'Check your email for the magic link!'
               : 'Enter your email to get started'}
           </p>
         </div>
@@ -88,7 +89,12 @@ export function SignUpForm({
             <form onSubmit={handleSignUp}>
               <div className="flex flex-col gap-4">
                 <div className="grid gap-2">
-                  <label htmlFor="email" className="text-sm font-medium text-foreground">Email</label>
+                  <label
+                    htmlFor="email"
+                    className="text-sm font-medium text-foreground"
+                  >
+                    Email
+                  </label>
                   <BrutalInput
                     id="email"
                     type="email"
@@ -99,14 +105,30 @@ export function SignUpForm({
                     variant="boxed"
                   />
                 </div>
-                {error && <p className="text-sm text-red-500">{error}</p>}
-                <BrutalButton type="submit" variant="filled" className="w-full" disabled={isLoading}>
+                {error && (
+                  <p className="text-sm text-red-500">
+                    {error}
+                    <br />
+                    <span className="text-xs">Try refreshing the page.</span>
+                  </p>
+                )}
+                <BrutalButton
+                  type="submit"
+                  variant="filled"
+                  className="w-full"
+                  disabled={isLoading}
+                >
                   {isLoading ? 'Sending magic link...' : 'Send magic link'}
                 </BrutalButton>
               </div>
               <div className="mt-6 text-center text-sm">
-                <span className="text-foreground">Already have an account?</span>{' '}
-                <Link href="/auth/login" className="underline underline-offset-4 hover:no-underline text-foreground font-medium">
+                <span className="text-foreground">
+                  Already have an account?
+                </span>{' '}
+                <Link
+                  href="/auth/login"
+                  className="underline underline-offset-4 hover:no-underline text-foreground font-medium"
+                >
                   Sign In
                 </Link>
               </div>

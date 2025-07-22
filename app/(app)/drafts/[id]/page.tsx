@@ -727,6 +727,27 @@ export default function DraftPage() {
     const initialTime = calculateTimeLeft()
     setChallengeWindowTimeLeft(initialTime)
 
+    // Function to check with backend if challenge window has expired
+    const checkChallengeWindowExpiration = async () => {
+      try {
+        const response = await fetch(
+          `/api/drafts/${draftId}/check-challenge-window`,
+          {
+            method: 'POST'
+          }
+        )
+        if (response.ok) {
+          const data = await response.json()
+          if (data.expired) {
+            // Challenge window expired, reload draft data to get updated state
+            await loadDraft()
+          }
+        }
+      } catch (error) {
+        console.error('Error checking challenge window expiration:', error)
+      }
+    }
+
     // Update every second
     const interval = setInterval(() => {
       const timeLeft = calculateTimeLeft()
@@ -734,20 +755,37 @@ export default function DraftPage() {
 
       if (timeLeft <= 0) {
         setChallengeWindowTimeLeft(null)
+        // Check with backend when timer reaches 0
+        checkChallengeWindowExpiration()
         clearInterval(interval)
       }
     }, 1000)
 
-    return () => clearInterval(interval)
+    // Also check periodically (every 5 seconds) while challenge window is active
+    const checkInterval = setInterval(() => {
+      checkChallengeWindowExpiration()
+    }, 5000)
+
+    return () => {
+      clearInterval(interval)
+      clearInterval(checkInterval)
+    }
   }, [draft?.draftState, draft?.turnStartedAt])
 
   // Function to check if challenge button should be shown
   const shouldShowChallengeButton = () => {
-    const shouldShow = !challengeResolvedAfterLastPick
-    if (shouldHideChallengeButtonOnLoad) {
-      return false
+    // Always show challenge button in challenge window state, except if current user's pick is the last pick
+    if (draft?.draftState === 'challenge_window') {
+      const lastPick = picks[picks.length - 1]
+      return lastPick && lastPick.clientId !== currentUser?.id
     }
-    return shouldShow
+
+    // For active state, use the existing logic but simplified
+    if (draft?.draftState === 'active') {
+      return !challengeResolvedAfterLastPick && !shouldHideChallengeButtonOnLoad
+    }
+
+    return false
   }
 
   // Update challenge flag when picks change
@@ -762,8 +800,19 @@ export default function DraftPage() {
       // Draft is active and no current challenge, so we can reset the flag
       // This happens after a challenge is resolved
       setChallengeResolvedAfterLastPick(false)
+      setShouldHideChallengeButtonOnLoad(false)
     }
   }, [draft?.draftState, currentChallenge])
+
+  // Reset challenge flags when a new pick is made after a challenge
+  useEffect(() => {
+    if (picks.length > 0 && draft?.draftState === 'active') {
+      // If we're in active state and have picks, reset challenge flags
+      // This ensures challenge button is available for the next pick
+      setChallengeResolvedAfterLastPick(false)
+      setShouldHideChallengeButtonOnLoad(false)
+    }
+  }, [draft?.draftState, picks.length])
 
   // Debug: Log when shouldShowChallengeButton result changes
   useEffect(() => {
@@ -1518,9 +1567,10 @@ export default function DraftPage() {
               isJoined &&
               currentUser &&
               draft.isFreeform &&
-              shouldShowChallengeButton() &&
               draft.draftState === 'challenge_window' &&
-              picks.length > 0
+              picks.length > 0 &&
+              challengeWindowTimeLeft !== null &&
+              challengeWindowTimeLeft > 0
 
             return shouldShow
           })() && (
@@ -1771,7 +1821,7 @@ export default function DraftPage() {
                                   />
                                 </div>
                                 <div className="flex items-center gap-6 pr-16 sm:pr-12">
-                                  <span className="font-mono text-xs text-muted-foreground">
+                                  <span className="font-mono text-xs text-muted-foreground w-6 text-right">
                                     {pick.pickNumber}
                                   </span>
                                   <div className="flex-1 space-y-1.5">
@@ -1841,7 +1891,7 @@ export default function DraftPage() {
                                           )}
                                           inline={true}
                                           userIdToName={userIdToName}
-                                          maxEmojis={3}
+                                          maxEmojis={1}
                                           pickNumber={pick.pickNumber}
                                           pickerName={pick.clientName}
                                           pickContent={pick.payload}
@@ -1871,11 +1921,7 @@ export default function DraftPage() {
                       return (
                         <div key={drafter.name}>
                           <div className="flex items-center justify-between mb-3">
-                            <h3
-                              className={`font-bold text-sm flex items-center gap-2 ${
-                                isMyDrafter ? 'text-primary' : 'text-foreground'
-                              }`}
-                            >
+                            <h3 className="font-bold text-sm flex items-center gap-2 text-foreground">
                               {drafter.name}
                             </h3>
                             <span className="text-xs text-muted-foreground">
@@ -1888,10 +1934,11 @@ export default function DraftPage() {
                               const roundNum = Math.ceil(
                                 pick.pickNumber / participants.length
                               )
+                              const isMyPick = pick.clientId === currentUser?.id
                               return (
                                 <BrutalListItem
                                   key={pick.pickNumber}
-                                  variant="minimal"
+                                  variant={isMyPick ? 'highlighted' : 'default'}
                                   className="relative"
                                 >
                                   <div className="absolute top-0 right-0 z-10">
@@ -1920,7 +1967,7 @@ export default function DraftPage() {
                                     />
                                   </div>
                                   <div className="flex items-center gap-6 pr-16 sm:pr-12">
-                                    <span className="font-mono text-xs text-muted-foreground">
+                                    <span className="font-mono text-xs text-muted-foreground w-6 text-center">
                                       {pick.pickNumber}
                                     </span>
                                     <div className="flex-1 space-y-1.5">
