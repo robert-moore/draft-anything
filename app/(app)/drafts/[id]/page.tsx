@@ -1526,7 +1526,7 @@ export default function DraftPage() {
                         {/* Show autopick delay message when timer expired */}
                         {isTimerExpired && (
                           <div className="mt-2 text-xs text-muted-foreground text-center">
-                            This may take up to a minute.
+                            This may take up to a minute
                           </div>
                         )}
                       </div>

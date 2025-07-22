@@ -213,7 +213,7 @@ export default function NewDraftPage() {
                         <>
                           <p>
                             <strong>Freeform Selections:</strong> Players can
-                            pick any item they want during their turn.
+                            pick any item they want during their turn
                           </p>
                           <p className="text-primary font-medium">
                             Challenge mechanism: Other players can challenge
@@ -231,7 +231,7 @@ export default function NewDraftPage() {
                         <div className="text-xs text-muted-foreground space-y-2">
                           <p>
                             <strong>Curated Selections:</strong> Players choose
-                            from a predefined list of options you provide.
+                            from a predefined list of options you provide
                           </p>
                         </div>
                         <div className="mt-6">
