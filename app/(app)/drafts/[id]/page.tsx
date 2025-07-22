@@ -2017,6 +2017,7 @@ export default function DraftPage() {
                 Draft Board
               </h2>
               <div className="flex items-center gap-4">
+                <ViewModeTabs viewMode={viewMode} onChange={setViewMode} />
                 {(viewMode === 'selections' || viewMode === 'by-round') && (
                   <button
                     onClick={() => setIsReversed(!isReversed)}
@@ -2029,7 +2030,6 @@ export default function DraftPage() {
                     )}
                   </button>
                 )}
-                <ViewModeTabs viewMode={viewMode} onChange={setViewMode} />
               </div>
             </div>
             {picks.length === 0 ? (
