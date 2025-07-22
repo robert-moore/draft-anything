@@ -1,5 +1,6 @@
 'use client'
 
+import { AutoPickMonitor } from '@/components/draft/auto-pick-monitor'
 import { DraftMetadata } from '@/components/draft/draft-metadata'
 import { DraftPickGrid } from '@/components/draft/draft-pick-grid'
 import { DraftTimer } from '@/components/draft/draft-timer'
@@ -260,7 +261,10 @@ export default function DraftPage() {
         setShowLoading(false)
       }, 1000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load draft')
+      setError(
+        (err instanceof Error ? err.message : 'Failed to load draft') +
+          '. Please try refreshing the page.'
+      )
       setIsLoading(false)
       setShowLoading(false)
     }
@@ -407,6 +411,21 @@ export default function DraftPage() {
                 }
               ]
             })
+
+            // Update curated options to mark used options
+            if (newPick.curated_option_id) {
+              setCuratedOptions(prev =>
+                prev.map(option =>
+                  option.id === newPick.curated_option_id
+                    ? { ...option, isUsed: true }
+                    : option
+                )
+              )
+            }
+
+            // Reset justSubmittedPick state when a new pick is made
+            setJustSubmittedPick(false)
+
             setShouldHideChallengeButtonOnLoad(false)
           }
         )
@@ -838,9 +857,37 @@ export default function DraftPage() {
     }
   }, [draft?.currentPositionOnClock, draft?.draftState, picks.length])
 
+  // Reset pick state when turn changes
+  useEffect(() => {
+    if (draft?.draftState === 'active' && isJoined && currentUser) {
+      const myPosition = participants.find(
+        p => p.id === currentUser?.id
+      )?.position
+      const isMyTurn = myPosition === draft.currentPositionOnClock
+
+      // If it's not my turn, clear the current pick
+      if (!isMyTurn) {
+        setCurrentPick('')
+        setSimilarPick(null)
+      }
+    }
+  }, [
+    draft?.currentPositionOnClock,
+    draft?.draftState,
+    isJoined,
+    currentUser,
+    participants
+  ])
+
   // Timer expired handler
   const handleTimerExpired = () => {
     setIsTimerExpired(true)
+  }
+
+  // Timer reset handler
+  const handleTimerReset = () => {
+    setIsTimerExpired(false)
+    setJustSubmittedPick(false)
   }
 
   // Function to check if challenge button should be shown
@@ -922,7 +969,10 @@ export default function DraftPage() {
       setIsJoined(true)
       setPlayerName('')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to join draft')
+      setError(
+        (err instanceof Error ? err.message : 'Failed to join draft') +
+          '. Please try refreshing the page.'
+      )
     }
   }
 
@@ -936,7 +986,10 @@ export default function DraftPage() {
 
       setDraft(prev => (prev ? { ...prev, draftState: 'active' } : null))
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start draft')
+      setError(
+        (err instanceof Error ? err.message : 'Failed to start draft') +
+          '. Please try refreshing the page.'
+      )
     }
   }
 
@@ -985,7 +1038,10 @@ export default function DraftPage() {
       }, 1000)
     } catch (err) {
       setJustSubmittedPick(false)
-      setError(err instanceof Error ? err.message : 'Failed to make pick')
+      setError(
+        (err instanceof Error ? err.message : 'Failed to make pick') +
+          '. Please try refreshing the page.'
+      )
     }
   }
 
@@ -997,7 +1053,10 @@ export default function DraftPage() {
 
       if (!response.ok) {
         const error = await response.json()
-        setError(error.error || 'Failed to initiate challenge')
+        setError(
+          (error.error || 'Failed to initiate challenge') +
+            '. Please try refreshing the page.'
+        )
         // Show challenge button again if challenge failed
         setChallengeResolvedAfterLastPick(false)
         return
@@ -1010,7 +1069,8 @@ export default function DraftPage() {
       setChallengeResolvedAfterLastPick(true)
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : 'Failed to initiate challenge'
+        (err instanceof Error ? err.message : 'Failed to initiate challenge') +
+          '. Please try refreshing the page.'
       )
     }
   }
@@ -1025,14 +1085,20 @@ export default function DraftPage() {
 
       if (!response.ok) {
         const error = await response.json()
-        setError(error.error || 'Failed to cast vote')
+        setError(
+          (error.error || 'Failed to cast vote') +
+            '. Please try refreshing the page.'
+        )
         return
       }
 
       setHasVoted(true)
       await loadVoteCounts() // Refresh vote counts after voting
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to cast vote')
+      setError(
+        (err instanceof Error ? err.message : 'Failed to cast vote') +
+          '. Please try refreshing the page.'
+      )
     }
   }
 
@@ -1090,7 +1156,10 @@ export default function DraftPage() {
         setShowInviteLink(true)
       } catch (err) {
         setError(
-          err instanceof Error ? err.message : 'Failed to create invite link'
+          (err instanceof Error
+            ? err.message
+            : 'Failed to create invite link') +
+            '. Please try refreshing the page.'
         )
         return
       }
@@ -1285,7 +1354,11 @@ export default function DraftPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto flex pb-8">
+      <div
+        className={`max-w-7xl mx-auto flex pb-8 ${
+          isMyTurn && draft?.draftState === 'active' ? 'pb-32' : ''
+        }`}
+      >
         {/* Main Content */}
         <main className="flex-1 px-6 pt-6 bg-background">
           {/* Draft Header */}
@@ -1351,12 +1424,20 @@ export default function DraftPage() {
           </div>
 
           {/* Last Pick display */}
-          {picks.length > 0 && (
+          {picks.length > 0 && draft.draftState !== 'completed' && (
             <div className="w-full flex justify-center pt-4 mb-4">
-              <span className="text-sm font-medium text-muted-foreground text-center">
-                Last Pick: {picks[picks.length - 1].payload} by{' '}
-                {picks[picks.length - 1].clientName}
-              </span>
+              <div className="bg-card border border-border rounded-lg px-4 py-2 shadow-sm">
+                <span className="text-sm font-medium text-muted-foreground">
+                  Last Pick:{' '}
+                  <span className="text-foreground font-semibold">
+                    {picks[picks.length - 1].payload}
+                  </span>{' '}
+                  by{' '}
+                  <span className="text-foreground font-semibold">
+                    {picks[picks.length - 1].clientName}
+                  </span>
+                </span>
+              </div>
             </div>
           )}
 
@@ -1449,13 +1530,14 @@ export default function DraftPage() {
                             isPaused={draft.timerPaused ?? undefined}
                             variant="full"
                             onExpired={handleTimerExpired}
+                            onReset={handleTimerReset}
                           />
                         </div>
                         {/* Autopick delay message */}
                         {parseInt(draft.secPerRound) > 0 && !isTimerExpired && (
                           <div className="mt-2 text-xs text-muted-foreground">
-                            If you don't pick in time, an auto-pick will be
-                            made. This may take up to a minute.
+                            If you don't pick in time, a random auto-pick will
+                            be made. That may take up to a minute.
                           </div>
                         )}
                       </div>
@@ -1536,6 +1618,53 @@ export default function DraftPage() {
               </div>
             )}
 
+          {/* Curated Options Preview - Show when not your turn but draft is active */}
+          {draft.draftState === 'active' &&
+            !justSubmittedPick &&
+            isJoined &&
+            currentUser &&
+            isOrderFinalized &&
+            !draft.isFreeform &&
+            participants.find(p => p.id === currentUser?.id)?.position !==
+              draft.currentPositionOnClock && (
+              <div className="py-8">
+                <div className="max-w-2xl mx-auto">
+                  <div className="bg-card border-2 border-border p-8 relative overflow-hidden">
+                    <GeometricBackground variant="diagonal" opacity={0.05} />
+                    <div className="relative z-10">
+                      <div className="text-center mb-6">
+                        <h2 className="text-2xl font-bold text-foreground">
+                          Preview Options
+                        </h2>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          You can browse options, but can't submit until your
+                          turn
+                        </p>
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <CuratedOptionsDropdown
+                            options={curatedOptions}
+                            value={currentPick}
+                            onValueChange={setCurrentPick}
+                            placeholder="Browse options..."
+                            disabled={false}
+                          />
+                        </div>
+                        <BrutalButton
+                          disabled={true}
+                          variant="filled"
+                          className="w-full py-3 text-lg opacity-50"
+                        >
+                          Not Your Turn
+                        </BrutalButton>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
           {/* Processing Pick */}
           {draft.draftState === 'active' && justSubmittedPick && (
             <div className="py-8">
@@ -1585,6 +1714,7 @@ export default function DraftPage() {
                             isPaused={draft.timerPaused ?? undefined}
                             variant="compact"
                             onExpired={handleTimerExpired}
+                            onReset={handleTimerReset}
                           />
                         </div>
                       </>
@@ -1964,7 +2094,7 @@ export default function DraftPage() {
                                       currentUserId={currentUser?.id}
                                     />
                                     {pick && (
-                                      <div className="absolute top-1 right-1 z-10">
+                                      <div className="absolute top-0 right-0 z-10">
                                         <EmojiReactionsRow
                                           reactions={getPickReactions(
                                             pick.pickNumber
@@ -2107,6 +2237,59 @@ export default function DraftPage() {
                 </div>
               </div>
             )}
+
+            {/* Mobile Order List - Show during active phase on mobile */}
+            {draft.draftState === 'active' && (
+              <div className="lg:hidden mt-8">
+                <div className="text-center">
+                  <h3 className="text-sm font-bold text-foreground mb-3">
+                    ORDER
+                  </h3>
+                  {isOrderFinalized ? (
+                    <div className="space-y-1">
+                      {[...participants]
+                        .sort((a, b) => a.position! - b.position!)
+                        .map((participant, index) => {
+                          const isCurrentTurn =
+                            participant.position ===
+                            draft.currentPositionOnClock
+                          return (
+                            <div
+                              key={participant.id}
+                              className={`px-3 py-2 text-sm font-medium flex items-center justify-between ${
+                                isCurrentTurn
+                                  ? 'bg-accent text-accent-foreground'
+                                  : 'text-muted-foreground'
+                              }`}
+                            >
+                              <span>
+                                {participant.position}. {participant.name}
+                              </span>
+                              {isCurrentTurn && (
+                                <span className="font-bold">NOW</span>
+                              )}
+                            </div>
+                          )
+                        })}
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      {Array.from({ length: participants.length }).map(
+                        (_, index) => (
+                          <div
+                            key={index}
+                            className="px-3 py-2 text-sm font-medium flex items-center justify-between text-muted-foreground"
+                          >
+                            <span className="animate-pulse bg-muted h-4 w-16 rounded"></span>
+                            <span className="animate-pulse bg-muted h-4 w-8 rounded"></span>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </main>
 
@@ -2207,6 +2390,39 @@ export default function DraftPage() {
           </BrutalSection>
         </aside>
       </div>
+
+      {/* Sticky "You're on the clock" footer */}
+      {isMyTurn && draft?.draftState === 'active' && (
+        <div className="fixed bottom-0 left-0 right-0 bg-card border-t-2 border-border p-4 z-50">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+              <span className="font-bold text-foreground">
+                You're on the clock!
+              </span>
+            </div>
+            <DraftTimer
+              turnStartedAt={draft.turnStartedAt}
+              secondsPerRound={parseInt(draft.secPerRound)}
+              isPaused={draft.timerPaused ?? undefined}
+              variant="compact"
+              onExpired={handleTimerExpired}
+              onReset={handleTimerReset}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Auto-pick monitor */}
+      {draft?.draftState === 'active' && isJoined && currentUser && (
+        <AutoPickMonitor
+          draftId={draftId}
+          turnStartedAt={draft.turnStartedAt}
+          secondsPerRound={parseInt(draft.secPerRound)}
+          isMyTurn={isMyTurn}
+          currentPickNumber={picks.length + 1}
+        />
+      )}
     </div>
   )
 }

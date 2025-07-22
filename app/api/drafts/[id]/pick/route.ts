@@ -190,6 +190,7 @@ export async function POST(
     )
 
     // Check if this is the last pick and we should enter challenge window
+    // Only freeform drafts enter challenge window - curated drafts complete immediately
     const shouldEnterChallengeWindow = isDraftCompleted && draft.isFreeform
 
     // Update draft state

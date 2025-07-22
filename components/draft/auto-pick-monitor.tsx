@@ -18,6 +18,8 @@ export function AutoPickMonitor({
   isMyTurn,
   currentPickNumber
 }: AutoPickMonitorProps) {
+  // Disable auto-pick in development mode
+  const isDevelopment = process.env.NODE_ENV === 'development'
   const { isExpired, secondsLeft } = useDraftTimer({
     turnStartedAt,
     secondsPerRound
@@ -47,6 +49,12 @@ export function AutoPickMonitor({
   }, [turnStartedAt])
 
   useEffect(() => {
+    // Disable auto-pick in development mode
+    if (isDevelopment) {
+      console.log('Auto-pick: Skipping - disabled in development mode')
+      return
+    }
+
     // Only check for auto-pick if timer is enabled
     if (secondsPerRound === 0) {
       console.log('Auto-pick: Skipping - untimed draft')
@@ -90,8 +98,7 @@ export function AutoPickMonitor({
     console.log('Auto-pick: Timer expired, triggering auto-pick')
     setHasTriggered(true)
 
-    // Call backend to check and perform auto-pick
-    const checkAutoPick = async () => {
+    const attemptAutoPick = async () => {
       try {
         console.log(
           'Auto-pick: Checking backend auto-pick for draft',
@@ -125,7 +132,7 @@ export function AutoPickMonitor({
 
     // Longer delay to prevent rapid successive calls
     const delay = isMyTurn ? 500 : 1000
-    const timeout = setTimeout(checkAutoPick, delay)
+    const timeout = setTimeout(attemptAutoPick, delay)
 
     return () => clearTimeout(timeout)
   }, [

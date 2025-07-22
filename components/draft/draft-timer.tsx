@@ -12,6 +12,7 @@ interface DraftTimerProps {
   variant?: 'compact' | 'full'
   className?: string
   onExpired?: () => void
+  onReset?: () => void
 }
 
 export function DraftTimer({
@@ -20,7 +21,8 @@ export function DraftTimer({
   isPaused = false,
   variant = 'compact',
   className,
-  onExpired
+  onExpired,
+  onReset
 }: DraftTimerProps) {
   const { formatted, color, percentage, secondsLeft, isUntimed, isExpired } =
     useDraftTimer({
@@ -31,6 +33,7 @@ export function DraftTimer({
 
   // Track previous expired state to only call onExpired on transition
   const wasExpiredRef = React.useRef(isExpired)
+  const prevTurnStartedAtRef = React.useRef(turnStartedAt)
 
   // Call onExpired when timer expires (only on transition from not expired to expired)
   React.useEffect(() => {
@@ -39,6 +42,14 @@ export function DraftTimer({
     }
     wasExpiredRef.current = isExpired
   }, [isExpired, onExpired])
+
+  // Call onReset when timer restarts (turnStartedAt changes)
+  React.useEffect(() => {
+    if (turnStartedAt !== prevTurnStartedAtRef.current && onReset) {
+      onReset()
+    }
+    prevTurnStartedAtRef.current = turnStartedAt
+  }, [turnStartedAt, onReset])
 
   if (!turnStartedAt) return null
 

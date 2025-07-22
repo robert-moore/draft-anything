@@ -10,7 +10,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { ChevronDown } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 interface CuratedOption {
   id: number
@@ -34,6 +34,8 @@ export function CuratedOptionsDropdown({
   disabled = false
 }: CuratedOptionsDropdownProps) {
   const [searchValue, setSearchValue] = useState('')
+  const [isOpen, setIsOpen] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   // Filter out used options
   const availableOptions = options.filter(option => !option.isUsed)
@@ -46,12 +48,26 @@ export function CuratedOptionsDropdown({
     option.optionText.toLowerCase().includes(searchValue.toLowerCase())
   )
 
+  const handleSelect = (optionText: string) => {
+    onValueChange(optionText)
+    setSearchValue('')
+    setIsOpen(false)
+  }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchValue(e.target.value)
+    // Keep focus on input
+    setTimeout(() => {
+      searchInputRef.current?.focus()
+    }, 0)
+  }
+
   return (
-    <DropdownMenu>
+    <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="outline"
-          className="w-full justify-between"
+          className="w-full justify-between border-2 border-border dark:border-input"
           disabled={disabled}
         >
           {value ? selectedOption?.optionText : placeholder}
@@ -61,10 +77,12 @@ export function CuratedOptionsDropdown({
       <DropdownMenuContent className="w-full min-w-[300px] max-h-[400px] overflow-y-auto">
         <div className="p-2">
           <Input
+            ref={searchInputRef}
             placeholder="Search options..."
             value={searchValue}
-            onChange={e => setSearchValue(e.target.value)}
-            className="mb-2"
+            onChange={handleInputChange}
+            className="mb-2 border-2 border-border dark:border-input"
+            autoFocus
           />
         </div>
         {filteredOptions.length === 0 ? (
@@ -76,7 +94,7 @@ export function CuratedOptionsDropdown({
             {filteredOptions.map(option => (
               <DropdownMenuItem
                 key={option.id}
-                onClick={() => onValueChange(option.optionText)}
+                onClick={() => handleSelect(option.optionText)}
                 className={cn(
                   'cursor-pointer',
                   value === option.optionText && 'bg-accent'
