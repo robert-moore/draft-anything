@@ -1194,9 +1194,7 @@ export default function DraftPage() {
       setChallengeResolvedAfterLastPick(false)
 
       // Clear the just submitted state after a short delay to prevent layout shift
-      setTimeout(() => {
-        setJustSubmittedPick(false)
-      }, 1000)
+      setTimeout(() => setJustSubmittedPick(false), 0)
     } catch (err) {
       setJustSubmittedPick(false)
       setError(

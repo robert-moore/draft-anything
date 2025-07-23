@@ -6,18 +6,26 @@ import {
 import { Smile } from 'lucide-react'
 
 const EMOJIS = [
-  '👍',
-  '👎',
-  '🔥',
-  '🤡',
-  '🤯',
-  '🤔',
-  '😢',
-  '💀',
-  '🤮',
-  '👏',
-  '😂',
-  '🧠'
+  '👍', // thumbs up
+  '👎', // thumbs down
+  '🔥', // fire
+  '🤡', // clown
+  '🤯', // mind blown
+  '🤔', // thinking
+  '😢', // crying
+  '💀', // skull
+  '🤮', // vomiting
+  '👏', // clapping
+  '😂', // laughing with tears
+  '🧠', // brain
+  '🤩', // star eyes ⭐
+  '❤️', // heart
+  '💰', // money bag
+  '💩', // poop
+  '😈', // smiling devil
+  '🥶', // cold face (icy take)
+  '😤', // triumph face (try hard)
+  '🎯' // bullseye (nailed it)
 ]
 
 export function EmojiReactPopover({
