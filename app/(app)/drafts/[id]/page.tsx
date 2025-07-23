@@ -2178,33 +2178,35 @@ export default function DraftPage() {
                 {(viewMode === 'selections' || viewMode === 'by-round') && (
                   <button
                     onClick={() => setIsReversed(!isReversed)}
-                    className="text-xs px-3 py-1 border border-border rounded hover:bg-accent transition-colors flex items-center gap-1"
+                    className="text-xs px-3 py-1 border border-border rounded hover:bg-accent transition-all duration-300 ease-out transform hover:scale-105 flex items-center gap-1"
                   >
                     {isReversed ? (
-                      <ArrowUp className="w-3 h-3" />
+                      <ArrowUp className="w-3 h-3 transition-transform duration-300 ease-out" />
                     ) : (
-                      <ArrowDown className="w-3 h-3" />
+                      <ArrowDown className="w-3 h-3 transition-transform duration-300 ease-out" />
                     )}
                   </button>
                 )}
               </div>
             </div>
             {picks.length === 0 ? (
-              <div className="border-2 border-border border-dashed p-16 text-center">
-                <p className="text-lg text-muted-foreground mb-2">
-                  {draft.draftState === 'setting_up'
-                    ? 'Draft Not Started'
-                    : 'No Picks Yet'}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {draft.draftState === 'setting_up'
-                    ? `Waiting for ${
-                        participants.length < 2
-                          ? 'more players'
-                          : 'host to start'
-                      }`
-                    : 'The first pick will appear here'}
-                </p>
+              <div className="max-w-2xl mx-auto">
+                <div className="border-2 border-border border-dashed p-16 text-center">
+                  <p className="text-lg text-muted-foreground mb-2">
+                    {draft.draftState === 'setting_up'
+                      ? 'Draft Not Started'
+                      : 'No Picks Yet'}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {draft.draftState === 'setting_up'
+                      ? `Waiting for ${
+                          participants.length < 2
+                            ? 'more players'
+                            : 'host to start'
+                        }`
+                      : 'The first pick will appear here'}
+                  </p>
+                </div>
               </div>
             ) : (
               <div className="max-w-4xl">
@@ -2213,7 +2215,14 @@ export default function DraftPage() {
                   <div className="space-y-8">
                     {(isReversed ? [...roundsData].reverse() : roundsData).map(
                       (round, roundIndex) => (
-                        <div key={roundIndex}>
+                        <div
+                          key={`round-${
+                            isReversed
+                              ? roundsData.length - roundIndex
+                              : roundIndex + 1
+                          }`}
+                          className="transition-all duration-700 ease-out"
+                        >
                           <h3 className="font-bold text-sm mb-3 text-foreground">
                             Round{' '}
                             {isReversed
@@ -2222,16 +2231,20 @@ export default function DraftPage() {
                           </h3>
                           <div className="space-y-2">
                             {(isReversed ? [...round].reverse() : round).map(
-                              pick => {
+                              (pick, pickIndex) => {
                                 const isMyPick =
                                   currentUser?.id === pick.clientId
                                 return (
                                   <BrutalListItem
-                                    key={pick.pickNumber}
+                                    key={`pick-${pick.pickNumber}-${
+                                      isReversed
+                                        ? round.length - pickIndex
+                                        : pickIndex + 1
+                                    }`}
                                     variant={
                                       isMyPick ? 'highlighted' : 'default'
                                     }
-                                    className="relative"
+                                    className="relative transition-all duration-500 ease-out transform"
                                   >
                                     <div className="absolute top-0 right-0 z-10">
                                       <EmojiReactionsRow
@@ -2292,7 +2305,14 @@ export default function DraftPage() {
                       ? Array.from({ length: draft.numRounds }).reverse()
                       : Array.from({ length: draft.numRounds })
                     ).map((_, roundIndex) => (
-                      <div key={roundIndex}>
+                      <div
+                        key={`round-${
+                          isReversed
+                            ? draft.numRounds - roundIndex
+                            : roundIndex + 1
+                        }`}
+                        className="transition-all duration-700 ease-out"
+                      >
                         <h3 className="font-bold text-sm mb-3 text-foreground">
                           Round{' '}
                           {isReversed
@@ -2313,7 +2333,14 @@ export default function DraftPage() {
                                 p => p.pickNumber === pickNumber
                               )
                               return (
-                                <div key={pickIndex} className="relative">
+                                <div
+                                  key={`pick-${pickNumber}-${
+                                    isReversed
+                                      ? participants.length - pickIndex
+                                      : pickIndex + 1
+                                  }`}
+                                  className="relative transition-all duration-500 ease-out transform"
+                                >
                                   <DraftPickGrid
                                     pickNumber={pickNumber}
                                     pick={pick}
@@ -2366,7 +2393,10 @@ export default function DraftPage() {
                       )
 
                       return (
-                        <div key={drafter.name}>
+                        <div
+                          key={drafter.name}
+                          className="transition-all duration-700 ease-out"
+                        >
                           <div className="flex items-center justify-between mb-3">
                             <h3 className="font-bold text-sm flex items-center gap-2 text-foreground">
                               {drafter.name}
@@ -2377,16 +2407,18 @@ export default function DraftPage() {
                             </span>
                           </div>
                           <div className="space-y-2">
-                            {drafter.picks.map(pick => {
+                            {drafter.picks.map((pick, pickIndex) => {
                               const roundNum = Math.ceil(
                                 pick.pickNumber / participants.length
                               )
                               const isMyPick = pick.clientId === currentUser?.id
                               return (
                                 <BrutalListItem
-                                  key={pick.pickNumber}
+                                  key={`pick-${pick.pickNumber}-${
+                                    pickIndex + 1
+                                  }`}
                                   variant={isMyPick ? 'highlighted' : 'default'}
-                                  className="relative"
+                                  className="relative transition-all duration-500 ease-out transform"
                                 >
                                   <div className="absolute top-0 right-0 z-10">
                                     <EmojiReactionsRow

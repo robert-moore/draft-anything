@@ -1,8 +1,8 @@
 'use client'
 
-import * as React from 'react'
-import * as RadioGroupPrimitive from '@radix-ui/react-radio-group'
 import { cn } from '@/lib/utils'
+import * as RadioGroupPrimitive from '@radix-ui/react-radio-group'
+import * as React from 'react'
 
 const RadioGroupSegmented = React.forwardRef<
   React.ElementRef<typeof RadioGroupPrimitive.Root>,
@@ -34,11 +34,10 @@ const RadioGroupSegmentedItem = React.forwardRef<
       className={cn(
         'px-4 py-2 text-sm font-medium transition-colors flex items-center gap-2',
         'border-l-2 border-border first:border-l-0',
-        'data-[state=checked]:bg-accent',
-        'data-[state=checked]:text-accent-foreground',
+        'data-[state=checked]:bg-gray-200 dark:data-[state=checked]:bg-accent data-[state=checked]:text-foreground dark:data-[state=checked]:text-accent-foreground',
         'data-[state=unchecked]:bg-background',
         'data-[state=unchecked]:text-foreground',
-        'hover:bg-muted data-[state=checked]:hover:bg-accent',
+        'hover:bg-muted data-[state=checked]:hover:bg-gray-200 dark:data-[state=checked]:hover:bg-accent',
         'focus:z-10 focus:outline-none focus-visible:ring-0',
         'disabled:pointer-events-none disabled:opacity-50',
         className
