@@ -70,7 +70,8 @@ export default function NewDraftPage() {
           numRounds,
           isFreeform: selectionType === 'freeform',
           curatedOptions:
-            selectionType === 'curated' ? curatedOptions : undefined
+            selectionType === 'curated' ? curatedOptions : undefined,
+          timerMode
         })
       })
 

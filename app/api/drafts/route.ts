@@ -7,15 +7,45 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 // Schema for creating a draft
-const createDraftSchema = z.object({
-  name: z.string().min(1, 'Draft name is required').max(100),
-  maxDrafters: z.number().int().min(2).max(20),
-  secPerRound: z.number().int().min(30).max(300),
-  numRounds: z.number().int().min(1).max(20),
-  isFreeform: z.boolean().default(true),
-  curatedOptions: z.string().optional(),
-  draftState: z.enum(['setting_up', 'active', 'completed', 'paused']).optional()
-})
+const createDraftSchema = z
+  .object({
+    name: z.string().min(1, 'Draft name is required').max(100),
+    maxDrafters: z.number().int().min(2).max(20),
+    secPerRound: z.number().int(),
+    numRounds: z.number().int().min(1).max(20),
+    isFreeform: z.boolean().default(true),
+    curatedOptions: z.string().optional(),
+    draftState: z
+      .enum(['setting_up', 'active', 'completed', 'paused'])
+      .optional(),
+    timerMode: z.enum(['timed', 'untimed']).optional()
+  })
+  .superRefine((data, ctx) => {
+    // If timerMode is untimed or secPerRound is 0, allow 0
+    // If timerMode is timed, secPerRound must be between 30 and 300
+    // For backward compatibility, infer timerMode from secPerRound
+    const isUntimed = data.timerMode === 'untimed' || data.secPerRound === 0
+    if (isUntimed) {
+      if (data.secPerRound !== 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'For untimed drafts, secPerRound must be 0.'
+        })
+      }
+    } else {
+      if (
+        typeof data.secPerRound !== 'number' ||
+        data.secPerRound < 30 ||
+        data.secPerRound > 300
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            'Seconds per pick must be between 30 and 300 for timed drafts.'
+        })
+      }
+    }
+  })
 
 export async function POST(req: NextRequest) {
   try {
