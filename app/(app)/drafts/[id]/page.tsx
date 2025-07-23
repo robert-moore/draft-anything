@@ -222,7 +222,7 @@ export default function DraftPage() {
 
   const loadDraft = async () => {
     try {
-      // Always ensure we have a guest client ID available
+      // Ensure we have a guest client ID available
       const clientId = getGuestClientId()
       if (!isGuest && clientId) {
         setIsGuest(true)
