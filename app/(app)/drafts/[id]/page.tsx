@@ -197,6 +197,7 @@ export default function DraftPage() {
       setIsAdmin(data.isAdmin || false)
       setCuratedOptions(data.curatedOptions || [])
       setReactions(data.reactions || [])
+      setJustSubmittedPick(false)
 
       // Immediately check if timer is expired ---
       if (
@@ -447,6 +448,26 @@ export default function DraftPage() {
           {
             event: 'DELETE',
             schema: 'da',
+            table: 'draft_users',
+            filter: `draft_id=eq.${draft.id}`
+          },
+          payload => {
+            // Remove the deleted participant from local state
+            setParticipants(prev =>
+              prev.filter(p => p.id !== payload.old.user_id)
+            )
+
+            // If the current user left, update local state
+            if (payload.old.user_id === currentUser?.id) {
+              setIsJoined(false)
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'da',
             table: 'draft_selections',
             filter: `draft_id=eq.${draft.id}`
           },
@@ -524,9 +545,6 @@ export default function DraftPage() {
               )
             }
 
-            // Reset justSubmittedPick state when a new pick is made
-            setJustSubmittedPick(false)
-
             setShouldHideChallengeButtonOnLoad(false)
             setChallengeResolvedAfterLastPick(false)
           }
@@ -562,6 +580,10 @@ export default function DraftPage() {
             const prevState = draft?.draftState || 'setting_up'
             const updatedState = payload.new.draft_state
             const positionOnClock = payload.new.current_position_on_clock
+
+            if (draft && draft.currentPositionOnClock !== positionOnClock) {
+              setJustSubmittedPick(false)
+            }
 
             setDraft(prev => {
               if (!prev) return prev
@@ -1137,6 +1159,24 @@ export default function DraftPage() {
     }
   }
 
+  const handleLeaveDraft = async () => {
+    try {
+      const response = await fetch(`/api/drafts/${draftId}/leave`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) throw new Error('Failed to leave draft')
+
+      // The subscription will handle updating the UI state
+      setIsJoined(false)
+    } catch (err) {
+      setError(
+        (err instanceof Error ? err.message : 'Failed to leave draft') +
+          '. Please try refreshing the page.'
+      )
+    }
+  }
+
   const handleStartDraft = async () => {
     try {
       const response = await fetch(`/api/drafts/${draftId}/start`, {
@@ -1192,9 +1232,6 @@ export default function DraftPage() {
 
       // Reset challenge flag since a new pick was made
       setChallengeResolvedAfterLastPick(false)
-
-      // Clear the just submitted state after a short delay to prevent layout shift
-      setTimeout(() => setJustSubmittedPick(false), 0)
     } catch (err) {
       setJustSubmittedPick(false)
       setError(
@@ -1623,6 +1660,30 @@ export default function DraftPage() {
                     variant="filled"
                   >
                     Join
+                  </BrutalButton>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Leave Draft */}
+          {isJoined && draft.draftState === 'setting_up' && !isAdmin && (
+            <div className="py-8">
+              <div className="max-w-xl mx-auto">
+                <div className="text-center">
+                  <p className="text-muted-foreground mb-4">
+                    You're joined as{' '}
+                    <span className="font-semibold text-foreground">
+                      {participants.find(p => p.id === currentUser?.id)?.name ||
+                        'Unknown'}
+                    </span>
+                  </p>
+                  <BrutalButton
+                    onClick={handleLeaveDraft}
+                    variant="default"
+                    className="px-6"
+                  >
+                    Leave Draft
                   </BrutalButton>
                 </div>
               </div>
