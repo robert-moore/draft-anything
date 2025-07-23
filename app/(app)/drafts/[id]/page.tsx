@@ -247,6 +247,114 @@ export default function DraftPage() {
         await loadChallenge()
       }
 
+      // Initialize challenge window timer if draft is in challenge_window state
+      if (
+        data.draft.draftState === 'challenge_window' &&
+        data.draft.turnStartedAt
+      ) {
+        // Calculate initial challenge window time remaining
+        const calculateTimeLeft = () => {
+          if (!data.draft.turnStartedAt) return 0
+
+          try {
+            let startTime: number
+
+            // Handle different timestamp formats
+            if (data.draft.turnStartedAt.includes('T')) {
+              // Already in ISO format (e.g., '2025-07-21T02:33:37.887+00:00')
+              startTime = new Date(data.draft.turnStartedAt).getTime()
+            } else {
+              // Database format with timezone offset (e.g., '2025-07-23 01:17:05.62+00')
+              // or without timezone (e.g., '2025-07-19 14:48:07.297')
+              let timestamp = data.draft.turnStartedAt
+              if (timestamp.includes('+')) {
+                // Has timezone offset, convert to ISO format
+                // Handle both '+00' and '+00:00' formats
+                timestamp = timestamp.replace(' ', 'T')
+                if (timestamp.match(/\+[0-9]{2}$/)) {
+                  // Format is '+00', convert to '+00:00'
+                  timestamp = timestamp.replace(/(\+[0-9]{2})$/, '$1:00')
+                }
+              } else {
+                // No timezone offset, assume UTC
+                timestamp = timestamp.replace(' ', 'T') + 'Z'
+              }
+              startTime = new Date(timestamp).getTime()
+            }
+
+            // Check if startTime is valid
+            if (isNaN(startTime)) {
+              return 0
+            }
+
+            const now = Date.now()
+            const elapsed = now - startTime
+            const remaining = Math.max(0, 30 - Math.floor(elapsed / 1000))
+
+            return remaining
+          } catch (error) {
+            return 0
+          }
+        }
+
+        const initialTime = calculateTimeLeft()
+        // Calculate startTime for debugging using same logic as above
+        let debugStartTime: number
+        let debugTimestamp: string
+        if (data.draft.turnStartedAt.includes('T')) {
+          debugTimestamp = data.draft.turnStartedAt
+          debugStartTime = new Date(debugTimestamp).getTime()
+        } else {
+          let timestamp = data.draft.turnStartedAt
+          if (timestamp.includes('+')) {
+            timestamp = timestamp.replace(' ', 'T')
+            if (timestamp.match(/\+[0-9]{2}$/)) {
+              // Format is '+00', convert to '+00:00'
+              timestamp = timestamp.replace(/(\+[0-9]{2})$/, '$1:00')
+            }
+          } else {
+            timestamp = timestamp.replace(' ', 'T') + 'Z'
+          }
+          debugTimestamp = timestamp
+          debugStartTime = new Date(timestamp).getTime()
+        }
+
+        console.log('Challenge window timer initialization:', {
+          turnStartedAt: data.draft.turnStartedAt,
+          initialTime,
+          now: Date.now(),
+          startTime: debugStartTime,
+          parsedTimestamp: debugTimestamp,
+          isValid: !isNaN(debugStartTime)
+        })
+        setChallengeWindowTimeLeft(initialTime)
+
+        // If the challenge window has already expired, check with backend to complete the draft
+        if (initialTime <= 0) {
+          try {
+            const response = await fetch(
+              `/api/drafts/${draftId}/check-challenge-window`,
+              {
+                method: 'POST'
+              }
+            )
+            if (response.ok) {
+              const checkData = await response.json()
+              if (checkData.expired) {
+                // Challenge window expired, reload draft data to get updated state
+                await loadDraft()
+                return
+              }
+            }
+          } catch (error) {
+            console.error(
+              'Error checking challenge window expiration on load:',
+              error
+            )
+          }
+        }
+      }
+
       // If we've advanced past the setting up state, set the order to finalized
       if (data.draft.draftState !== 'setting_up') {
         setIsOrderFinalized(true)
@@ -493,13 +601,21 @@ export default function DraftPage() {
               setHasVoted(false)
               await loadDraft()
             } else if (updatedState === 'challenge_window') {
-              // Entered challenge window, no action needed as timer will handle
+              // Entered challenge window, reset timer to ensure proper initialization
+              setChallengeWindowTimeLeft(null)
             } else if (
               prevState === 'challenge_window' &&
               updatedState === 'completed'
             ) {
               // Challenge window ended, draft completed
+              setChallengeWindowTimeLeft(null)
               await loadDraft()
+            } else if (
+              prevState === 'challenge_window' &&
+              updatedState !== 'challenge_window'
+            ) {
+              // Left challenge window state, reset timer
+              setChallengeWindowTimeLeft(null)
             }
           }
         )
@@ -777,10 +893,22 @@ export default function DraftPage() {
           // Already in ISO format (e.g., '2025-07-21T02:33:37.887+00:00')
           startTime = new Date(draft.turnStartedAt).getTime()
         } else {
-          // Database format (e.g., '2025-07-19 14:48:07.297')
-          startTime = new Date(
-            draft.turnStartedAt.replace(' ', 'T') + 'Z'
-          ).getTime()
+          // Database format with timezone offset (e.g., '2025-07-23 01:17:05.62+00')
+          // or without timezone (e.g., '2025-07-19 14:48:07.297')
+          let timestamp = draft.turnStartedAt
+          if (timestamp.includes('+')) {
+            // Has timezone offset, convert to ISO format
+            // Handle both '+00' and '+00:00' formats
+            timestamp = timestamp.replace(' ', 'T')
+            if (timestamp.match(/\+[0-9]{2}$/)) {
+              // Format is '+00', convert to '+00:00'
+              timestamp = timestamp.replace(/(\+[0-9]{2})$/, '$1:00')
+            }
+          } else {
+            // No timezone offset, assume UTC
+            timestamp = timestamp.replace(' ', 'T') + 'Z'
+          }
+          startTime = new Date(timestamp).getTime()
         }
 
         // Check if startTime is valid
@@ -800,6 +928,35 @@ export default function DraftPage() {
 
     // Set initial time
     const initialTime = calculateTimeLeft()
+    // Calculate startTime for debugging using same logic as above
+    let debugStartTime: number
+    let debugTimestamp: string
+    if (draft.turnStartedAt.includes('T')) {
+      debugTimestamp = draft.turnStartedAt
+      debugStartTime = new Date(debugTimestamp).getTime()
+    } else {
+      let timestamp = draft.turnStartedAt
+      if (timestamp.includes('+')) {
+        timestamp = timestamp.replace(' ', 'T')
+        if (timestamp.match(/\+[0-9]{2}$/)) {
+          // Format is '+00', convert to '+00:00'
+          timestamp = timestamp.replace(/(\+[0-9]{2})$/, '$1:00')
+        }
+      } else {
+        timestamp = timestamp.replace(' ', 'T') + 'Z'
+      }
+      debugTimestamp = timestamp
+      debugStartTime = new Date(timestamp).getTime()
+    }
+
+    console.log('Challenge window useEffect timer calculation:', {
+      turnStartedAt: draft.turnStartedAt,
+      initialTime,
+      now: Date.now(),
+      startTime: debugStartTime,
+      parsedTimestamp: debugTimestamp,
+      isValid: !isNaN(debugStartTime)
+    })
     setChallengeWindowTimeLeft(initialTime)
 
     // Function to check with backend if challenge window has expired
@@ -829,7 +986,7 @@ export default function DraftPage() {
       setChallengeWindowTimeLeft(timeLeft)
 
       if (timeLeft <= 0) {
-        setChallengeWindowTimeLeft(null)
+        setChallengeWindowTimeLeft(0)
         // Check with backend when timer reaches 0
         checkChallengeWindowExpiration()
         clearInterval(interval)
@@ -1824,9 +1981,7 @@ export default function DraftPage() {
               currentUser &&
               draft.isFreeform &&
               draft.draftState === 'challenge_window' &&
-              picks.length > 0 &&
-              challengeWindowTimeLeft !== null &&
-              challengeWindowTimeLeft > 0
+              picks.length > 0
 
             return shouldShow
           })() && (
@@ -1844,10 +1999,12 @@ export default function DraftPage() {
                             Challenge window: {challengeWindowTimeLeft}s
                             remaining
                           </>
-                        ) : (
+                        ) : challengeWindowTimeLeft === 0 ? (
                           <>
                             Challenge window expired - checking with server...
                           </>
+                        ) : (
+                          <>Challenge window active - initializing timer...</>
                         )}
                       </span>
                     </div>
