@@ -10,8 +10,8 @@ import { z } from 'zod'
 const createDraftSchema = z.object({
   name: z.string().min(1, 'Draft name is required').max(100),
   maxDrafters: z.number().int().min(2).max(20),
-  secPerRound: z.number().int().min(0).max(300),
-  numRounds: z.number().int().min(1).max(10),
+  secPerRound: z.number().int().min(30).max(300),
+  numRounds: z.number().int().min(1).max(20),
   isFreeform: z.boolean().default(true),
   curatedOptions: z.string().optional(),
   draftState: z.enum(['setting_up', 'active', 'completed', 'paused']).optional()
