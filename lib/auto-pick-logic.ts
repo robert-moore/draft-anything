@@ -18,9 +18,6 @@ const recentAutoPicks = new Map<string, number>()
 
 export async function performAutoPickForDraft(draftGuid: string) {
   try {
-    // Only log start and important events
-    console.log('[AUTO-PICK] Start for draft', draftGuid)
-
     // Validate and fetch draft
     const draftResult = await validateAndFetchDraftByGuid(draftGuid)
     if (!draftResult.success) {
@@ -101,11 +98,7 @@ export async function performAutoPickForDraft(draftGuid: string) {
       console.error('[AUTO-PICK] INTERNAL_AUTOPICK_SECRET is not set')
       return
     }
-    console.log('[AUTO-PICK] POST', {
-      draftGuid,
-      currentPickNumber,
-      userId: currentPlayer.userId
-    })
+
     const res = await fetch(pickUrl, {
       method: 'POST',
       headers: {
@@ -136,11 +129,6 @@ export async function performAutoPickForDraft(draftGuid: string) {
         recentAutoPicks.delete(key)
       }
     }
-    console.log('[AUTO-PICK] Success', {
-      draftGuid,
-      currentPickNumber,
-      userId: currentPlayer.userId
-    })
   } catch (error: any) {
     console.error('[AUTO-PICK] Error', error)
   }

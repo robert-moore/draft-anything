@@ -41,7 +41,7 @@ export function EmojiReactPopover({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-auto p-2 grid grid-cols-4 grid-rows-3 gap-2"
+        className="w-auto p-2 grid grid-cols-4 grid-rows-3 gap-2 mr-2 sm:mr-0"
       >
         {EMOJIS.map(emoji => {
           const isActive = currentUserReactions.includes(emoji)

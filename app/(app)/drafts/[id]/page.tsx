@@ -319,14 +319,6 @@ export default function DraftPage() {
           debugStartTime = new Date(timestamp).getTime()
         }
 
-        console.log('Challenge window timer initialization:', {
-          turnStartedAt: data.draft.turnStartedAt,
-          initialTime,
-          now: Date.now(),
-          startTime: debugStartTime,
-          parsedTimestamp: debugTimestamp,
-          isValid: !isNaN(debugStartTime)
-        })
         setChallengeWindowTimeLeft(initialTime)
 
         // If the challenge window has already expired, check with backend to complete the draft
@@ -535,11 +527,6 @@ export default function DraftPage() {
             // Reset justSubmittedPick state when a new pick is made
             setJustSubmittedPick(false)
 
-            console.log('New pick made - resetting challenge state:', {
-              pickNumber: newPick.pick_number,
-              userId: newPick.user_id,
-              payload: pickPayload
-            })
             setShouldHideChallengeButtonOnLoad(false)
             setChallengeResolvedAfterLastPick(false)
           }
@@ -651,14 +638,6 @@ export default function DraftPage() {
               payload.new.status === 'resolved' ||
               payload.new.status === 'dismissed'
             ) {
-              console.log(
-                'Challenge resolved - setting challengeResolvedAfterLastPick to true:',
-                {
-                  challengeId: payload.new.id,
-                  status: payload.new.status,
-                  challengedPickNumber: payload.new.challenged_pick_number
-                }
-              )
               setChallengeResolvedAfterLastPick(true)
             }
           }
@@ -808,6 +787,20 @@ export default function DraftPage() {
     loadDraft()
   }, [draftId])
 
+  // Poll draft data every 10 seconds, but stop if draft is complete
+  useEffect(() => {
+    if (!draftId || draft?.draftState === 'completed') return
+    const interval = setInterval(() => {
+      // If draft becomes complete, stop polling
+      if (draft?.draftState === 'completed') {
+        clearInterval(interval)
+        return
+      }
+      loadDraft()
+    }, 10000) // 10 seconds
+    return () => clearInterval(interval)
+  }, [draftId, draft?.draftState])
+
   // Reload draft data when tab becomes visible (in case real-time updates were missed)
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -949,14 +942,6 @@ export default function DraftPage() {
       debugStartTime = new Date(timestamp).getTime()
     }
 
-    console.log('Challenge window useEffect timer calculation:', {
-      turnStartedAt: draft.turnStartedAt,
-      initialTime,
-      now: Date.now(),
-      startTime: debugStartTime,
-      parsedTimestamp: debugTimestamp,
-      isValid: !isNaN(debugStartTime)
-    })
     setChallengeWindowTimeLeft(initialTime)
 
     // Function to check with backend if challenge window has expired
@@ -1068,32 +1053,17 @@ export default function DraftPage() {
     if (draft?.draftState === 'challenge_window') {
       const lastPick = picks[picks.length - 1]
       const shouldShow = lastPick && lastPick.clientId !== currentUser?.id
-      console.log('Challenge window state - shouldShowChallengeButton:', {
-        draftState: draft?.draftState,
-        lastPick,
-        currentUserId: currentUser?.id,
-        shouldShow
-      })
+
       return shouldShow
     }
 
     // For active state, only use real-time state, not the initial load state
     if (draft?.draftState === 'active') {
       const shouldShow = !challengeResolvedAfterLastPick
-      console.log('Active state - shouldShowChallengeButton:', {
-        draftState: draft?.draftState,
-        challengeResolvedAfterLastPick,
-        shouldShow,
-        picksLength: picks.length,
-        lastPick: picks[picks.length - 1]
-      })
+
       return shouldShow
     }
 
-    console.log('Other state - shouldShowChallengeButton:', {
-      draftState: draft?.draftState,
-      shouldShow: false
-    })
     return false
   }
 

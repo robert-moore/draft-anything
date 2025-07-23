@@ -42,14 +42,11 @@ class AutoPickScheduler {
 
           // Try to restart after a delay
           setTimeout(() => {
-            console.log('Attempting to restart auto-pick scheduler...')
             this.start()
           }, 30000) // Wait 30 seconds before restarting
         }
       }
     }, this.CHECK_INTERVAL)
-
-    console.log('Auto-pick scheduler started')
   }
 
   stop() {
@@ -58,7 +55,6 @@ class AutoPickScheduler {
       this.interval = null
     }
     this.isRunning = false
-    console.log('Auto-pick scheduler stopped')
   }
 
   // Made public for testing
@@ -97,10 +93,6 @@ class AutoPickScheduler {
         return // No active drafts to check
       }
 
-      console.log(
-        `Auto-pick scheduler: Checking ${activeDrafts.length} active drafts`
-      )
-
       for (const draft of activeDrafts) {
         if (!draft.turnStartedAt) continue
 
@@ -109,14 +101,6 @@ class AutoPickScheduler {
 
         // Check if timer has expired (with 1 second buffer)
         if (elapsedSeconds >= secPerRound + 1) {
-          console.log(
-            `Auto-pick scheduler: Timer expired for draft ${draft.guid}`,
-            {
-              elapsedSeconds,
-              secPerRound
-            }
-          )
-
           // Trigger auto-pick for this draft
           await this.performAutoPick(draft)
 

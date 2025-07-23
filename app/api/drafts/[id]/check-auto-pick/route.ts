@@ -7,8 +7,6 @@ export async function POST(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    console.log('Auto-pick: Backend check started')
-
     // Validate draft GUID
     const guidResult = await parseDraftGuid(context)
     if (!guidResult.success) return guidResult.error

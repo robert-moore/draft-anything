@@ -17,8 +17,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    console.log('API: Draft route called')
-
     // Check authentication
     const user = await getCurrentUser()
     if (!user) {
@@ -183,16 +181,8 @@ export async function GET(
         )
         .limit(1)
 
-      console.log('API: Checking for active challenges:', {
-        draftId: draft.id,
-        highestPickNumber,
-        currentPickChallenges: currentPickChallenges.length,
-        hasPreviousPickAlreadyBeenChallenged
-      })
-
       if (currentPickChallenges.length > 0) {
         hasPreviousPickAlreadyBeenChallenged = true
-        console.log('API: Found active challenge, hiding button')
       }
     }
 

@@ -56,15 +56,6 @@ export async function POST(
 
     const pickToChallenge = lastPick[0]
 
-    // Debug logging
-    console.log('Challenge debug:', {
-      currentUserId: user.id,
-      lastPickUserId: pickToChallenge.userId,
-      lastPickNumber: pickToChallenge.pickNumber,
-      lastPickPayload: pickToChallenge.payload,
-      isOwnPick: pickToChallenge.userId === user.id
-    })
-
     // Get the current user's position in this draft
     const [currentUserPosition] = await db
       .select({ position: draftUsersInDa.position })

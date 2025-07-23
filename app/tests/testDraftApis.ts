@@ -18,12 +18,10 @@ async function createDraft() {
   })
   const data = await res.json()
   if (!res.ok) {
-    console.error('❌ Create draft failed:', data)
     throw new Error(`Status ${res.status}`)
   }
 
   draftId = data.draft.id
-  console.log('✅ Created draft:', draftId)
 }
 
 async function joinDraft(userId: string) {
@@ -34,11 +32,8 @@ async function joinDraft(userId: string) {
   })
   const data = await res.json()
   if (!res.ok) {
-    console.error(`❌ Join draft failed for ${userId}:`, data)
     throw new Error(`Status ${res.status}`)
   }
-
-  console.log(`✅ User ${userId} joined draft. isAdmin: ${data.isAdmin}`)
 }
 
 async function getDraftInfo() {
@@ -48,8 +43,6 @@ async function getDraftInfo() {
     console.error('❌ Fetch draft info failed:', data)
     throw new Error(`Status ${res.status}`)
   }
-
-  console.log('✅ Draft info:', data.draft)
 }
 
 async function startDraft(userId: string) {
@@ -58,27 +51,16 @@ async function startDraft(userId: string) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId, draftId })
   })
-  const data = await res.json()
-
-  if (res.ok) {
-    console.log(`✅ User ${userId} successfully started draft.`)
-  } else {
-    console.warn(`⚠️  User ${userId} failed to start draft:`, data)
-  }
 }
 
 async function runTests() {
   try {
-    console.log('🔁 Starting draft API test flow...\n')
-
     await createDraft()
     await joinDraft(adminTestId)
     await joinDraft(nonAdminTestId)
     await getDraftInfo()
     await startDraft(nonAdminTestId) // Should fail
     await startDraft(adminTestId) // Should succeed
-
-    console.log('\n✅ All tests completed!')
   } catch (err) {
     console.error('\n❌ Error during test run:', err)
   }

@@ -292,7 +292,7 @@ const HowItWorksSection = memo(() => (
           </div>
           <h3 className="text-xl font-semibold mb-4">Make Your Picks</h3>
           <p className="text-muted-foreground leading-relaxed">
-            Take turns drafting items or vote on your favorites. Watch the
+            Take turns drafting items and reacting to your favorites. Watch the
             rankings unfold in real-time.
           </p>
         </BrutalistCard>
