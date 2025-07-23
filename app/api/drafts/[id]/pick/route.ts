@@ -13,8 +13,8 @@ import {
   validateAndFetchDraftByGuid,
   verifyParticipantByGuid
 } from '@/lib/api/draft-helpers'
+import { getCurrentUserOrGuest } from '@/lib/api/guest-helpers'
 import { parseJsonRequest } from '@/lib/api/validation'
-import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
 import { getElapsedSeconds, getUtcNow } from '@/lib/time-utils'
 import { eq } from 'drizzle-orm'
@@ -53,6 +53,11 @@ export async function POST(
     if (!guidResult.success) return guidResult.error
     const { draftGuid } = guidResult
 
+    // Validate and fetch draft first
+    const draftResult = await validateAndFetchDraftByGuid(draftGuid)
+    if (!draftResult.success) return draftResult.error
+    const { draft } = draftResult
+
     // --- Internal auto-pick support ---
     const secret = process.env.INTERNAL_AUTOPICK_SECRET
     const internalSecret = request.headers.get('x-internal-autopick-secret')
@@ -87,21 +92,17 @@ export async function POST(
       }
       user = { id: userIdFromBody }
     } else {
-      // Normal authentication
-      user = await getCurrentUser()
-      if (!user) {
+      // Normal authentication - try authenticated user or guest
+      const userOrGuest = await getCurrentUserOrGuest(draft.id, request)
+      if (!userOrGuest) {
         return NextResponse.json(
           { error: 'Authentication required' },
           { status: 401 }
         )
       }
+      user = { id: userOrGuest.id }
       wasAutoPick = false
     }
-
-    // Validate and fetch draft
-    const draftResult = await validateAndFetchDraftByGuid(draftGuid)
-    if (!draftResult.success) return draftResult.error
-    const { draft } = draftResult
 
     // Verify participant
     const participantResult = await verifyParticipantByGuid(draftGuid, user.id)

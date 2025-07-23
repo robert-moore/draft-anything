@@ -20,6 +20,43 @@ import { AlertCircle, ArrowDown, ArrowUp, Clock, Share } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
+// Guest management utilities
+const GUEST_CLIENT_ID_KEY = 'draft-guest-client-id'
+
+function getGuestClientId(): string {
+  if (typeof window === 'undefined') {
+    return ''
+  }
+
+  let clientId = localStorage.getItem(GUEST_CLIENT_ID_KEY)
+  if (!clientId) {
+    clientId = crypto.randomUUID()
+    localStorage.setItem(GUEST_CLIENT_ID_KEY, clientId)
+  }
+  return clientId
+}
+
+function hasGuestClientId(): boolean {
+  if (typeof window === 'undefined') {
+    return false
+  }
+  return !!localStorage.getItem(GUEST_CLIENT_ID_KEY)
+}
+
+function createGuestFetch() {
+  return async (url: string, options: RequestInit = {}) => {
+    const clientId = getGuestClientId()
+
+    return fetch(url, {
+      ...options,
+      headers: {
+        ...options.headers,
+        ...(clientId ? { 'x-client-id': clientId } : {})
+      }
+    })
+  }
+}
+
 const supabase = createClient()
 
 // Utility to truncate pick payload
@@ -52,6 +89,11 @@ export default function DraftPage() {
   const pickTruncateLimit = usePickTruncateLimit()
   const params = useParams()
   const draftId = params.id as string
+
+  // Guest state
+  const [isGuest, setIsGuest] = useState(false)
+  const [clientId, setClientId] = useState<string>('')
+  const [showGuestChoice, setShowGuestChoice] = useState(false)
 
   const [draft, setDraft] = useState<Draft | null>(null)
   const [participants, setParticipants] = useState<Participant[]>([])
@@ -180,11 +222,48 @@ export default function DraftPage() {
 
   const loadDraft = async () => {
     try {
-      const response = await fetch(`/api/drafts/${draftId}`)
+      // Always ensure we have a guest client ID available
+      const clientId = getGuestClientId()
+      if (!isGuest && clientId) {
+        setIsGuest(true)
+        setClientId(clientId)
+      }
+
+      const guestFetch = createGuestFetch()
+      const response = await guestFetch(`/api/drafts/${draftId}`)
       if (!response.ok) {
         if (response.status === 401) {
-          window.location.href = `/auth/login?redirectTo=/drafts/${draftId}`
-          return
+          // In incognito or when not authenticated, automatically try to join as guest
+          if (!isGuest) {
+            setIsGuest(true)
+            setClientId(getGuestClientId())
+            // Try to load draft again with guest credentials
+            const guestResponse = await guestFetch(`/api/drafts/${draftId}`)
+            if (!guestResponse.ok) {
+              setError('Authentication required')
+              setIsLoading(false)
+              setShowLoading(false)
+              return
+            }
+            // Parse the guest response
+            const data = await guestResponse.json()
+            setDraft(data.draft)
+            setParticipants(data.participants || [])
+            setPicks(data.picks || [])
+            setCurrentUser(data.currentUser)
+            setIsAdmin(data.isAdmin || false)
+            setCuratedOptions(data.curatedOptions || [])
+            setReactions(data.reactions || [])
+            setJustSubmittedPick(false)
+            setIsLoading(false)
+            setShowLoading(false)
+            return
+          } else {
+            setError('Authentication required')
+            setIsLoading(false)
+            setShowLoading(false)
+            return
+          }
         }
         throw new Error('Failed to load draft')
       }
@@ -213,12 +292,17 @@ export default function DraftPage() {
         }
       }
 
-      if (
-        data.currentUser &&
-        data.participants?.some(
-          (p: Participant) => p.id === data.currentUser.id
-        )
-      ) {
+      // Check if user is joined (either authenticated user or guest)
+      const guestClientId = getGuestClientId()
+      const isUserJoined =
+        (data.currentUser &&
+          data.participants?.some(
+            (p: Participant) => p.id === data.currentUser.id
+          )) ||
+        (guestClientId &&
+          data.participants?.some((p: Participant) => p.id === guestClientId))
+
+      if (isUserJoined) {
         setIsJoined(true)
       }
 
@@ -374,7 +458,8 @@ export default function DraftPage() {
 
   const loadChallenge = async () => {
     try {
-      const response = await fetch(`/api/drafts/${draftId}/challenge`)
+      const guestFetch = createGuestFetch()
+      const response = await guestFetch(`/api/drafts/${draftId}/challenge`)
       if (response.ok) {
         const data = await response.json()
         setCurrentChallenge(data.challenge)
@@ -389,7 +474,10 @@ export default function DraftPage() {
 
   const loadVoteCounts = async () => {
     try {
-      const response = await fetch(`/api/drafts/${draftId}/challenge/votes`)
+      const guestFetch = createGuestFetch()
+      const response = await guestFetch(
+        `/api/drafts/${draftId}/challenge/votes`
+      )
       if (response.ok) {
         const data = await response.json()
         setVoteCounts(data)
@@ -1124,7 +1212,8 @@ export default function DraftPage() {
     if (!playerName.trim()) return
 
     try {
-      const response = await fetch(`/api/drafts/${draftId}/join`, {
+      const guestFetch = createGuestFetch()
+      const response = await guestFetch(`/api/drafts/${draftId}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: playerName.trim() })
@@ -1159,9 +1248,56 @@ export default function DraftPage() {
     }
   }
 
+  const handleJoinAsGuest = async () => {
+    if (!playerName.trim()) return
+
+    try {
+      const guestClientId = getGuestClientId()
+      const response = await fetch(`/api/drafts/${draftId}/join-guest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: playerName.trim(),
+          clientId: guestClientId
+        })
+      })
+
+      if (!response.ok) throw new Error('Failed to join draft as guest')
+
+      const newParticipant = await response.json()
+
+      // Immediately add the new participant to local state
+      setParticipants(prev => {
+        if (prev.some(p => p.id === newParticipant.id)) return prev
+        return [
+          ...prev,
+          {
+            id: newParticipant.id,
+            name: newParticipant.name,
+            position: newParticipant.position,
+            isReady: newParticipant.isReady,
+            createdAt: newParticipant.createdAt
+          }
+        ]
+      })
+
+      setIsJoined(true)
+      setIsGuest(true)
+      setClientId(guestClientId)
+      setPlayerName('')
+      setShowGuestChoice(false)
+    } catch (err) {
+      setError(
+        (err instanceof Error ? err.message : 'Failed to join draft as guest') +
+          '. Please try refreshing the page.'
+      )
+    }
+  }
+
   const handleLeaveDraft = async () => {
     try {
-      const response = await fetch(`/api/drafts/${draftId}/leave`, {
+      const guestFetch = createGuestFetch()
+      const response = await guestFetch(`/api/drafts/${draftId}/leave`, {
         method: 'DELETE'
       })
 
@@ -1214,7 +1350,8 @@ export default function DraftPage() {
         }
       }
 
-      const response = await fetch(`/api/drafts/${draftId}/pick`, {
+      const guestFetch = createGuestFetch()
+      const response = await guestFetch(`/api/drafts/${draftId}/pick`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1243,7 +1380,8 @@ export default function DraftPage() {
 
   const handleChallenge = async () => {
     try {
-      const response = await fetch(`/api/drafts/${draftId}/challenge`, {
+      const guestFetch = createGuestFetch()
+      const response = await guestFetch(`/api/drafts/${draftId}/challenge`, {
         method: 'POST'
       })
 
@@ -1273,11 +1411,15 @@ export default function DraftPage() {
 
   const handleVote = async (vote: boolean) => {
     try {
-      const response = await fetch(`/api/drafts/${draftId}/challenge/vote`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vote })
-      })
+      const guestFetch = createGuestFetch()
+      const response = await guestFetch(
+        `/api/drafts/${draftId}/challenge/vote`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vote })
+        }
+      )
 
       if (!response.ok) {
         const error = await response.json()
@@ -1417,6 +1559,129 @@ export default function DraftPage() {
             }
           }
         `}</style>
+      </div>
+    )
+  }
+
+  if (
+    draft &&
+    draft.draftState === 'setting_up' &&
+    !isJoined &&
+    !currentUser &&
+    !showGuestChoice
+  ) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="flex items-center justify-center py-32">
+          <BrutalSection variant="bordered" className="w-96 text-center">
+            <div className="p-8">
+              <h1 className="text-2xl font-bold mb-6 text-foreground">
+                Join Draft
+              </h1>
+              <p className="text-lg font-semibold text-foreground mb-2">
+                {draft.name}
+              </p>
+              <p className="text-muted-foreground mb-8">
+                Choose how you'd like to join this draft
+              </p>
+
+              <div className="space-y-4">
+                <BrutalButton
+                  onClick={() =>
+                    (window.location.href = `/auth/login?redirectTo=/drafts/${draftId}`)
+                  }
+                  variant="filled"
+                  className="w-full"
+                >
+                  Sign In
+                </BrutalButton>
+
+                <div className="text-xs text-muted-foreground mb-4">
+                  Sign in to create your own drafts and view your history
+                </div>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-border" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      Or
+                    </span>
+                  </div>
+                </div>
+
+                <BrutalButton
+                  onClick={() => {
+                    console.log('Join as Guest clicked')
+                    console.log('Before setShowGuestChoice:', showGuestChoice)
+                    setShowGuestChoice(true)
+                    console.log('After setShowGuestChoice: true')
+                  }}
+                  variant="default"
+                  className="w-full"
+                >
+                  Join as Guest
+                </BrutalButton>
+
+                <div className="text-xs text-muted-foreground">
+                  Join without an account (you'll need to rejoin if you clear
+                  your browser data)
+                </div>
+              </div>
+            </div>
+          </BrutalSection>
+        </div>
+      </div>
+    )
+  }
+
+  console.log('showGuestChoice state:', showGuestChoice)
+  if (showGuestChoice) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="flex items-center justify-center py-32">
+          <BrutalSection variant="bordered" className="w-96 text-center">
+            <div className="p-8">
+              <h1 className="text-2xl font-bold mb-6 text-foreground">
+                Join as Guest
+              </h1>
+              <p className="text-muted-foreground mb-8">
+                Enter your name to join this draft
+              </p>
+
+              <div className="space-y-4">
+                <BrutalInput
+                  placeholder="Your name"
+                  value={playerName}
+                  onChange={e => setPlayerName(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleJoinAsGuest()}
+                  variant="boxed"
+                  className="w-full"
+                  autoFocus
+                />
+
+                <div className="flex gap-2">
+                  <BrutalButton
+                    onClick={() => setShowGuestChoice(false)}
+                    variant="filled"
+                    className="flex-1"
+                  >
+                    Back
+                  </BrutalButton>
+                  <BrutalButton
+                    onClick={handleJoinAsGuest}
+                    disabled={!playerName.trim()}
+                    variant="default"
+                    className="flex-1"
+                  >
+                    Join
+                  </BrutalButton>
+                </div>
+              </div>
+            </div>
+          </BrutalSection>
+        </div>
       </div>
     )
   }
@@ -1638,7 +1903,7 @@ export default function DraftPage() {
           )}
 
           {/* Join Draft */}
-          {!isJoined && draft.draftState === 'setting_up' && (
+          {!isJoined && draft.draftState === 'setting_up' && currentUser && (
             <div className="py-8">
               <div className="max-w-xl mx-auto">
                 <h2 className="text-2xl font-bold mb-6 text-center text-foreground">
@@ -1674,8 +1939,14 @@ export default function DraftPage() {
                   <p className="text-muted-foreground mb-4">
                     You're joined as{' '}
                     <span className="font-semibold text-foreground">
-                      {participants.find(p => p.id === currentUser?.id)?.name ||
-                        'Unknown'}
+                      {(() => {
+                        const guestClientId = getGuestClientId()
+                        const participant = participants.find(
+                          p =>
+                            p.id === currentUser?.id || p.id === guestClientId
+                        )
+                        return participant?.name || 'Unknown'
+                      })()}
                     </span>
                   </p>
                   <BrutalButton
@@ -1726,10 +1997,14 @@ export default function DraftPage() {
           {/* Active Pick Input */}
           {draft.draftState === 'active' &&
             isJoined &&
-            currentUser &&
             isOrderFinalized &&
-            participants.find(p => p.id === currentUser?.id)?.position ===
-              draft.currentPositionOnClock &&
+            (() => {
+              const guestClientId = getGuestClientId()
+              const participant = participants.find(
+                p => p.id === currentUser?.id || p.id === guestClientId
+              )
+              return participant?.position === draft.currentPositionOnClock
+            })() &&
             !justSubmittedPick && (
               <div className="py-8">
                 <div className="max-w-2xl mx-auto">

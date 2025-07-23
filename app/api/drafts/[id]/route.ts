@@ -3,11 +3,10 @@ import {
   draftCuratedOptionsInDa,
   draftReactionsInDa,
   draftSelectionsInDa,
-  draftUsersInDa,
-  profilesInDa
+  draftUsersInDa
 } from '@/drizzle/schema'
 import { getDraftByGuid, parseDraftGuid } from '@/lib/api/draft-guid-helpers'
-import { getCurrentUser } from '@/lib/auth/get-current-user'
+import { getCurrentUserOrGuest } from '@/lib/api/guest-helpers'
 import { db } from '@/lib/db'
 import { and, desc, eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
@@ -17,15 +16,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Check authentication
-    const user = await getCurrentUser()
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
     // Validate draft GUID
     const guidResult = await parseDraftGuid({ params })
     if (!guidResult.success) return guidResult.error
@@ -38,19 +28,25 @@ export async function GET(
       return NextResponse.json({ error: 'Draft not found' }, { status: 404 })
     }
 
-    const isAdmin = draft?.adminUserId === user.id
+    // Check authentication (user or guest) - but allow viewing even if not joined
+    const userOrGuest = await getCurrentUserOrGuest(draft.id, request)
+    // Note: We don't require authentication to view draft details
+    // The userOrGuest can be null for unauthenticated viewers
 
-    // Get participants
+    const isAdmin =
+      userOrGuest?.type === 'user' && draft?.adminUserId === userOrGuest.id
+
+    // Get participants (both users and guests)
     const participantsQuery = await db
       .select({
-        id: profilesInDa.id,
+        id: draftUsersInDa.userId,
         name: draftUsersInDa.draftUsername,
         position: draftUsersInDa.position,
         isReady: draftUsersInDa.isReady,
+        isGuest: draftUsersInDa.isGuest,
         createdAt: draftUsersInDa.createdAt
       })
       .from(draftUsersInDa)
-      .innerJoin(profilesInDa, eq(draftUsersInDa.userId, profilesInDa.id))
       .where(eq(draftUsersInDa.draftId, draft.id))
 
     // Get draft picks with user names in a single query
@@ -196,7 +192,7 @@ export async function GET(
       draft,
       participants: participantsQuery,
       picks: picks.sort((a, b) => a.pickNumber - b.pickNumber),
-      currentUser: user,
+      currentUser: userOrGuest ? { id: userOrGuest.id } : null,
       isAdmin,
       curatedOptions,
       latestResolvedChallenge: latestChallenge || null,

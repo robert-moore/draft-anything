@@ -71,7 +71,12 @@ export function AppHeader() {
     )
   }
 
-  if (!user) {
+  // Check if user is a guest (has guest client ID in localStorage)
+  const isGuest =
+    typeof window !== 'undefined' &&
+    !!localStorage.getItem('draft-guest-client-id')
+
+  if (!user && !isGuest) {
     return (
       <header className="bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -101,43 +106,45 @@ export function AppHeader() {
 
           <div className="flex items-center gap-4">
             <ThemeToggle />
-            <Link href="/new">
+            <Link href={user ? '/new' : '/auth/login'}>
               <BrutalistButton variant="primary" className="px-4 py-2">
                 <Plus className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">New Draft</span>
               </BrutalistButton>
             </Link>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="relative h-10 w-10 border-2 border-border hover:border-primary p-0"
+            {user && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="relative h-10 w-10 border-2 border-border hover:border-primary p-0"
+                  >
+                    <CurrentUserAvatar />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  className="w-56 border-2 border-border rounded-none"
+                  align="end"
                 >
-                  <CurrentUserAvatar />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-56 border-2 border-border rounded-none"
-                align="end"
-              >
-                <div className="flex items-center justify-start gap-2 p-2">
-                  <div className="flex flex-col space-y-1 leading-none">
-                    <p className="w-[200px] truncate text-sm text-muted-foreground">
-                      {user.email}
-                    </p>
+                  <div className="flex items-center justify-start gap-2 p-2">
+                    <div className="flex flex-col space-y-1 leading-none">
+                      <p className="w-[200px] truncate text-sm text-muted-foreground">
+                        {user?.email || 'User'}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="cursor-pointer"
-                  onClick={handleSignOut}
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sign out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="cursor-pointer"
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Sign out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </div>

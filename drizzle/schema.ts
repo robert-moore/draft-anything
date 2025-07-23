@@ -72,6 +72,7 @@ export const draftUsersInDa = da.table(
     draftUsername: text('draft_username').notNull(),
     position: smallint(),
     isReady: boolean('is_ready').notNull(),
+    isGuest: boolean('is_guest').notNull().default(false),
     createdAt: timestamp('created_at', { mode: 'string' }).notNull()
   },
   table => [
@@ -79,12 +80,8 @@ export const draftUsersInDa = da.table(
       columns: [table.draftId],
       foreignColumns: [draftsInDa.id],
       name: 'draft_users_draft_id_fkey'
-    }),
-    foreignKey({
-      columns: [table.userId],
-      foreignColumns: [profilesInDa.id],
-      name: 'draft_users_user_id_fkey'
     })
+    // Removed foreign key constraint on userId to allow guest users
   ]
 )
 
@@ -105,11 +102,6 @@ export const draftSelectionsInDa = da.table(
       columns: [table.draftId],
       foreignColumns: [draftsInDa.id],
       name: 'draft_selections_draft_id_fkey'
-    }),
-    foreignKey({
-      columns: [table.userId],
-      foreignColumns: [profilesInDa.id],
-      name: 'draft_selections_user_id_fkey'
     }),
     foreignKey({
       columns: [table.curatedOptionId],
@@ -137,16 +129,6 @@ export const draftChallengesInDa = da.table(
       columns: [table.draftId],
       foreignColumns: [draftsInDa.id],
       name: 'draft_challenges_draft_id_fkey'
-    }),
-    foreignKey({
-      columns: [table.challengedUserId],
-      foreignColumns: [profilesInDa.id],
-      name: 'draft_challenges_challenged_user_id_fkey'
-    }),
-    foreignKey({
-      columns: [table.challengerUserId],
-      foreignColumns: [profilesInDa.id],
-      name: 'draft_challenges_challenger_user_id_fkey'
     })
   ]
 )
@@ -165,11 +147,6 @@ export const draftChallengeVotesInDa = da.table(
       columns: [table.challengeId],
       foreignColumns: [draftChallengesInDa.id],
       name: 'draft_challenge_votes_challenge_id_fkey'
-    }),
-    foreignKey({
-      columns: [table.voterUserId],
-      foreignColumns: [profilesInDa.id],
-      name: 'draft_challenge_votes_voter_user_id_fkey'
     }),
     unique('unique_challenge_vote').on(table.challengeId, table.voterUserId)
   ]
@@ -193,11 +170,6 @@ export const draftReactionsInDa = da.table(
         draftSelectionsInDa.pickNumber
       ],
       name: 'draft_reactions_selection_fkey'
-    }),
-    foreignKey({
-      columns: [table.userId],
-      foreignColumns: [profilesInDa.id],
-      name: 'draft_reactions_user_id_fkey'
     })
   ]
 )
