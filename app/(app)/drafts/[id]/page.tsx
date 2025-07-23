@@ -545,9 +545,10 @@ export default function DraftPage() {
               prev.filter(p => p.id !== payload.old.user_id)
             )
 
-            // If the current user left, update local state
-            if (payload.old.user_id === currentUser?.id) {
-              setIsJoined(false)
+            // If the current user was kicked, refresh the page
+            const currentUserId = currentUser?.id || getGuestClientId()
+            if (payload.old.user_id === currentUserId) {
+              window.location.reload()
             }
           }
         )
@@ -1313,6 +1314,28 @@ export default function DraftPage() {
     }
   }
 
+  const handleKickUser = async (userIdToKick: string) => {
+    try {
+      const response = await fetch(`/api/drafts/${draftId}/kick`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userIdToKick })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to kick user')
+      }
+
+      // The subscription will handle updating the UI state
+    } catch (err) {
+      setError(
+        (err instanceof Error ? err.message : 'Failed to kick user') +
+          '. Please try refreshing the page.'
+      )
+    }
+  }
+
   const handleStartDraft = async () => {
     try {
       const response = await fetch(`/api/drafts/${draftId}/start`, {
@@ -1613,10 +1636,7 @@ export default function DraftPage() {
 
                 <BrutalButton
                   onClick={() => {
-                    console.log('Join as Guest clicked')
-                    console.log('Before setShowGuestChoice:', showGuestChoice)
                     setShowGuestChoice(true)
-                    console.log('After setShowGuestChoice: true')
                   }}
                   variant="default"
                   className="w-full"
@@ -1636,7 +1656,6 @@ export default function DraftPage() {
     )
   }
 
-  console.log('showGuestChoice state:', showGuestChoice)
   if (showGuestChoice) {
     return (
       <div className="min-h-screen bg-background">
@@ -2789,11 +2808,29 @@ export default function DraftPage() {
                       Waiting for players...
                     </p>
                   ) : (
-                    <p className="text-sm text-foreground">
-                      {participants
-                        .map(participant => participant.name)
-                        .join(', ')}
-                    </p>
+                    <div className="space-y-2">
+                      {participants.map((participant, index) => (
+                        <div
+                          key={participant.id}
+                          className="flex items-center justify-between gap-2 px-3 py-2 bg-card border border-border rounded"
+                        >
+                          <div className="flex items-center gap-2 flex-1">
+                            <span className="text-sm font-medium text-foreground">
+                              {participant.name}
+                            </span>
+                          </div>
+                          {isAdmin && participant.id !== currentUser?.id && (
+                            <button
+                              onClick={() => handleKickUser(participant.id)}
+                              className="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 font-medium rounded transition-colors"
+                              title="Kick player"
+                            >
+                              Kick
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
               </div>
@@ -2880,11 +2917,17 @@ export default function DraftPage() {
                       <span className="font-medium text-sm flex-1 truncate text-foreground">
                         {participant.name}
                       </span>
-                      {participant.isReady && (
-                        <span className="text-xs bg-muted px-2 py-1 font-medium text-foreground">
-                          Ready
-                        </span>
-                      )}
+                      {isAdmin &&
+                        draft.draftState === 'setting_up' &&
+                        participant.id !== currentUser?.id && (
+                          <button
+                            onClick={() => handleKickUser(participant.id)}
+                            className="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 font-medium rounded transition-colors"
+                            title="Kick player"
+                          >
+                            Kick
+                          </button>
+                        )}
                     </div>
                   ))}
                 </div>
