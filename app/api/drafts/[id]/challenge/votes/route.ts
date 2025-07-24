@@ -27,10 +27,10 @@ export async function GET(
 
     // Try authenticated user or guest (but don't require authentication for viewing)
     const userOrGuest = await getCurrentUserOrGuest(draft.id, request)
-    if (!userOrGuest) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    let user = null
+    if (userOrGuest) {
+      user = { id: userOrGuest.id }
     }
-    const user = { id: userOrGuest.id }
 
     // Get the active challenge
     const [challenge] = await db
@@ -86,23 +86,27 @@ export async function GET(
       )
 
     // Check if user has voted
-    const [userVote] = await db
-      .select()
-      .from(draftChallengeVotesInDa)
-      .where(
-        and(
-          eq(draftChallengeVotesInDa.challengeId, challenge.id),
-          eq(draftChallengeVotesInDa.voterUserId, user.id)
+    let userVote = undefined
+    if (user) {
+      const [vote] = await db
+        .select()
+        .from(draftChallengeVotesInDa)
+        .where(
+          and(
+            eq(draftChallengeVotesInDa.challengeId, challenge.id),
+            eq(draftChallengeVotesInDa.voterUserId, user.id)
+          )
         )
-      )
-      .limit(1)
+        .limit(1)
+      userVote = vote?.vote
+    }
 
     return NextResponse.json({
       totalVotes: totalVotes[0].count,
       validVotes: validVotes[0].count,
       invalidVotes: invalidVotes[0].count,
       eligibleVoters,
-      userVote: userVote?.vote,
+      userVote: userVote,
       fiftyPercentThreshold: Math.ceil(eligibleVoters / 2)
     })
   } catch (error) {

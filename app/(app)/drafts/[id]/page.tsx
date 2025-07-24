@@ -12,7 +12,6 @@ import { BrutalListItem } from '@/components/ui/brutal-list-item'
 import { BrutalSection } from '@/components/ui/brutal-section'
 import { CuratedOptionsDropdown } from '@/components/ui/curated-options-dropdown'
 import { GeometricBackground } from '@/components/ui/geometric-background'
-import { NumberBox } from '@/components/ui/number-box'
 import { createClient } from '@/lib/supabase/client'
 import type { Draft, DraftPick, Participant } from '@/types/draft'
 import { differenceInSeconds, parseISO } from 'date-fns'
@@ -1304,7 +1303,6 @@ export default function DraftPage() {
 
       if (!response.ok) throw new Error('Failed to leave draft')
 
-      // The subscription will handle updating the UI state
       setIsJoined(false)
     } catch (err) {
       setError(
@@ -1467,38 +1465,45 @@ export default function DraftPage() {
     switch (state) {
       case 'setting_up':
         return {
-          label: 'SETUP',
-          variant: 'default' as const
+          label: 'Setting Up',
+          color: 'bg-blue-500 text-white dark:bg-blue-400 dark:text-black',
+          pulse: true
         }
       case 'active':
         return {
-          label: 'LIVE',
-          variant: 'filled' as const
+          label: 'Live',
+          color: 'bg-green-500 text-white dark:bg-green-400 dark:text-black',
+          pulse: true
         }
       case 'challenge_window':
         return {
-          label: 'FINISHING',
-          variant: 'filled' as const
+          label: 'Last Pick Made',
+          color: 'bg-yellow-500 text-black dark:bg-yellow-300 dark:text-black',
+          pulse: true
         }
       case 'challenge':
         return {
-          label: 'CHALLENGE',
-          variant: 'filled' as const
+          label: 'Challenge',
+          color: 'bg-orange-500 text-white dark:bg-orange-400 dark:text-black',
+          pulse: true
         }
       case 'completed':
         return {
-          label: 'DONE',
-          variant: 'default' as const
+          label: 'Finished',
+          color: 'bg-gray-400 text-white dark:bg-gray-600 dark:text-white',
+          pulse: false
         }
       case 'paused':
         return {
-          label: 'PAUSED',
-          variant: 'default' as const
+          label: 'Paused',
+          color: 'bg-purple-500 text-white dark:bg-purple-400 dark:text-black',
+          pulse: false
         }
       default:
         return {
-          label: 'ERROR',
-          variant: 'default' as const
+          label: 'Error',
+          color: 'bg-red-500 text-white dark:bg-red-400 dark:text-black',
+          pulse: false
         }
     }
   }
@@ -1849,16 +1854,31 @@ export default function DraftPage() {
         <main className="flex-1 px-6 pt-6 bg-background">
           {/* Draft Header */}
           <div className="mb-8">
+            {/* State Indicator - Centered above title */}
+            <div className="flex justify-center mb-2">
+              <div className="flex items-center gap-2">
+                <span
+                  className={`w-3 h-3 rounded-full inline-block ${
+                    stateInfo.color
+                  } ${stateInfo.pulse ? 'animate-pulse' : ''}`}
+                  aria-label="Draft state indicator"
+                ></span>
+                <span
+                  className={`font-semibold text-base ${stateInfo.color} px-3 py-1 rounded-full bg-opacity-80`}
+                  style={{
+                    backgroundColor: 'inherit',
+                    color: 'inherit'
+                  }}
+                >
+                  {stateInfo.label}
+                </span>
+              </div>
+            </div>
             <div className="flex items-center gap-4 mb-4">
               <h1 className="text-4xl font-black tracking-tight text-foreground">
                 {draft.name}
               </h1>
-              <NumberBox
-                number={stateInfo.label}
-                size="md"
-                variant={stateInfo.variant}
-                className="px-8 w-auto min-w-[6rem]"
-              />
+              {/* Removed state tag from here */}
               {/* Mobile Share Button - Only visible on small screens */}
               <div className="lg:hidden ml-auto">
                 <BrutalButton
@@ -2417,7 +2437,7 @@ export default function DraftPage() {
                       )
                     })()}
 
-                    {/* Vote Counts */}
+                    {/* Vote Counts - Always show if joined (including guests) */}
                     {voteCounts && (
                       <div className="mb-6 p-4 bg-muted rounded-lg">
                         <div className="grid grid-cols-2 gap-4 text-sm">
@@ -2486,9 +2506,11 @@ export default function DraftPage() {
                         <p>You have voted. Waiting for other participants...</p>
                       </div>
                     ) : (
-                      <div className="text-muted-foreground">
-                        <p>Loading vote options...</p>
-                      </div>
+                      isJoined && (
+                        <div className="text-muted-foreground">
+                          <p>Loading vote options...</p>
+                        </div>
+                      )
                     )}
                   </div>
                 </div>
@@ -3036,3 +3058,19 @@ export default function DraftPage() {
     </div>
   )
 }
+
+/* Add this to the bottom of the file for custom pulse if needed */
+;<style jsx global>{`
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+  .animate-pulse {
+    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+`}</style>

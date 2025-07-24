@@ -1,7 +1,6 @@
 import { draftsInDa } from '@/drizzle/schema'
 import { parseDraftGuid } from '@/lib/api/draft-guid-helpers'
 import { validateAndFetchDraftByGuid } from '@/lib/api/draft-helpers'
-import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
 import { getElapsedSeconds } from '@/lib/time-utils'
 import { eq } from 'drizzle-orm'
@@ -16,15 +15,6 @@ export async function POST(
     const guidResult = await parseDraftGuid(context)
     if (!guidResult.success) return guidResult.error
     const { draftGuid } = guidResult
-
-    // Check authentication
-    const user = await getCurrentUser()
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
 
     // Validate and fetch draft
     const draftResult = await validateAndFetchDraftByGuid(draftGuid)
