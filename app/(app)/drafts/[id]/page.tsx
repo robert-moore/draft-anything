@@ -1489,7 +1489,7 @@ export default function DraftPage() {
         }
       case 'completed':
         return {
-          label: 'Finished',
+          label: 'Done',
           color: 'bg-gray-400 text-white dark:bg-gray-600 dark:text-white',
           pulse: false
         }
@@ -1606,9 +1606,14 @@ export default function DraftPage() {
               <h1 className="text-2xl font-bold mb-6 text-foreground">
                 Join Draft
               </h1>
-              <p className="text-lg font-semibold text-foreground mb-2">
-                {draft.name}
-              </p>
+              <div className="mb-2">
+                <span
+                  className="block w-full font-semibold text-foreground break-words whitespace-pre-line"
+                  style={{ wordBreak: 'break-all' }}
+                >
+                  {draft.name}
+                </span>
+              </div>
               <p className="text-muted-foreground mb-8">
                 Choose how you'd like to join this draft
               </p>
@@ -1626,6 +1631,7 @@ export default function DraftPage() {
 
                 <div className="text-xs text-muted-foreground mb-4">
                   Sign in to create your own drafts and view your history
+                  (coming soon!)
                 </div>
 
                 <div className="relative">
@@ -1650,8 +1656,7 @@ export default function DraftPage() {
                 </BrutalButton>
 
                 <div className="text-xs text-muted-foreground">
-                  Join without an account (you'll need to rejoin if you clear
-                  your browser data)
+                  Join without an account
                 </div>
               </div>
             </div>
@@ -1851,31 +1856,32 @@ export default function DraftPage() {
         }`}
       >
         {/* Main Content */}
-        <main className="flex-1 px-6 pt-6 bg-background">
+        <main className="flex-1 px-6 pt-6 bg-background relative">
+          {/* State Indicator - Top Right */}
+          <div className="absolute right-0 top-0 mt-2 mr-2 z-20 flex items-center gap-2">
+            {
+              <span
+                className={`w-3 h-3 rounded-full inline-block ${stateInfo.color} animate-pulse`}
+                aria-label="Draft state indicator"
+              ></span>
+            }
+            <span
+              className={`font-semibold text-base ${stateInfo.color} px-3 py-1 rounded-full bg-opacity-80`}
+              style={{
+                backgroundColor: 'inherit',
+                color: 'inherit'
+              }}
+            >
+              {stateInfo.label}
+            </span>
+          </div>
           {/* Draft Header */}
-          <div className="mb-8">
-            {/* State Indicator - Centered above title */}
-            <div className="flex justify-center mb-2">
-              <div className="flex items-center gap-2">
-                <span
-                  className={`w-3 h-3 rounded-full inline-block ${
-                    stateInfo.color
-                  } ${stateInfo.pulse ? 'animate-pulse' : ''}`}
-                  aria-label="Draft state indicator"
-                ></span>
-                <span
-                  className={`font-semibold text-base ${stateInfo.color} px-3 py-1 rounded-full bg-opacity-80`}
-                  style={{
-                    backgroundColor: 'inherit',
-                    color: 'inherit'
-                  }}
-                >
-                  {stateInfo.label}
-                </span>
-              </div>
-            </div>
+          <div className="my-8">
             <div className="flex items-center gap-4 mb-4">
-              <h1 className="text-4xl font-black tracking-tight text-foreground">
+              <h1
+                className="block w-full text-4xl font-black tracking-tight text-foreground break-words whitespace-pre-line max-w-full sm:max-w-2xl"
+                style={{ wordBreak: 'break-all' }}
+              >
                 {draft.name}
               </h1>
               {/* Removed state tag from here */}
