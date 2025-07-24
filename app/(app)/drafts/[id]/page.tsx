@@ -1796,12 +1796,16 @@ export default function DraftPage() {
     emoji: string,
     isActive: boolean
   ) {
+    // Get current user ID (authenticated user or guest)
+    const currentUserId = currentUser?.id || getGuestClientId()
+    const currentUserName = currentUser?.name || 'Guest'
+
     // Optimistically update reactions state
     setReactions(prev => {
-      if (!currentUser) return prev
+      if (!currentUserId) return prev
       // Remove any previous reaction for this pick and user
       let filtered = prev.filter(
-        r => !(r.pickNumber === pickNumber && r.userId === currentUser.id)
+        r => !(r.pickNumber === pickNumber && r.userId === currentUserId)
       )
       // If removing (isActive), only remove; if adding, add new reaction
       if (!isActive) {
@@ -1811,8 +1815,8 @@ export default function DraftPage() {
             id: Math.floor(Math.random() * 1e9), // temp id
             draftId: draft?.id || 0,
             pickNumber,
-            userId: currentUser.id,
-            userName: currentUser.name || '',
+            userId: currentUserId,
+            userName: currentUserName,
             emoji,
             createdAt: new Date().toISOString()
           }
@@ -1822,8 +1826,10 @@ export default function DraftPage() {
     })
     // Send to server
     const url = `/api/drafts/${draftId}/reactions`
-    await fetch(url, {
+    const guestFetch = createGuestFetch()
+    await guestFetch(url, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pickNumber, emoji: isActive ? null : emoji })
     })
     // TODO: Ignore any real-time updates for this user until next reload
@@ -1835,8 +1841,8 @@ export default function DraftPage() {
   return (
     <div className="min-h-screen bg-background">
       <div
-        className={`max-w-7xl mx-auto flex pb-8 ${
-          isMyTurn && draft?.draftState === 'active' ? 'pb-32' : ''
+        className={`max-w-7xl mx-auto flex ${
+          isMyTurn && draft?.draftState === 'active' ? 'pb-32' : 'pb-8'
         }`}
       >
         {/* Main Content */}
@@ -2822,7 +2828,7 @@ export default function DraftPage() {
                           {isAdmin && participant.id !== currentUser?.id && (
                             <button
                               onClick={() => handleKickUser(participant.id)}
-                              className="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 font-medium rounded transition-colors"
+                              className="text-xs bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900 dark:hover:bg-red-800 dark:text-red-100 px-2 py-1 font-medium rounded transition-colors"
                               title="Kick player"
                             >
                               Kick
@@ -2922,7 +2928,7 @@ export default function DraftPage() {
                         participant.id !== currentUser?.id && (
                           <button
                             onClick={() => handleKickUser(participant.id)}
-                            className="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 font-medium rounded transition-colors"
+                            className="text-xs bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900 dark:hover:bg-red-800 dark:text-red-100 px-2 py-1 font-medium rounded transition-colors"
                             title="Kick player"
                           >
                             Kick
@@ -2997,8 +3003,8 @@ export default function DraftPage() {
 
       {/* Sticky "You're on the clock" footer */}
       {isMyTurn && draft?.draftState === 'active' && (
-        <div className="fixed bottom-0 left-0 right-0 bg-card border-t-2 border-border p-4 z-50">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="fixed bottom-0 left-0 right-0 bg-card border-t-2 border-border z-50 h-20 flex items-center">
+          <div className="max-w-7xl mx-auto flex items-center justify-between w-full px-6">
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
               <span className="font-bold text-foreground">

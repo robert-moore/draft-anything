@@ -3,7 +3,7 @@ import {
   draftUsersInDa,
   draftsInDa
 } from '@/drizzle/schema'
-import { getCurrentUser } from '@/lib/auth/get-current-user'
+import { getCurrentUserOrGuest } from '@/lib/api/guest-helpers'
 import { db } from '@/lib/db'
 import { and, eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
@@ -41,13 +41,17 @@ export async function POST(
   const draftId = await getDraftIdFromGuid(guid)
   if (!draftId)
     return NextResponse.json({ error: 'Draft not found' }, { status: 404 })
-  const user = await getCurrentUser()
-  if (!user)
+
+  // Try authenticated user or guest
+  const userOrGuest = await getCurrentUserOrGuest(draftId, req)
+  if (!userOrGuest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const { pickNumber, emoji } = await req.json()
   if (!pickNumber)
     return NextResponse.json({ error: 'Missing pickNumber' }, { status: 400 })
-  if (!(await isParticipant(draftId, user.id)))
+  if (!(await isParticipant(draftId, userOrGuest.id)))
     return NextResponse.json({ error: 'Not a participant' }, { status: 403 })
   // If emoji is null or empty, set emoji to null (soft delete)
   if (emoji === null || emoji === '') {
@@ -56,7 +60,7 @@ export async function POST(
       .values({
         draftId,
         pickNumber,
-        userId: user.id,
+        userId: userOrGuest.id,
         emoji: null
       })
       .onConflictDoUpdate({
@@ -75,7 +79,7 @@ export async function POST(
     .values({
       draftId,
       pickNumber,
-      userId: user.id,
+      userId: userOrGuest.id,
       emoji
     })
     .onConflictDoUpdate({

@@ -45,17 +45,20 @@ export function EmojiReactionsRow({
       acc[r.emoji].push(r)
       return acc
     }, {})
+
   // Sort emojis by frequency, then alphabetically
   let emojis = Object.keys(grouped).sort((a, b) => {
     const diff = grouped[b].length - grouped[a].length
     if (diff !== 0) return diff
     return a.localeCompare(b)
   })
+
   // Always show the user's emoji on the right if present
   const myEmoji = emojis.find(e =>
     grouped[e].some(u => u.userId === currentUserId)
   )
   emojis = emojis.filter(e => e !== myEmoji)
+
   // Limit the number of emojis shown
   const limit = typeof maxEmojis === 'number' ? maxEmojis : inline ? 3 : 5
   let shown = emojis.slice(0, limit - (myEmoji ? 1 : 0))
@@ -63,8 +66,10 @@ export function EmojiReactionsRow({
   if (myEmoji) shown.push(myEmoji)
   // If there are more, show ... on the left
   if (hasMore) shown = ['...', ...shown.slice(-(limit - 1))]
+
   const [showMobileTooltip, setShowMobileTooltip] = useState(false)
   const longPressTimeout = useRef<NodeJS.Timeout | null>(null)
+
   // Detect mobile
   const isMobile =
     typeof window !== 'undefined' &&
@@ -72,16 +77,35 @@ export function EmojiReactionsRow({
     /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
       navigator.userAgent
     )
+
   function handleTouchStart() {
     if (!isMobile) return
     longPressTimeout.current = setTimeout(() => setShowMobileTooltip(true), 400)
   }
+
   function handleTouchEnd() {
     if (longPressTimeout.current) clearTimeout(longPressTimeout.current)
   }
+
+  // Handle click outside to dismiss the floating tooltip
+  useEffect(() => {
+    if (!showMobileTooltip) return
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      if (!target.closest('.emoji-reactions-container')) {
+        setShowMobileTooltip(false)
+      }
+    }
+
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [showMobileTooltip])
+
   // Track previous counts for pop animation
   const [popCounts, setPopCounts] = useState<Record<string, boolean>>({})
   const prevCountsRef = useRef<Record<string, number>>({})
+
   useEffect(() => {
     const newPop: Record<string, boolean> = {}
     for (const emoji of Object.keys(grouped)) {
@@ -99,6 +123,7 @@ export function EmojiReactionsRow({
       Object.keys(grouped).map(e => [e, grouped[e].length])
     )
   }, [reactions])
+
   if (Object.keys(grouped).length === 0) {
     return (
       <div
@@ -121,13 +146,14 @@ export function EmojiReactionsRow({
       </div>
     )
   }
+
   return (
     <>
       <TooltipProvider delayDuration={100}>
         <Tooltip>
           <TooltipTrigger asChild>
             <div
-              className={`flex flex-wrap gap-1 items-center pt-1${
+              className={`emoji-reactions-container flex flex-wrap gap-1 items-center pt-1${
                 inline ? ' mr-2' : ''
               }`}
               style={{
@@ -151,8 +177,10 @@ export function EmojiReactionsRow({
                     </span>
                   )
                 }
-                const users = grouped[emoji]
-                const isActive = users.some(u => u.userId === currentUserId)
+                const users = grouped[emoji] || []
+                const isActive = users.some(
+                  (u: Reaction) => u.userId === currentUserId
+                )
                 return (
                   <button
                     key={emoji}
@@ -207,19 +235,21 @@ export function EmojiReactionsRow({
                 // Put the current user's emoji first if present
                 const allEmojis = Object.keys(grouped)
                 const myEmoji = allEmojis.find(e =>
-                  grouped[e].some(u => u.userId === currentUserId)
+                  grouped[e].some((u: Reaction) => u.userId === currentUserId)
                 )
                 const rest = allEmojis.filter(e => e !== myEmoji)
                 const ordered = myEmoji ? [myEmoji, ...rest] : rest
                 return ordered.map(emoji => {
-                  const users = grouped[emoji]
+                  const users = grouped[emoji] || []
                   if (!users.length) return null
                   return (
                     <div key={emoji} className="mb-1">
                       <span className="mr-1">{emoji}</span>
                       <span>
                         {users
-                          .map(u => userIdToName[u.userId] || 'Unknown')
+                          .map(
+                            (u: Reaction) => userIdToName[u.userId] || 'Unknown'
+                          )
                           .join(', ')}
                       </span>
                     </div>
@@ -230,72 +260,49 @@ export function EmojiReactionsRow({
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
-      {/* Mobile modal for tooltip */}
+
+      {/* Floating tooltip div - positioned above emoji row */}
       {showMobileTooltip && (
         <div
-          className="fixed inset-0 z-[999] flex items-center justify-center bg-black/40"
-          onClick={() => setShowMobileTooltip(false)}
+          className="absolute z-[9999] bg-card p-3 rounded-lg shadow-lg border border-border max-w-sm w-full max-h-[60vh] overflow-y-auto"
+          style={{
+            bottom: '100%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            marginBottom: '8px'
+          }}
+          onClick={e => e.stopPropagation()}
         >
-          <div
-            className="bg-card p-4 rounded-lg shadow-lg max-w-xs w-full relative"
-            onClick={e => e.stopPropagation()}
-          >
-            <button
-              className="absolute top-2 right-2 text-muted-foreground"
-              onClick={() => setShowMobileTooltip(false)}
-              aria-label="Close"
-            >
-              ✕
-            </button>
-            {/* Pick content at the top of the modal, if provided */}
-            {pickContent && (
-              <div className="mb-2 text-center">
-                <div className="text-base font-semibold text-foreground">
-                  {pickContent}
-                </div>
-              </div>
-            )}
-            {/* Modal Title with Pick Number and Picker Name (no 'Pick Info' string) */}
-            <div className="mb-4 text-center">
-              {pickNumber !== undefined && pickerName ? (
-                <div className="text-xs text-muted-foreground">
-                  Pick #{pickNumber} — {pickerName}
-                </div>
-              ) : (
-                <div className="text-xs text-muted-foreground">
-                  Pick # — Picker
-                </div>
-              )}
-            </div>
-            <div className="text-xs mt-2">
-              {(() => {
-                const allEmojis = Object.keys(grouped)
-                const myEmoji = allEmojis.find(e =>
-                  grouped[e].some(u => u.userId === currentUserId)
+          <div className="text-xs mt-2">
+            {(() => {
+              const allEmojis = Object.keys(grouped)
+              const myEmoji = allEmojis.find(e =>
+                grouped[e].some((u: Reaction) => u.userId === currentUserId)
+              )
+              const rest = allEmojis.filter(e => e !== myEmoji)
+              const ordered = myEmoji ? [myEmoji, ...rest] : rest
+              return ordered.map(emoji => {
+                const users = grouped[emoji] || []
+                if (!users.length) return null
+                return (
+                  <div key={emoji} className="flex items-start mb-3">
+                    <span
+                      className="mr-2 text-xs"
+                      style={{ fontSize: '0.75rem', lineHeight: '1.2' }}
+                    >
+                      {emoji}
+                    </span>
+                    <span className="flex-1 text-xs text-foreground">
+                      {users
+                        .map(
+                          (u: Reaction) => userIdToName[u.userId] || 'Unknown'
+                        )
+                        .join(', ')}
+                    </span>
+                  </div>
                 )
-                const rest = allEmojis.filter(e => e !== myEmoji)
-                const ordered = myEmoji ? [myEmoji, ...rest] : rest
-                return ordered.map(emoji => {
-                  const users = grouped[emoji]
-                  if (!users.length) return null
-                  return (
-                    <div key={emoji} className="flex items-start mb-3">
-                      <span
-                        className="mr-2 text-xs"
-                        style={{ fontSize: '0.75rem', lineHeight: '1.2' }}
-                      >
-                        {emoji}
-                      </span>
-                      <span className="flex-1 text-xs text-foreground">
-                        {users
-                          .map(u => userIdToName[u.userId] || 'Unknown')
-                          .join(', ')}
-                      </span>
-                    </div>
-                  )
-                })
-              })()}
-            </div>
+              })
+            })()}
           </div>
         </div>
       )}
