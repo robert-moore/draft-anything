@@ -108,9 +108,47 @@ class AutoPickScheduler {
           await new Promise(resolve => setTimeout(resolve, 200))
         }
       }
+
+      // Check for expired challenge windows
+      await this.checkExpiredChallengeWindows()
     } catch (error) {
       console.error('Error checking expired timers:', error)
       throw error // Re-throw to be handled by the interval
+    }
+  }
+
+  private async checkExpiredChallengeWindows() {
+    try {
+      // Find all drafts in challenge_window state
+      const challengeWindowDrafts = await db
+        .select({
+          id: draftsInDa.id,
+          guid: draftsInDa.guid,
+          turnStartedAt: draftsInDa.turnStartedAt
+        })
+        .from(draftsInDa)
+        .where(eq(draftsInDa.draftState, 'challenge_window'))
+        .limit(250)
+
+      for (const draft of challengeWindowDrafts) {
+        if (!draft.turnStartedAt) continue
+
+        const elapsedSeconds = getElapsedSeconds(draft.turnStartedAt)
+
+        // Challenge window expires after 30 seconds
+        if (elapsedSeconds >= 30) {
+          // Complete the draft
+          await db
+            .update(draftsInDa)
+            .set({
+              draftState: 'completed',
+              currentPositionOnClock: null
+            })
+            .where(eq(draftsInDa.id, draft.id))
+        }
+      }
+    } catch (error) {
+      console.error('Error checking expired challenge windows:', error)
     }
   }
 
