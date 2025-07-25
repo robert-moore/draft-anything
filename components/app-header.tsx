@@ -94,7 +94,16 @@ export function AppHeader() {
   }
 
   const formatDateAgo = (dateString: string) => {
-    const date = parseISO(dateString)
+    // Handle database timestamp format: '2025-07-25 14:36:27.751'
+    let date: Date
+    if (dateString.includes(' ')) {
+      // Database format: '2025-07-25 14:36:27.751'
+      date = new Date(dateString.replace(' ', 'T') + 'Z')
+    } else {
+      // ISO format
+      date = parseISO(dateString)
+    }
+
     const now = new Date()
 
     const distance = formatDistance(date, now, { addSuffix: true })
@@ -282,11 +291,11 @@ export function AppHeader() {
                       </div>
 
                       {/* Emoji Statistics */}
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 gap-3 mt-2">
                         {/* User's Emoji Reactions */}
                         <div>
                           <h4 className="text-xs font-medium text-foreground mb-1">
-                            Your Top Emojis
+                            Reactions Given
                           </h4>
                           <div className="space-y-1">
                             {profileData.userEmojiReactions.map(
