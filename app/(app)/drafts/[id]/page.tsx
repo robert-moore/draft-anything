@@ -1609,7 +1609,7 @@ export default function DraftPage() {
               <div className="mb-2">
                 <span
                   className="block w-full font-semibold text-foreground break-words whitespace-pre-line"
-                  style={{ wordBreak: 'break-all' }}
+                  style={{ wordBreak: 'break-word' }}
                 >
                   {draft.name}
                 </span>
@@ -1880,7 +1880,7 @@ export default function DraftPage() {
             <div className="flex items-center gap-4 mb-4">
               <h1
                 className="block w-full text-4xl font-black tracking-tight text-foreground break-words whitespace-pre-line max-w-full sm:max-w-2xl"
-                style={{ wordBreak: 'break-all' }}
+                style={{ wordBreak: 'break-word' }}
               >
                 {draft.name}
               </h1>

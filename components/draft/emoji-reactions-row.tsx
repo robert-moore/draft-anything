@@ -194,6 +194,12 @@ export function EmojiReactionsRow({
                     `}
                     style={{ border: 'none', background: 'none' }}
                     onClick={() => {
+                      // On mobile, show tooltip instead of toggling reaction
+                      if (isMobile && canReact) {
+                        setShowMobileTooltip(true)
+                        return
+                      }
+                      // On desktop, toggle reaction as before
                       if (canReact) {
                         onReact(emoji, isActive && emoji ? true : false)
                       }
