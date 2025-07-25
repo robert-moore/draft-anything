@@ -1107,6 +1107,23 @@ export default function DraftPage() {
     participants.find(p => p.id === currentUser?.id)?.position ===
       draft?.currentPositionOnClock
 
+  // Change tab title when it's your turn
+  useEffect(() => {
+    const originalTitle = document.title
+
+    if (isMyTurn && draft?.draftState === 'active') {
+      document.title = "⏰ You're on the clock! - Draft Anything"
+    } else {
+      // Reset to original title when it's not your turn
+      document.title = originalTitle
+    }
+
+    // Cleanup: restore original title when component unmounts
+    return () => {
+      document.title = originalTitle
+    }
+  }, [isMyTurn, draft?.draftState])
+
   // Reset timer expired state when turn changes or draft state changes
   useEffect(() => {
     if (
@@ -1631,7 +1648,6 @@ export default function DraftPage() {
 
                 <div className="text-xs text-muted-foreground mb-4">
                   Sign in to create your own drafts and view your history
-                  (coming soon!)
                 </div>
 
                 <div className="relative">
