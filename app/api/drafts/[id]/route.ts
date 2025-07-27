@@ -33,8 +33,16 @@ export async function GET(
     // Note: We don't require authentication to view draft details
     // The userOrGuest can be null for unauthenticated viewers
 
-    const isAdmin =
-      userOrGuest?.type === 'user' && draft?.adminUserId === userOrGuest.id
+    // Check if user is admin (either joined user/guest or guest who created the draft)
+    let isAdmin = userOrGuest && draft?.adminUserId === userOrGuest.id
+
+    // If not admin via joined user, check if guest client ID matches admin
+    if (!isAdmin) {
+      const clientId = request.headers.get('x-client-id')
+      if (clientId && draft?.adminUserId === clientId) {
+        isAdmin = true
+      }
+    }
 
     // Get participants (both users and guests)
     const participantsQuery = await db

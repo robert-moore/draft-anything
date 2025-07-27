@@ -6,6 +6,22 @@ import { randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
+// Guest management utilities
+const GUEST_CLIENT_ID_KEY = 'draft-guest-client-id'
+
+function getGuestClientId(): string {
+  if (typeof window === 'undefined') {
+    return ''
+  }
+
+  let clientId = localStorage.getItem(GUEST_CLIENT_ID_KEY)
+  if (!clientId) {
+    clientId = crypto.randomUUID()
+    localStorage.setItem(GUEST_CLIENT_ID_KEY, clientId)
+  }
+  return clientId
+}
+
 // Schema for creating a draft
 const createDraftSchema = z
   .object({
@@ -49,13 +65,25 @@ const createDraftSchema = z
 
 export async function POST(req: NextRequest) {
   try {
-    // Check authentication
+    // Check authentication - try user first, then guest
     const user = await getCurrentUser()
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
+    let adminUserId: string | null = null
+    let isGuest = false
+
+    if (user) {
+      adminUserId = user.id
+    } else {
+      // Try to get guest client ID from headers
+      const clientId = req.headers.get('x-client-id')
+      if (clientId) {
+        adminUserId = clientId
+        isGuest = true
+      } else {
+        return NextResponse.json(
+          { error: 'Authentication required' },
+          { status: 401 }
+        )
+      }
     }
 
     // Validate request body
@@ -113,7 +141,7 @@ export async function POST(req: NextRequest) {
       .values({
         guid: randomUUID(),
         name,
-        adminUserId: user.id,
+        adminUserId: adminUserId,
         draftState: draftState || 'setting_up',
         maxDrafters,
         secPerRound: secPerRound.toString(),

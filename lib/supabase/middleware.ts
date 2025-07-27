@@ -44,7 +44,8 @@ export async function updateSession(request: NextRequest) {
     '/', // Root path
     '/auth', // Auth-related pages
     '/share', // Share pages
-    '/api' // API routes
+    '/api', // API routes
+    '/new' // New draft page - allow guests to create drafts
     // Add other public paths here if needed
   ]
 

@@ -67,7 +67,7 @@ const HeroSection = memo(() => (
 
           {/* Primary CTA - Maximum visual weight */}
           <div className="flex justify-center">
-            <Link href="/auth/login">
+            <Link href="/new">
               <BrutalistButton
                 variant="primary"
                 className="px-12 py-4 text-xl font-semibold group"
@@ -75,7 +75,7 @@ const HeroSection = memo(() => (
                   <Play className="w-6 h-6 transition-transform group-hover:translate-x-1" />
                 }
               >
-                Start Drafting
+                Set Up Your Draft
               </BrutalistButton>
             </Link>
           </div>
@@ -348,7 +348,7 @@ const CTASection = memo(() => (
 
             {/* Primary conversion action */}
             <div className="flex justify-center mb-16">
-              <Link href="/auth/login">
+              <Link href="/new">
                 <BrutalistButton
                   variant="primary"
                   className="px-12 py-5 text-xl font-semibold group"

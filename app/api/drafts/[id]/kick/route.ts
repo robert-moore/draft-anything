@@ -1,6 +1,6 @@
 import { draftUsersInDa } from '@/drizzle/schema'
 import { getDraftByGuid, parseDraftGuid } from '@/lib/api/draft-guid-helpers'
-import { getCurrentUser } from '@/lib/auth/get-current-user'
+import { getCurrentUserOrGuest } from '@/lib/api/guest-helpers'
 import { db } from '@/lib/db'
 import { and, eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
@@ -10,16 +10,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Check authentication
-    const user = await getCurrentUser()
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    // Validate draft GUID
+    // Validate draft GUID first
     const guidResult = await parseDraftGuid({ params })
     if (!guidResult.success) return guidResult.error
     const { draftGuid } = guidResult
@@ -30,8 +21,17 @@ export async function POST(
       return NextResponse.json({ error: 'Draft not found' }, { status: 404 })
     }
 
+    // Check authentication (user or guest)
+    const userOrGuest = await getCurrentUserOrGuest(draft.id, request)
+    if (!userOrGuest) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
     // Check if user is admin
-    if (draft.adminUserId !== user.id) {
+    if (draft.adminUserId !== userOrGuest.id) {
       return NextResponse.json(
         { error: 'Only admin can kick users' },
         { status: 403 }
@@ -56,7 +56,7 @@ export async function POST(
     }
 
     // Prevent admin from kicking themselves
-    if (userIdToKick === user.id) {
+    if (userIdToKick === userOrGuest.id) {
       return NextResponse.json(
         { error: 'Admin cannot kick themselves' },
         { status: 400 }

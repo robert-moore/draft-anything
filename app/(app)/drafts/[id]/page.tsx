@@ -1331,11 +1331,24 @@ export default function DraftPage() {
 
   const handleKickUser = async (userIdToKick: string) => {
     try {
-      const response = await fetch(`/api/drafts/${draftId}/kick`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userIdToKick })
-      })
+      let response: Response
+
+      if (isGuest) {
+        // Guest user (even if they have a currentUser)
+        const guestFetch = createGuestFetch()
+        response = await guestFetch(`/api/drafts/${draftId}/kick`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userIdToKick })
+        })
+      } else {
+        // Authenticated user only
+        response = await fetch(`/api/drafts/${draftId}/kick`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userIdToKick })
+        })
+      }
 
       if (!response.ok) {
         const error = await response.json()
@@ -1353,9 +1366,21 @@ export default function DraftPage() {
 
   const handleStartDraft = async () => {
     try {
-      const response = await fetch(`/api/drafts/${draftId}/start`, {
-        method: 'POST'
-      })
+      let response: Response
+
+      if (isGuest) {
+        // Guest user (even if they have a currentUser)
+        const guestFetch = createGuestFetch()
+        const clientId = getGuestClientId()
+        response = await guestFetch(`/api/drafts/${draftId}/start`, {
+          method: 'POST'
+        })
+      } else {
+        // Authenticated user only
+        response = await fetch(`/api/drafts/${draftId}/start`, {
+          method: 'POST'
+        })
+      }
 
       if (!response.ok) throw new Error('Failed to start draft')
 
@@ -1608,129 +1633,6 @@ export default function DraftPage() {
     )
   }
 
-  if (
-    draft &&
-    draft.draftState === 'setting_up' &&
-    !isJoined &&
-    !currentUser &&
-    !showGuestChoice
-  ) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="flex items-center justify-center py-32">
-          <BrutalSection variant="bordered" className="w-96 text-center">
-            <div className="p-8">
-              <h1 className="text-2xl font-bold mb-6 text-foreground">
-                Join Draft
-              </h1>
-              <div className="mb-2">
-                <span
-                  className="block w-full font-semibold text-foreground break-words whitespace-pre-line"
-                  style={{ wordBreak: 'break-word' }}
-                >
-                  {draft.name}
-                </span>
-              </div>
-              <p className="text-muted-foreground mb-8">
-                Choose how you'd like to join this draft
-              </p>
-
-              <div className="space-y-4">
-                <BrutalButton
-                  onClick={() =>
-                    (window.location.href = `/auth/login?redirectTo=/drafts/${draftId}`)
-                  }
-                  variant="filled"
-                  className="w-full"
-                >
-                  Sign In
-                </BrutalButton>
-
-                <div className="text-xs text-muted-foreground mb-4">
-                  Sign in to create your own drafts and view your history
-                </div>
-
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-border" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">
-                      Or
-                    </span>
-                  </div>
-                </div>
-
-                <BrutalButton
-                  onClick={() => {
-                    setShowGuestChoice(true)
-                  }}
-                  variant="default"
-                  className="w-full"
-                >
-                  Join as Guest
-                </BrutalButton>
-
-                <div className="text-xs text-muted-foreground">
-                  Join without an account
-                </div>
-              </div>
-            </div>
-          </BrutalSection>
-        </div>
-      </div>
-    )
-  }
-
-  if (showGuestChoice) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="flex items-center justify-center py-32">
-          <BrutalSection variant="bordered" className="w-96 text-center">
-            <div className="p-8">
-              <h1 className="text-2xl font-bold mb-6 text-foreground">
-                Join as Guest
-              </h1>
-              <p className="text-muted-foreground mb-8">
-                Enter your name to join this draft
-              </p>
-
-              <div className="space-y-4">
-                <BrutalInput
-                  placeholder="Your name"
-                  value={playerName}
-                  onChange={e => setPlayerName(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleJoinAsGuest()}
-                  variant="boxed"
-                  className="w-full"
-                  autoFocus
-                />
-
-                <div className="flex gap-2">
-                  <BrutalButton
-                    onClick={() => setShowGuestChoice(false)}
-                    variant="filled"
-                    className="flex-1"
-                  >
-                    Back
-                  </BrutalButton>
-                  <BrutalButton
-                    onClick={handleJoinAsGuest}
-                    disabled={!playerName.trim()}
-                    variant="default"
-                    className="flex-1"
-                  >
-                    Join
-                  </BrutalButton>
-                </div>
-              </div>
-            </div>
-          </BrutalSection>
-        </div>
-      </div>
-    )
-  }
-
   if (error || !draft) {
     return (
       <div className="min-h-screen bg-background">
@@ -1969,6 +1871,66 @@ export default function DraftPage() {
             </div>
           )}
 
+          {/* Join Draft Choice */}
+          {!isJoined &&
+            draft.draftState === 'setting_up' &&
+            !currentUser &&
+            !showGuestChoice &&
+            !isAdmin && (
+              <div className="py-8">
+                <div className="max-w-xl mx-auto">
+                  <BrutalSection variant="bordered" className="text-center">
+                    <div className="p-8">
+                      <h2 className="text-2xl font-bold mb-6 text-foreground">
+                        Join Draft
+                      </h2>
+                      <p className="text-muted-foreground mb-8">
+                        Choose how you'd like to join this draft
+                      </p>
+
+                      <div className="space-y-4">
+                        <BrutalButton
+                          onClick={() =>
+                            (window.location.href = `/auth/login?redirectTo=/drafts/${draftId}`)
+                          }
+                          variant="filled"
+                          className="w-full"
+                        >
+                          Sign In
+                        </BrutalButton>
+
+                        <div className="text-xs text-muted-foreground mb-4">
+                          Sign in to join drafts and view your history from any
+                          device
+                        </div>
+
+                        <div className="relative">
+                          <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t border-border" />
+                          </div>
+                          <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-background px-2 text-muted-foreground">
+                              Or
+                            </span>
+                          </div>
+                        </div>
+
+                        <BrutalButton
+                          onClick={() => {
+                            setShowGuestChoice(true)
+                          }}
+                          variant="filled"
+                          className="w-full"
+                        >
+                          Join as Guest
+                        </BrutalButton>
+                      </div>
+                    </div>
+                  </BrutalSection>
+                </div>
+              </div>
+            )}
+
           {/* Join Draft */}
           {!isJoined && draft.draftState === 'setting_up' && currentUser && (
             <div className="py-8">
@@ -1988,6 +1950,35 @@ export default function DraftPage() {
                   />
                   <BrutalButton
                     onClick={handleJoinDraft}
+                    disabled={!playerName.trim()}
+                    variant="filled"
+                  >
+                    Join
+                  </BrutalButton>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Join Draft as Guest */}
+          {!isJoined && draft.draftState === 'setting_up' && !currentUser && (
+            <div className="py-8">
+              <div className="max-w-xl mx-auto">
+                <h2 className="text-2xl font-bold mb-6 text-center text-foreground">
+                  Join Draft
+                </h2>
+                <div className="flex gap-4">
+                  <BrutalInput
+                    placeholder="Your name"
+                    value={playerName}
+                    onChange={e => setPlayerName(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleJoinAsGuest()}
+                    variant="boxed"
+                    className="flex-1"
+                    autoFocus
+                  />
+                  <BrutalButton
+                    onClick={handleJoinAsGuest}
                     disabled={!playerName.trim()}
                     variant="filled"
                   >
@@ -2869,15 +2860,17 @@ export default function DraftPage() {
                               {participant.name}
                             </span>
                           </div>
-                          {isAdmin && participant.id !== currentUser?.id && (
-                            <button
-                              onClick={() => handleKickUser(participant.id)}
-                              className="text-xs bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900 dark:hover:bg-red-800 dark:text-red-100 px-2 py-1 font-medium rounded transition-colors"
-                              title="Kick player"
-                            >
-                              Kick
-                            </button>
-                          )}
+                          {isAdmin &&
+                            participant.id !== currentUser?.id &&
+                            participant.id !== getGuestClientId() && (
+                              <button
+                                onClick={() => handleKickUser(participant.id)}
+                                className="text-xs bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900 dark:hover:bg-red-800 dark:text-red-100 px-2 py-1 font-medium rounded transition-colors"
+                                title="Kick player"
+                              >
+                                Kick
+                              </button>
+                            )}
                         </div>
                       ))}
                     </div>
@@ -2969,7 +2962,8 @@ export default function DraftPage() {
                       </span>
                       {isAdmin &&
                         draft.draftState === 'setting_up' &&
-                        participant.id !== currentUser?.id && (
+                        participant.id !== currentUser?.id &&
+                        participant.id !== getGuestClientId() && (
                           <button
                             onClick={() => handleKickUser(participant.id)}
                             className="text-xs bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900 dark:hover:bg-red-800 dark:text-red-100 px-2 py-1 font-medium rounded transition-colors"
@@ -3039,7 +3033,7 @@ export default function DraftPage() {
               onClick={handleShareDraft}
               className="w-full"
             >
-              Share Draft
+              Invite Friends
             </BrutalButton>
           </BrutalSection>
         </aside>

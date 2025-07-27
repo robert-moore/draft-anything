@@ -189,6 +189,12 @@ export function AppHeader() {
             </Link>
             <div className="flex items-center gap-4">
               <ThemeToggle />
+              <Link href="/new">
+                <BrutalistButton variant="primary" className="px-4 py-2">
+                  <Plus className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">New Draft</span>
+                </BrutalistButton>
+              </Link>
               <Link href="/auth/login">
                 <Button variant="outline">Sign In</Button>
               </Link>
@@ -209,14 +215,14 @@ export function AppHeader() {
 
           <div className="flex items-center gap-4">
             <ThemeToggle />
-            <Link href={user ? '/new' : '/auth/login'}>
+            <Link href={user ? '/new' : '/new'}>
               <BrutalistButton variant="primary" className="px-4 py-2">
                 <Plus className="w-4 h-4 sm:mr-2" />
                 <span className="hidden sm:inline">New Draft</span>
               </BrutalistButton>
             </Link>
 
-            {user && (
+            {user ? (
               <DropdownMenu
                 onOpenChange={open => {
                   if (open) {
@@ -359,6 +365,12 @@ export function AppHeader() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            ) : (
+              <Link href="/auth/login">
+                <BrutalistButton variant="secondary" className="px-6">
+                  Sign In
+                </BrutalistButton>
+              </Link>
             )}
           </div>
         </div>
