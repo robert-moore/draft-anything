@@ -17,7 +17,7 @@ const title = 'Draft Anything'
 const description = 'Draft anything with friends.'
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://draftanything.io'),
+  metadataBase: new URL('https://draft-anything.vercel.app'),
   title,
   description,
   icons: {
