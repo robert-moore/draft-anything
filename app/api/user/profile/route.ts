@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
       .orderBy(desc(draftsInDa.createdAt))
       .limit(250)
 
-    // Get user's top 5 most used emoji reactions
+    // Get user's top 6 most used emoji reactions
     const userEmojiReactions = await db
       .select({
         emoji: draftReactionsInDa.emoji,
@@ -50,9 +50,9 @@ export async function GET(request: NextRequest) {
       )
       .groupBy(draftReactionsInDa.emoji)
       .orderBy(desc(sql`count(*)`))
-      .limit(5)
+      .limit(6)
 
-    // Get top 5 most used emoji reactions on user's selections
+    // Get top 6 most used emoji reactions on user's selections
     const userSelectionEmojiReactions = await db
       .select({
         emoji: draftReactionsInDa.emoji,
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
       )
       .groupBy(draftReactionsInDa.emoji)
       .orderBy(desc(sql`count(*)`))
-      .limit(5)
+      .limit(6)
 
     return NextResponse.json({
       drafts: userDrafts,

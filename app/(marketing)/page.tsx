@@ -1,33 +1,13 @@
 'use client'
 
-import { BrandLogo } from '@/components/brand/brand-logo'
+import { AppHeader } from '@/components/app-header'
 import { BrutalistButton } from '@/components/ui/brutalist-button'
 import { BrutalistCard } from '@/components/ui/brutalist-card'
 import { RhythmSpacer } from '@/components/ui/rhythm-spacer'
-import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { VisualFocus } from '@/components/ui/visual-focus'
 import { Heart, Play, Sparkles, Star, Trophy, Users, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { memo, useState } from 'react'
-
-const Header = memo(() => (
-  <header className="fixed top-0 left-0 right-0 z-50 px-6 py-4 backdrop-blur-md bg-background/80 border-b border-border">
-    <div className="max-w-6xl mx-auto flex items-center justify-between">
-      <Link href="/" className="flex items-center">
-        <BrandLogo variant="wordmark" size="md" />
-      </Link>
-      <div className="flex items-center gap-3">
-        <ThemeToggle />
-        <Link href="/auth/login">
-          <BrutalistButton variant="secondary" className="px-6">
-            Sign In
-          </BrutalistButton>
-        </Link>
-      </div>
-    </div>
-  </header>
-))
-Header.displayName = 'Header'
 
 const HeroSection = memo(() => (
   <section className="relative px-6 pt-24 pb-12 md:pt-32 lg:pt-40">
@@ -386,7 +366,7 @@ CTASection.displayName = 'CTASection'
 export default function DraftAnythingLanding() {
   return (
     <div className="min-h-screen">
-      <Header />
+      <AppHeader />
       <HeroSection />
       <ExamplesSection />
       <HowItWorksSection />

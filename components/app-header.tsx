@@ -16,7 +16,7 @@ import { createClient } from '@/lib/supabase/client'
 import { formatDistance, parseISO } from 'date-fns'
 import { LogOut, Plus } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 interface Draft {
@@ -44,6 +44,7 @@ export function AppHeader() {
   const [profileData, setProfileData] = useState<UserProfileData | null>(null)
   const [isProfileLoading, setIsProfileLoading] = useState(false)
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     const supabase = createClient()
@@ -161,6 +162,9 @@ export function AppHeader() {
     }
   }
 
+  // Check if we're on the /new page
+  const isOnNewPage = pathname === '/new'
+
   if (isLoading) {
     return (
       <header className="bg-background">
@@ -194,12 +198,14 @@ export function AppHeader() {
             </Link>
             <div className="flex items-center gap-4">
               <ThemeToggle />
-              <Link href="/new">
-                <BrutalistButton variant="primary" className="px-4 py-2">
-                  <Plus className="w-4 h-4 sm:mr-2" />
-                  <span className="hidden sm:inline">New Draft</span>
-                </BrutalistButton>
-              </Link>
+              {!isOnNewPage && (
+                <Link href="/new">
+                  <BrutalistButton variant="primary" className="px-4 py-2">
+                    <Plus className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">New Draft</span>
+                  </BrutalistButton>
+                </Link>
+              )}
               <Link href="/auth/login">
                 <Button variant="outline">Sign In</Button>
               </Link>
@@ -220,12 +226,14 @@ export function AppHeader() {
 
           <div className="flex items-center gap-4">
             <ThemeToggle />
-            <Link href={user ? '/new' : '/new'}>
-              <BrutalistButton variant="primary" className="px-4 py-2">
-                <Plus className="w-4 h-4 sm:mr-2" />
-                <span className="hidden sm:inline">New Draft</span>
-              </BrutalistButton>
-            </Link>
+            {!isOnNewPage && (
+              <Link href={user ? '/new' : '/new'}>
+                <BrutalistButton variant="primary" className="px-4 py-2">
+                  <Plus className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">New Draft</span>
+                </BrutalistButton>
+              </Link>
+            )}
 
             {user ? (
               <DropdownMenu
@@ -244,7 +252,7 @@ export function AppHeader() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
-                  className="w-80 border-2 border-border rounded-none max-h-[80vh] overflow-y-auto"
+                  className="w-96 border-2 border-border rounded-none max-h-[80vh] overflow-y-auto"
                   align="end"
                 >
                   {/* User Info */}
@@ -270,7 +278,7 @@ export function AppHeader() {
                       {/* Recent Drafts */}
                       <div>
                         <h3 className="text-sm font-medium text-foreground mb-2">
-                          Draft History ({profileData.drafts.length})
+                          Your Drafts
                         </h3>
                         <div className="space-y-1 max-h-64 overflow-y-auto">
                           {profileData.drafts.slice(0, 250).map(draft => (
@@ -302,15 +310,16 @@ export function AppHeader() {
                       </div>
 
                       {/* Emoji Statistics */}
-                      <div className="grid grid-cols-2 gap-3 mt-2">
+                      <div className="flex gap-3 mt-8">
                         {/* User's Emoji Reactions */}
-                        <div>
-                          <h4 className="text-xs font-medium text-foreground mb-1">
-                            Reactions Given
+                        <div className="flex-1">
+                          <h4 className="text-xs font-medium text-foreground mb-1 text-center">
+                            Reactions You've Given
                           </h4>
-                          <div className="space-y-1">
-                            {profileData.userEmojiReactions.map(
-                              (reaction, index) => (
+                          <div className="grid grid-cols-2 gap-0.5 justify-items-center">
+                            {profileData.userEmojiReactions
+                              .slice(0, 6)
+                              .map((reaction, index) => (
                                 <div
                                   key={reaction.emoji}
                                   className="flex items-center gap-2 text-xs"
@@ -322,19 +331,22 @@ export function AppHeader() {
                                     {reaction.count}
                                   </span>
                                 </div>
-                              )
-                            )}
+                              ))}
                           </div>
                         </div>
 
+                        {/* Vertical Divider */}
+                        <div className="w-px bg-border" />
+
                         {/* Emoji Reactions on User's Selections */}
-                        <div>
-                          <h4 className="text-xs font-medium text-foreground mb-1">
-                            On Your Picks
+                        <div className="flex-1">
+                          <h4 className="text-xs font-medium text-foreground mb-1 text-center">
+                            Reactions On Your Picks
                           </h4>
-                          <div className="space-y-1">
-                            {profileData.userSelectionEmojiReactions.map(
-                              (reaction, index) => (
+                          <div className="grid grid-cols-2 gap-0.5 justify-items-center">
+                            {profileData.userSelectionEmojiReactions
+                              .slice(0, 6)
+                              .map((reaction, index) => (
                                 <div
                                   key={reaction.emoji}
                                   className="flex items-center gap-2 text-xs"
@@ -346,8 +358,7 @@ export function AppHeader() {
                                     {reaction.count}
                                   </span>
                                 </div>
-                              )
-                            )}
+                              ))}
                           </div>
                         </div>
                       </div>

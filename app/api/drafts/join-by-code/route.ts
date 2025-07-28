@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     const draft = await findDraftByJoinCode(joinCode)
     if (!draft) {
       return NextResponse.json(
-        { error: "The draft is done or doesn't exist" },
+        { error: "The draft is done or doesn't exist." },
         { status: 404 }
       )
     }
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     // Check if draft is completed
     if (draft.draftState === 'completed') {
       return NextResponse.json(
-        { error: "The draft is done or doesn't exist" },
+        { error: "The draft is done or doesn't exist." },
         { status: 400 }
       )
     }
