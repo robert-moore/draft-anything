@@ -64,9 +64,10 @@ export function BrandLogo({
   const getThemeVariant = () => {
     if (theme === 'light') return 'light'
     if (theme === 'dark') return 'dark'
-    // Auto mode: show dark logo on dark theme, light logo on light theme
-    // During hydration, default to light theme
-    return mounted && resolvedTheme === 'dark' ? 'light' : 'dark'
+    // Auto mode: show light logo on dark theme, dark logo on light theme
+    // Default to light logo since we're using dark theme by default
+    if (!mounted) return 'light' // Default to light logo during SSR
+    return resolvedTheme === 'dark' ? 'light' : 'dark'
   }
 
   const themeVariant = getThemeVariant()

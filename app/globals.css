@@ -9,7 +9,7 @@
   --card-foreground: 0 0% 0%;
   --popover: 0 0% 100%;
   --popover-foreground: 0 0% 0%;
-  --primary: 14.2857 73.0435% 54.902%;
+  --primary: 160 50% 60%;
   --primary-foreground: 0 0% 100%;
   --secondary: 0 0% 96%;
   --secondary-foreground: 0 0% 0%;
@@ -21,7 +21,7 @@
   --destructive-foreground: 0 0% 100%;
   --border: 0 0% 0%;
   --input: 0 0% 100%;
-  --ring: 14.2857 73.0435% 54.902%;
+  --ring: 160 50% 60%;
   --chart-1: 210.9091 37.5% 65.4902%;
   --chart-2: 14.1935 73.2283% 75.098%;
   --chart-3: 213.9474 29.9213% 50.1961%;
@@ -29,12 +29,12 @@
   --chart-5: 221.7722 43.6464% 35.4902%;
   --sidebar: 0 0% 87.6471%;
   --sidebar-foreground: 0 0% 20%;
-  --sidebar-primary: 14.2857 73.0435% 54.902%;
+  --sidebar-primary: 160 50% 60%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 0 0% 89.0196%;
   --sidebar-accent-foreground: 0 0% 32.9412%;
   --sidebar-border: 0 0% 90.9804%;
-  --sidebar-ring: 14.2857 73.0435% 54.902%;
+  --sidebar-ring: 160 50% 60%;
   --font-sans: 'Hanken Grotesk', sans-serif;
   --font-serif: Source Serif 4, serif;
   --font-mono: JetBrains Mono, monospace;
@@ -63,7 +63,7 @@
   --card-foreground: 0 0% 89.8039%;
   --popover: 0 0% 7.0588%;
   --popover-foreground: 0 0% 89.8039%;
-  --primary: 14.2857 73.0435% 54.902%;
+  --primary: 160 50% 60%;
   --primary-foreground: 0 0% 100%;
   --secondary: 0 0% 20.3922%;
   --secondary-foreground: 0 0% 89.8039%;
@@ -75,7 +75,7 @@
   --destructive-foreground: 0 0% 100%;
   --border: 0 0% 28.4314%;
   --input: 0 0% 28.4314%;
-  --ring: 14.2857 73.0435% 54.902%;
+  --ring: 160 50% 60%;
   --chart-1: 210.9091 37.5% 65.4902%;
   --chart-2: 12.4138 63.5036% 73.1373%;
   --chart-3: 213.9474 29.9213% 50.1961%;
@@ -83,12 +83,12 @@
   --chart-5: 221.7722 43.6464% 35.4902%;
   --sidebar: 0 0% 20.5882%;
   --sidebar-foreground: 0 0% 89.8039%;
-  --sidebar-primary: 14.2857 73.0435% 54.902%;
+  --sidebar-primary: 160 50% 60%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 0 0% 25.098%;
   --sidebar-accent-foreground: 0 0% 87.2549%;
   --sidebar-border: 0 0% 28.4314%;
-  --sidebar-ring: 14.2857 73.0435% 54.902%;
+  --sidebar-ring: 160 50% 60%;
   --font-sans: 'Hanken Grotesk', sans-serif;
   --font-serif: Source Serif 4, serif;
   --font-mono: JetBrains Mono, monospace;

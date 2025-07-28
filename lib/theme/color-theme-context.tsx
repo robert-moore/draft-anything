@@ -7,12 +7,21 @@ interface ColorThemeContextType {
   currentTheme: ColorTheme
   setTheme: (theme: ColorTheme) => void
   themes: ColorTheme[]
+  isLoaded: boolean
 }
 
-const ColorThemeContext = createContext<ColorThemeContextType | undefined>(undefined)
+const ColorThemeContext = createContext<ColorThemeContextType | undefined>(
+  undefined
+)
 
-export function ColorThemeProvider({ children }: { children: React.ReactNode }) {
-  const [currentTheme, setCurrentTheme] = useState<ColorTheme>(DEFAULT_COLOR_THEME)
+export function ColorThemeProvider({
+  children
+}: {
+  children: React.ReactNode
+}) {
+  const [currentTheme, setCurrentTheme] =
+    useState<ColorTheme>(DEFAULT_COLOR_THEME)
+  const [isLoaded, setIsLoaded] = useState(false)
 
   // Load saved theme from localStorage on mount
   useEffect(() => {
@@ -27,6 +36,7 @@ export function ColorThemeProvider({ children }: { children: React.ReactNode }) 
       // Apply default theme CSS variables on first load
       updateCSSVariables(DEFAULT_COLOR_THEME)
     }
+    setIsLoaded(true)
   }, [])
 
   const setTheme = (theme: ColorTheme) => {
@@ -37,13 +47,13 @@ export function ColorThemeProvider({ children }: { children: React.ReactNode }) 
 
   const updateCSSVariables = (theme: ColorTheme) => {
     if (typeof document === 'undefined') return // SSR guard
-    
+
     const root = document.documentElement
-    
+
     // Only update if the value is actually different
     const currentPrimary = root.style.getPropertyValue('--primary').trim()
     const newPrimary = theme.primary.trim()
-    
+
     if (currentPrimary !== newPrimary) {
       // console.log('Updating CSS variables:', { from: currentPrimary, to: newPrimary, theme: theme.name })
       root.style.setProperty('--primary', newPrimary)
@@ -54,11 +64,14 @@ export function ColorThemeProvider({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <ColorThemeContext.Provider value={{
-      currentTheme,
-      setTheme,
-      themes: COLOR_THEMES
-    }}>
+    <ColorThemeContext.Provider
+      value={{
+        currentTheme,
+        setTheme,
+        themes: COLOR_THEMES,
+        isLoaded
+      }}
+    >
       {children}
     </ColorThemeContext.Provider>
   )

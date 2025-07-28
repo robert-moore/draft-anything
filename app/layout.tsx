@@ -1,4 +1,5 @@
 import { ThemeProvider } from '@/components/theme-provider'
+import { ThemeWrapper } from '@/components/theme-wrapper'
 import { Toaster } from '@/components/ui/sonner'
 import { ColorThemeProvider } from '@/lib/theme/color-theme-context'
 import { cn } from '@/lib/utils'
@@ -73,11 +74,14 @@ export default function RootLayout({
           defaultTheme="dark"
           enableSystem
           disableTransitionOnChange
+          storageKey="theme"
         >
           <ColorThemeProvider>
-            {children}
-            <Toaster />
-            <Analytics />
+            <ThemeWrapper>
+              {children}
+              <Toaster />
+              <Analytics />
+            </ThemeWrapper>
           </ColorThemeProvider>
         </ThemeProvider>
       </body>
