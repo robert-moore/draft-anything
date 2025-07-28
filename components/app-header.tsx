@@ -207,7 +207,7 @@ export function AppHeader() {
                 </Link>
               )}
               <Link href="/auth/login">
-                <Button variant="outline">Sign In</Button>
+                <BrutalistButton variant="secondary">Sign In</BrutalistButton>
               </Link>
             </div>
           </div>
