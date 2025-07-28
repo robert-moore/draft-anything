@@ -27,7 +27,15 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title,
-    description
+    description,
+    images: [
+      {
+        url: '/images/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Draft Anything'
+      }
+    ]
   },
   twitter: {
     title,
