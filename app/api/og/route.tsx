@@ -1,18 +1,9 @@
 import { ImageResponse } from 'next/og'
+import { NextRequest } from 'next/server'
 
-// Route segment config
 export const runtime = 'edge'
 
-// Image metadata
-export const alt = 'Draft Anything'
-export const size = {
-  width: 1200,
-  height: 630
-}
-export const contentType = 'image/png'
-
-// Image generation
-export default async function Image() {
+export async function GET(request: NextRequest) {
   // Sage mint color
   const primaryColor = '#64B5A6'
 
@@ -267,7 +258,8 @@ export default async function Image() {
       </div>
     ),
     {
-      ...size
+      width: 1200,
+      height: 630
     }
   )
 }
