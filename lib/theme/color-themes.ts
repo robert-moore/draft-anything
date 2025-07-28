@@ -65,4 +65,4 @@ export const COLOR_THEMES: ColorTheme[] = [
   }
 ]
 
-export const DEFAULT_COLOR_THEME = COLOR_THEMES[0] // Warm Clay
+export const DEFAULT_COLOR_THEME = COLOR_THEMES[2] // Sage Mint

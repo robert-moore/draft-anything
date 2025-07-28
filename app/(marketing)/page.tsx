@@ -75,7 +75,8 @@ const HeroSection = memo(() => (
                   <Play className="w-6 h-6 transition-transform group-hover:translate-x-1" />
                 }
               >
-                Set Up Your Draft
+                <span className="hidden sm:inline">Set Up Your Draft</span>
+                <span className="sm:hidden">Set Up Draft</span>
               </BrutalistButton>
             </Link>
             <div className="mt-2">
@@ -87,7 +88,8 @@ const HeroSection = memo(() => (
                     <Users className="w-6 h-6 transition-transform group-hover:scale-110" />
                   }
                 >
-                  Join Draft with Code
+                  <span className="hidden sm:inline">Join Draft with Code</span>
+                  <span className="sm:hidden">Join With Code</span>
                 </BrutalistButton>
               </Link>
             </div>
