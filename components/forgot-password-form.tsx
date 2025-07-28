@@ -27,7 +27,7 @@ export function ForgotPasswordForm({
   const [isLoading, setIsLoading] = useState(false)
 
   // Client-side protection: redirect if already authenticated
-  useAuthRedirect('/new')
+  useAuthRedirect('/join')
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault()

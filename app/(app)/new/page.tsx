@@ -18,6 +18,7 @@ import { useEffect, useState } from 'react'
 
 export default function NewDraftPage() {
   const [name, setName] = useState('')
+  const [adminName, setAdminName] = useState('')
   const [maxDrafters, setMaxDrafters] = useState<number | null>(4)
   const [secPerRound, setSecPerRound] = useState<number | null>(60)
   const [numRounds, setNumRounds] = useState<number | null>(3)
@@ -104,6 +105,11 @@ export default function NewDraftPage() {
       setIsLoading(false)
       return
     }
+    if (!adminName.trim()) {
+      setError('Your name is required')
+      setIsLoading(false)
+      return
+    }
     if (maxDrafters === null || maxDrafters < 2) {
       setError('Max players must be at least 2')
       setIsLoading(false)
@@ -128,6 +134,7 @@ export default function NewDraftPage() {
     try {
       const requestBody = {
         name,
+        adminName: adminName.trim(),
         maxDrafters,
         secPerRound: timerMode === 'untimed' ? 0 : secPerRound || 0,
         numRounds,
@@ -312,6 +319,26 @@ export default function NewDraftPage() {
                     required
                     className={`text-xl py-4 rounded-none border-2 w-full bg-card text-foreground placeholder:text-muted-foreground focus:border-border ${
                       !name.trim() ? 'border-primary' : 'border-border'
+                    }`}
+                  />
+                </div>
+
+                {/* Admin Name Input */}
+                <div>
+                  <Label
+                    htmlFor="adminName"
+                    className="text-lg font-bold mb-3 block text-foreground"
+                  >
+                    Your name
+                  </Label>
+                  <Input
+                    id="adminName"
+                    placeholder="Enter your name"
+                    value={adminName}
+                    onChange={e => setAdminName(e.target.value)}
+                    required
+                    className={`text-xl py-4 rounded-none border-2 w-full bg-card text-foreground placeholder:text-muted-foreground focus:border-border ${
+                      !adminName.trim() ? 'border-primary' : 'border-border'
                     }`}
                   />
                 </div>
@@ -533,6 +560,7 @@ export default function NewDraftPage() {
                   disabled={
                     isLoading ||
                     !name.trim() ||
+                    !adminName.trim() ||
                     maxDrafters === null ||
                     maxDrafters < 2 ||
                     numRounds === null ||

@@ -8,7 +8,7 @@ import { useEffect } from 'react'
  * Hook to redirect authenticated users away from auth pages
  * This serves as a client-side fallback to the server-side redirect
  */
-export function useAuthRedirect(redirectTo: string = '/new') {
+export function useAuthRedirect(redirectTo: string = '/join') {
   const router = useRouter()
 
   useEffect(() => {

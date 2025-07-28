@@ -21,7 +21,7 @@ export function LoginForm({
   const [isEmailSent, setIsEmailSent] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirectTo') || '/new'
+  const redirectTo = searchParams.get('redirectTo') || '/join'
 
   // Client-side protection: redirect if already authenticated
   useAuthRedirect(redirectTo)

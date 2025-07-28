@@ -5,6 +5,7 @@ import {
 } from '@/drizzle/schema'
 import { db } from '@/lib/db'
 import { getUtcNow } from '@/lib/time-utils'
+import { clearJoinCode } from '@/lib/utils/join-code'
 import { and, count, eq } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 
@@ -203,6 +204,11 @@ export async function updateDraftAfterPick(
   }
 
   await db.update(draftsInDa).set(updates).where(eq(draftsInDa.id, draftId))
+
+  // Clear join code if draft is completed
+  if (isDraftCompleted) {
+    await clearJoinCode(draftId)
+  }
 }
 
 /**
@@ -225,6 +231,19 @@ export async function updateDraftAfterPickByGuid(
   }
 
   await db.update(draftsInDa).set(updates).where(eq(draftsInDa.guid, draftGuid))
+
+  // Clear join code if draft is completed
+  if (isDraftCompleted) {
+    const [draft] = await db
+      .select({ id: draftsInDa.id })
+      .from(draftsInDa)
+      .where(eq(draftsInDa.guid, draftGuid))
+      .limit(1)
+
+    if (draft) {
+      await clearJoinCode(draft.id)
+    }
+  }
 }
 
 /**

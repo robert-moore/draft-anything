@@ -19,6 +19,7 @@ export interface Draft {
   turnStartedAt: string | null
   timerPaused: boolean | null
   isFreeform: boolean
+  joinCode: string | null
   createdAt: string
 }
 

@@ -66,7 +66,7 @@ const HeroSection = memo(() => (
           </p>
 
           {/* Primary CTA - Maximum visual weight */}
-          <div className="flex justify-center">
+          <div className="flex flex-col gap-4 justify-center">
             <Link href="/new">
               <BrutalistButton
                 variant="primary"
@@ -78,6 +78,19 @@ const HeroSection = memo(() => (
                 Set Up Your Draft
               </BrutalistButton>
             </Link>
+            <div className="mt-2">
+              <Link href="/join">
+                <BrutalistButton
+                  variant="secondary"
+                  className="px-12 py-4 text-xl font-semibold group"
+                  icon={
+                    <Users className="w-6 h-6 transition-transform group-hover:scale-110" />
+                  }
+                >
+                  Join Draft with Code
+                </BrutalistButton>
+              </Link>
+            </div>
           </div>
         </div>
       </VisualFocus>

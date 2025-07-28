@@ -148,6 +148,11 @@ export function AppHeader() {
           label: 'Paused',
           color: 'bg-purple-500 text-white dark:bg-purple-400 dark:text-black'
         }
+      case 'canceled':
+        return {
+          label: 'Canceled',
+          color: 'bg-gray-500 text-white dark:bg-gray-400 dark:text-black'
+        }
       default:
         return {
           label: 'Error',
@@ -265,7 +270,7 @@ export function AppHeader() {
                       {/* Recent Drafts */}
                       <div>
                         <h3 className="text-sm font-medium text-foreground mb-2">
-                          Recent Drafts ({profileData.drafts.length})
+                          Draft History ({profileData.drafts.length})
                         </h3>
                         <div className="space-y-1 max-h-64 overflow-y-auto">
                           {profileData.drafts.slice(0, 250).map(draft => (

@@ -22,7 +22,7 @@ export function SignUpForm({
   const router = useRouter()
 
   // Client-side protection: redirect if already authenticated
-  useAuthRedirect('/new')
+  useAuthRedirect('/join')
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,7 +35,7 @@ export function SignUpForm({
         email,
         options: {
           emailRedirectTo: `${getAppUrl()}/auth/callback?next=${encodeURIComponent(
-            '/new'
+            '/join'
           )}`
         }
       })

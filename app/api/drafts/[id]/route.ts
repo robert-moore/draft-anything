@@ -44,6 +44,12 @@ export async function GET(
       }
     }
 
+    // For drafts in setting_up state, allow viewing without authentication
+    // This allows users to see the draft before joining
+    if (draft.draftState === 'setting_up') {
+      // Allow viewing even if not authenticated
+    }
+
     // Get participants (both users and guests)
     const participantsQuery = await db
       .select({
@@ -200,7 +206,9 @@ export async function GET(
       draft,
       participants: participantsQuery,
       picks: picks.sort((a, b) => a.pickNumber - b.pickNumber),
-      currentUser: userOrGuest ? { id: userOrGuest.id } : null,
+      currentUser: userOrGuest
+        ? { id: userOrGuest.id, type: userOrGuest.type }
+        : null,
       isAdmin,
       curatedOptions,
       latestResolvedChallenge: latestChallenge || null,

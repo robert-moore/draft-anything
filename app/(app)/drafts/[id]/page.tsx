@@ -1229,12 +1229,34 @@ export default function DraftPage() {
     if (!playerName.trim()) return
 
     try {
-      const guestFetch = createGuestFetch()
-      const response = await guestFetch(`/api/drafts/${draftId}/join`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: playerName.trim() })
-      })
+      let response: Response
+
+      // In the case of a guest user creating the draft, they won't see a specific
+      // "Join As Guest" button, so we need to check if they're using a guest ID
+      const isUsingGuestId = currentUser?.id === getGuestClientId()
+
+      if (isUsingGuestId) {
+        // Guest user - use guest join endpoint
+        const guestFetch = createGuestFetch()
+        const guestClientId = getGuestClientId()
+        console.log('joining draft as guest')
+        response = await guestFetch(`/api/drafts/${draftId}/join-guest`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: playerName.trim(),
+            clientId: guestClientId
+          })
+        })
+      } else {
+        // Authenticated user - use regular join endpoint
+        console.log('joining draft as authenticated user')
+        response = await fetch(`/api/drafts/${draftId}/join`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: playerName.trim() })
+        })
+      }
 
       if (!response.ok) throw new Error('Failed to join draft')
 
@@ -1541,6 +1563,12 @@ export default function DraftPage() {
           color: 'bg-purple-500 text-white dark:bg-purple-400 dark:text-black',
           pulse: false
         }
+      case 'canceled':
+        return {
+          label: 'Canceled',
+          color: 'bg-gray-500 text-white dark:bg-gray-400 dark:text-black',
+          pulse: false
+        }
       default:
         return {
           label: 'Error',
@@ -1815,28 +1843,48 @@ export default function DraftPage() {
               </div>
             </div>
             {draft.draftState === 'setting_up' ? (
-              <div className="flex flex-wrap items-center gap-x-8 gap-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-foreground">PLAYERS</span>
-                  <span className="font-mono text-foreground">
-                    {participants.length}/{draft.maxDrafters}
-                  </span>
+              <>
+                {/* Join Code Display */}
+                {draft.joinCode && (
+                  <div className="mb-6 p-4 bg-card border border-border rounded-lg">
+                    <div className="text-center">
+                      <h3 className="text-lg font-semibold mb-2 text-foreground">
+                        Join Code
+                      </h3>
+                      <div className="text-3xl font-mono font-bold text-primary mb-2">
+                        {draft.joinCode}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Share this code with your friends to join via
+                        draftanything.io/join
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center gap-x-8 gap-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-foreground">PLAYERS</span>
+                    <span className="font-mono text-foreground">
+                      {participants.length}/{draft.maxDrafters}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-foreground">ROUNDS</span>
+                    <span className="font-mono text-foreground">
+                      {draft.numRounds}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-foreground">TIMER</span>
+                    <span className="font-mono text-foreground">
+                      {parseInt(draft.secPerRound) === 0
+                        ? 'UNTIMED'
+                        : `${parseInt(draft.secPerRound)}s`}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-foreground">ROUNDS</span>
-                  <span className="font-mono text-foreground">
-                    {draft.numRounds}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-foreground">TIMER</span>
-                  <span className="font-mono text-foreground">
-                    {parseInt(draft.secPerRound) === 0
-                      ? 'UNTIMED'
-                      : `${parseInt(draft.secPerRound)}s`}
-                  </span>
-                </div>
-              </div>
+              </>
             ) : draft.draftState !== 'completed' &&
               draft.draftState !== 'challenge_window' &&
               draft.draftState !== 'challenge' ? (
@@ -1932,62 +1980,69 @@ export default function DraftPage() {
             )}
 
           {/* Join Draft */}
-          {!isJoined && draft.draftState === 'setting_up' && currentUser && (
-            <div className="py-8">
-              <div className="max-w-xl mx-auto">
-                <h2 className="text-2xl font-bold mb-6 text-center text-foreground">
-                  Join Draft
-                </h2>
-                <div className="flex gap-4">
-                  <BrutalInput
-                    placeholder="Your name"
-                    value={playerName}
-                    onChange={e => setPlayerName(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleJoinDraft()}
-                    variant="boxed"
-                    className="flex-1"
-                    autoFocus
-                  />
-                  <BrutalButton
-                    onClick={handleJoinDraft}
-                    disabled={!playerName.trim()}
-                    variant="filled"
-                  >
-                    Join
-                  </BrutalButton>
+          {!isJoined &&
+            draft.draftState === 'setting_up' &&
+            currentUser &&
+            currentUser.type === 'user' &&
+            !showGuestChoice && (
+              <div className="py-8">
+                <div className="max-w-xl mx-auto">
+                  <h2 className="text-2xl font-bold mb-6 text-center text-foreground">
+                    Join Draft
+                  </h2>
+                  <div className="flex gap-4">
+                    <BrutalInput
+                      placeholder="Your name"
+                      value={playerName}
+                      onChange={e => setPlayerName(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleJoinDraft()}
+                      variant="boxed"
+                      className="flex-1"
+                      autoFocus
+                    />
+                    <BrutalButton
+                      onClick={handleJoinDraft}
+                      disabled={!playerName.trim()}
+                      variant="filled"
+                    >
+                      Join
+                    </BrutalButton>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Join Draft as Guest */}
-          {!isJoined && draft.draftState === 'setting_up' && !currentUser && (
-            <div className="py-8">
-              <div className="max-w-xl mx-auto">
-                <h2 className="text-2xl font-bold mb-6 text-center text-foreground">
-                  Join Draft
-                </h2>
-                <div className="flex gap-4">
-                  <BrutalInput
-                    placeholder="Your name"
-                    value={playerName}
-                    onChange={e => setPlayerName(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleJoinAsGuest()}
-                    variant="boxed"
-                    className="flex-1"
-                    autoFocus
-                  />
-                  <BrutalButton
-                    onClick={handleJoinAsGuest}
-                    disabled={!playerName.trim()}
-                    variant="filled"
-                  >
-                    Join
-                  </BrutalButton>
+          {!isJoined &&
+            draft.draftState === 'setting_up' &&
+            !currentUser &&
+            showGuestChoice && (
+              <div className="py-8">
+                <div className="max-w-xl mx-auto">
+                  <h2 className="text-2xl font-bold mb-6 text-center text-foreground">
+                    Join Draft
+                  </h2>
+                  <div className="flex gap-4">
+                    <BrutalInput
+                      placeholder="Your name"
+                      value={playerName}
+                      onChange={e => setPlayerName(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleJoinAsGuest()}
+                      variant="boxed"
+                      className="flex-1"
+                      autoFocus
+                    />
+                    <BrutalButton
+                      onClick={handleJoinAsGuest}
+                      disabled={!playerName.trim()}
+                      variant="filled"
+                    >
+                      Join
+                    </BrutalButton>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Leave Draft */}
           {isJoined && draft.draftState === 'setting_up' && !isAdmin && (
@@ -2559,6 +2614,8 @@ export default function DraftPage() {
                   <p className="text-lg text-muted-foreground mb-2">
                     {draft.draftState === 'setting_up'
                       ? 'Draft Not Started'
+                      : draft.draftState === 'canceled'
+                      ? 'Draft Canceled'
                       : 'No Picks Yet'}
                   </p>
                   <p className="text-sm text-muted-foreground">
@@ -2568,6 +2625,8 @@ export default function DraftPage() {
                             ? 'more players'
                             : 'host to start'
                         }`
+                      : draft.draftState === 'canceled'
+                      ? 'This draft was never started'
                       : 'The first pick will appear here'}
                   </p>
                 </div>

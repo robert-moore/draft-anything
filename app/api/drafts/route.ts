@@ -1,8 +1,14 @@
-import { draftCuratedOptionsInDa, draftsInDa } from '@/drizzle/schema'
+import {
+  draftCuratedOptionsInDa,
+  draftUsersInDa,
+  draftsInDa
+} from '@/drizzle/schema'
 import { parseJsonRequest } from '@/lib/api/validation'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
+import { generateUniqueJoinCode } from '@/lib/utils/join-code'
 import { randomUUID } from 'crypto'
+import { eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -26,6 +32,7 @@ function getGuestClientId(): string {
 const createDraftSchema = z
   .object({
     name: z.string().min(1, 'Draft name is required').max(100),
+    adminName: z.string().min(1, 'Admin name is required').max(50),
     maxDrafters: z.number().int().min(2).max(20),
     secPerRound: z.number().int(),
     numRounds: z.number().int().min(1).max(20),
@@ -91,6 +98,7 @@ export async function POST(req: NextRequest) {
     if (!bodyResult.success) return bodyResult.error
     const {
       name,
+      adminName,
       draftState,
       maxDrafters,
       secPerRound,
@@ -136,6 +144,9 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Generate unique join code
+    const joinCode = await generateUniqueJoinCode()
+
     const [newDraft] = await db
       .insert(draftsInDa)
       .values({
@@ -147,6 +158,7 @@ export async function POST(req: NextRequest) {
         secPerRound: secPerRound.toString(),
         numRounds,
         isFreeform,
+        joinCode,
         createdAt: new Date().toISOString()
       })
       .returning()
@@ -163,11 +175,48 @@ export async function POST(req: NextRequest) {
       await db.insert(draftCuratedOptionsInDa).values(curatedOptionsData)
     }
 
-    return NextResponse.json({ draft: newDraft }, { status: 201 })
-  } catch (err) {
-    console.error(err)
+    // Check for existing participants with the same name and disambiguate
+    const existingParticipants = await db
+      .select({ draftUsername: draftUsersInDa.draftUsername })
+      .from(draftUsersInDa)
+      .where(eq(draftUsersInDa.draftId, newDraft.id))
+
+    let finalAdminName = adminName
+    let counter = 2
+    while (existingParticipants.some(p => p.draftUsername === finalAdminName)) {
+      finalAdminName = `${adminName} (${counter})`
+      counter++
+    }
+
+    // Automatically join the admin to the draft
+    await db.insert(draftUsersInDa).values({
+      draftId: newDraft.id,
+      userId: adminUserId,
+      draftUsername: finalAdminName,
+      position: 1,
+      isReady: true,
+      isGuest: isGuest,
+      createdAt: new Date().toISOString()
+    })
+
+    return NextResponse.json({
+      draft: {
+        id: newDraft.id,
+        guid: newDraft.guid,
+        name: newDraft.name,
+        joinCode: newDraft.joinCode,
+        draftState: newDraft.draftState,
+        maxDrafters: newDraft.maxDrafters,
+        secPerRound: newDraft.secPerRound,
+        numRounds: newDraft.numRounds,
+        isFreeform: newDraft.isFreeform,
+        createdAt: newDraft.createdAt
+      }
+    })
+  } catch (err: any) {
+    console.error('❌ Error creating draft:', err)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to create draft' },
       { status: 500 }
     )
   }

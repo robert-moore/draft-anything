@@ -12,6 +12,7 @@ import {
 } from '@/lib/api/draft-helpers'
 import { getCurrentUserOrGuest } from '@/lib/api/guest-helpers'
 import { db } from '@/lib/db'
+import { clearJoinCode } from '@/lib/utils/join-code'
 import { and, count, eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -197,6 +198,9 @@ export async function POST(
               currentPositionOnClock: null
             })
             .where(eq(draftsInDa.id, draft.id))
+
+          // Clear the join code
+          await clearJoinCode(draft.id)
         } else {
           // Challenge failed during active state - advance to next player
           // Get participant count and calculate next drafter
@@ -215,6 +219,11 @@ export async function POST(
               turnStartedAt: new Date().toISOString() // Start timer for next player
             })
             .where(eq(draftsInDa.id, draft.id))
+
+          // Clear the join code if draft is completed
+          if (isDraftCompleted) {
+            await clearJoinCode(draft.id)
+          }
         }
       }
     }

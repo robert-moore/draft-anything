@@ -3,6 +3,7 @@ import { parseDraftGuid } from '@/lib/api/draft-guid-helpers'
 import { validateAndFetchDraftByGuid } from '@/lib/api/draft-helpers'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
+import { clearJoinCode } from '@/lib/utils/join-code'
 import { eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -46,6 +47,9 @@ export async function POST(
         currentPositionOnClock: null
       })
       .where(eq(draftsInDa.guid, draftGuid))
+
+    // Clear the join code
+    await clearJoinCode(draft.id)
 
     return NextResponse.json(
       { message: 'Challenge window ended, draft completed' },

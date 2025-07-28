@@ -43,6 +43,7 @@ export const draftsInDa = da.table('drafts', {
   turnStartedAt: timestamp('turn_started_at', { mode: 'string' }),
   timerPaused: boolean('timer_paused').default(false),
   isFreeform: boolean('is_freeform').notNull().default(true),
+  joinCode: text('join_code'),
   createdAt: timestamp('created_at', { mode: 'string' }).notNull()
 })
 
