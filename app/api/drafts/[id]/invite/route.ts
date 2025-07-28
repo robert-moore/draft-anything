@@ -1,5 +1,4 @@
 import { getDraftByGuid, parseDraftGuid } from '@/lib/api/draft-guid-helpers'
-import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { getAppUrl } from '@/lib/utils/get-app-url'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -8,16 +7,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // Check authentication
-    const user = await getCurrentUser()
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    // Validate draft GUID
+    // Validate draft GUID first
     const guidResult = await parseDraftGuid({ params })
     if (!guidResult.success) return guidResult.error
     const { draftGuid } = guidResult

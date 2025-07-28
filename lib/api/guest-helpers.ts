@@ -1,4 +1,4 @@
-import { draftUsersInDa } from '@/drizzle/schema'
+import { draftUsersInDa, draftsInDa } from '@/drizzle/schema'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
 import { and, eq } from 'drizzle-orm'
@@ -25,8 +25,20 @@ export async function getCurrentUserOrGuest(
   // Try guest client ID
   const clientId = request.headers.get('x-client-id')
   if (clientId) {
+    // First check if they're a joined guest participant
     const isValidGuest = await validateGuestInDraft(draftId, clientId)
     if (isValidGuest) {
+      return { type: 'guest', id: clientId }
+    }
+
+    // If not a joined participant, check if they're the admin who created the draft
+    const [draft] = await db
+      .select({ adminUserId: draftsInDa.adminUserId })
+      .from(draftsInDa)
+      .where(eq(draftsInDa.id, draftId))
+      .limit(1)
+
+    if (draft && draft.adminUserId === clientId) {
       return { type: 'guest', id: clientId }
     }
   }
