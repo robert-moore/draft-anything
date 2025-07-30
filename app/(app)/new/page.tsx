@@ -287,7 +287,7 @@ export default function NewDraftPage() {
                     this draft via a link, but won't be able to see it in your
                     draft history or use another device to join.{' '}
                     <a
-                      href="/auth/login"
+                      href="/auth/login?redirectTo=/new"
                       className=" hover:underline font-bold"
                     >
                       Sign in

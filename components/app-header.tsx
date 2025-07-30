@@ -167,11 +167,11 @@ export function AppHeader() {
 
   if (isLoading) {
     return (
-      <header className="bg-background">
+      <header className="border-b-2 border-border bg-background/80 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <BrandLogo className="h-8 w-auto" />
+              <BrandLogo variant="wordmark" className="h-8 w-auto" />
             </div>
             <div className="flex items-center gap-4">
               <ThemeToggle />
@@ -190,11 +190,11 @@ export function AppHeader() {
 
   if (!user && !isGuest) {
     return (
-      <header className="bg-background">
+      <header className="border-b-2 border-border bg-background/80 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center">
-              <BrandLogo className="h-8 w-auto" />
+              <BrandLogo variant="wordmark" className="h-8 w-auto" />
             </Link>
             <div className="flex items-center gap-4">
               <ThemeToggle />

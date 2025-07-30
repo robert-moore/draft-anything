@@ -8,7 +8,7 @@ export default async function Page() {
 
   if (user) {
     // Redirect authenticated users to the main app
-    redirect('/join')
+    redirect('/new')
   }
 
   return <SignUpForm />

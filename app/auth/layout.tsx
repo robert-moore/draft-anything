@@ -1,7 +1,5 @@
-'use client'
-
-import { BrandLogo } from '@/components/brand'
-import Link from 'next/link'
+import { AppHeader } from '@/components/app-header'
+import { ThemeProvidersClient } from '@/components/theme-providers-client'
 
 export default function AuthLayout({
   children
@@ -9,23 +7,14 @@ export default function AuthLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="border-b-2 border-border bg-card px-8 py-6">
-        <div className="max-w-7xl mx-auto">
-          <Link
-            href="/"
-            className="flex items-center space-x-3 hover:opacity-70 transition-opacity duration-200"
-          >
-            <BrandLogo variant="wordmark" size="md" />
-          </Link>
-        </div>
-      </nav>
-
-      {/* Main content */}
-      <main className="flex min-h-[calc(100vh-88px)] items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
-        <div className="w-full max-w-sm">{children}</div>
-      </main>
-    </div>
+    <ThemeProvidersClient>
+      <div className="min-h-screen bg-background">
+        <AppHeader />
+        {/* Main content */}
+        <main className="flex min-h-[calc(100vh-88px)] items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
+          <div className="w-full max-w-sm">{children}</div>
+        </main>
+      </div>
+    </ThemeProvidersClient>
   )
 }

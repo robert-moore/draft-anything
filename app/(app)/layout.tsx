@@ -1,14 +1,13 @@
 import { AppHeader } from '@/components/app-header'
+import { ThemeProvidersClient } from '@/components/theme-providers-client'
 
-export default function AppLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background">
-      <AppHeader />
-      {children}
-    </div>
+    <ThemeProvidersClient>
+      <div className="min-h-screen bg-background">
+        <AppHeader />
+        {children}
+      </div>
+    </ThemeProvidersClient>
   )
 }

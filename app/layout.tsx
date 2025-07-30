@@ -1,9 +1,4 @@
-import { ThemeProvider } from '@/components/theme-provider'
-import { ThemeWrapper } from '@/components/theme-wrapper'
-import { Toaster } from '@/components/ui/sonner'
-import { ColorThemeProvider } from '@/lib/theme/color-theme-context'
 import { cn } from '@/lib/utils'
-import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Hanken_Grotesk as FontSans } from 'next/font/google'
 import './globals.css'
@@ -69,21 +64,7 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-          storageKey="theme"
-        >
-          <ColorThemeProvider>
-            <ThemeWrapper>
-              {children}
-              <Toaster />
-              <Analytics />
-            </ThemeWrapper>
-          </ColorThemeProvider>
-        </ThemeProvider>
+        {children}
       </body>
     </html>
   )
