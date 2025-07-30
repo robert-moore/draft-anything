@@ -1,5 +1,6 @@
+import { ClientProviders } from '@/components/client-providers'
 import { cn } from '@/lib/utils'
-import type { Metadata, Viewport } from 'next'
+import type { Viewport } from 'next'
 import { Hanken_Grotesk as FontSans } from 'next/font/google'
 import './globals.css'
 
@@ -8,38 +9,6 @@ const fontSans = FontSans({
   variable: '--font-sans',
   weight: ['400', '500', '600', '700', '800']
 })
-
-const title = 'Draft Anything'
-const description = 'Draft anything with friends.'
-
-export const metadata: Metadata = {
-  metadataBase: new URL('https://draft-anything.vercel.app'),
-  title,
-  description,
-  icons: {
-    icon: '/brand/favicon.png',
-    shortcut: '/brand/favicon.png',
-    apple: '/brand/icon-dark.png'
-  },
-  openGraph: {
-    title,
-    description,
-    images: [
-      {
-        url: '/images/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'Draft Anything'
-      }
-    ]
-  },
-  twitter: {
-    title,
-    description,
-    card: 'summary_large_image',
-    creator: '@robmoo_re'
-  }
-}
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -53,11 +22,38 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  // Start the auto-pick scheduler on the server side
-  // autoPickScheduler.start() // Disabled: autopick is now handled by a Vercel cron job (see /api/cron/auto-pick and vercel.json)
-
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* 
+          Bypass Next.js 15's metadata injection via JavaScript by using dangerouslySetInnerHTML.
+          This ensures OG meta tags are present in the initial HTML for crawlers and social media platforms.
+          Next.js 15 streams metadata via JavaScript, which can cause issues with SEO and social sharing.
+        */}
+        <div
+          dangerouslySetInnerHTML={{
+            __html: `
+              <meta property="og:title" content="Draft Anything" />
+              <meta property="og:description" content="Draft anything with friends." />
+              <meta property="og:image" content="https://draft-anything.vercel.app/images/og-image.png" />
+              <meta property="og:image:width" content="1200" />
+              <meta property="og:image:height" content="630" />
+              <meta property="og:image:alt" content="Draft Anything" />
+              <meta property="og:type" content="website" />
+              <meta property="og:url" content="https://draft-anything.vercel.app" />
+              
+              <meta name="twitter:card" content="summary_large_image" />
+              <meta name="twitter:creator" content="@robmoo_re" />
+              <meta name="twitter:title" content="Draft Anything" />
+              <meta name="twitter:description" content="Draft anything with friends." />
+              <meta name="twitter:image" content="https://draft-anything.vercel.app/images/og-image.png" />
+              <meta name="twitter:image:width" content="1200" />
+              <meta name="twitter:image:height" content="630" />
+              <meta name="twitter:image:alt" content="Draft Anything" />
+            `
+          }}
+        />
+      </head>
       <body
         className={cn(
           'min-h-screen flex flex-col font-sans antialiased',
@@ -65,6 +61,7 @@ export default function RootLayout({
         )}
       >
         {children}
+        <ClientProviders />
       </body>
     </html>
   )
