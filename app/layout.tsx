@@ -25,6 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <title>Draft Anything</title>
         <link
           rel="icon"
           type="image/png"
