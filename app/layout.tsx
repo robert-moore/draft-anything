@@ -25,6 +25,36 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="32x32"
+          href="/brand/favicon.png"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="16x16"
+          href="/brand/favicon.png"
+        />
+        <link
+          rel="apple-touch-icon"
+          sizes="180x180"
+          href="/brand/favicon.png"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="192x192"
+          href="/brand/favicon.png"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="512x512"
+          href="/brand/favicon.png"
+        />
+
         {/* 
           Bypass Next.js 15's metadata injection via JavaScript by using dangerouslySetInnerHTML.
           This ensures OG meta tags are present in the initial HTML for crawlers and social media platforms.
@@ -40,7 +70,7 @@ export default function RootLayout({
               <meta property="og:image:height" content="630" />
               <meta property="og:image:alt" content="Draft Anything" />
               <meta property="og:type" content="website" />
-              <meta property="og:url" content="https://draft-anything.vercel.app" />
+              <meta property="og:url" content="https://draftanything.io" />
               
               <meta name="twitter:card" content="summary_large_image" />
               <meta name="twitter:creator" content="@robmoo_re" />
