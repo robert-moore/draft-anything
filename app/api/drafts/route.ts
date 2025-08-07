@@ -35,7 +35,7 @@ const createDraftSchema = z
     adminName: z.string().min(1, 'Admin name is required').max(50),
     maxDrafters: z.number().int().min(2).max(20),
     secPerRound: z.number().int(),
-    numRounds: z.number().int().min(1).max(20),
+    numRounds: z.number().int().min(1).max(30),
     isFreeform: z.boolean().default(true),
     curatedOptions: z.string().optional(),
     draftState: z

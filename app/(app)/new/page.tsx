@@ -363,7 +363,7 @@ export default function NewDraftPage() {
                         value={numRounds}
                         onChange={setNumRounds}
                         min={1}
-                        max={20}
+                        max={30}
                         required={true}
                       />
                     </div>
