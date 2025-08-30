@@ -2,8 +2,6 @@
 
 import { createGuestFetch } from '@/lib/guest-utils'
 import { cn } from '@/lib/utils'
-import { GripVertical, Plus, Trash2, X } from 'lucide-react'
-import { memo, useCallback, useEffect, useState } from 'react'
 import {
   DndContext,
   DragEndEvent,
@@ -11,15 +9,17 @@ import {
   DragStartEvent,
   PointerSensor,
   useSensor,
-  useSensors,
+  useSensors
 } from '@dnd-kit/core'
 import {
+  arrayMove,
   SortableContext,
   useSortable,
-  verticalListSortingStrategy,
-  arrayMove,
+  verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { Check, GripVertical, Plus, Trash2, X } from 'lucide-react'
+import { memo, useCallback, useEffect, useState } from 'react'
 import { BrutalInput } from '../ui/brutal-input'
 import { CuratedOptionsDropdown } from '../ui/curated-options-dropdown'
 
@@ -36,6 +36,8 @@ interface AutopickQueueProps {
   curatedOptions: Array<{ id: number; optionText: string; isUsed: boolean }>
   className?: string
   onQueueChange?: (queue: AutopickQueueItem[]) => void
+  isMyTurn?: boolean
+  onPickSubmit?: (text: string, curatedOptionId?: number) => Promise<void>
 }
 
 export const AutopickQueue = memo(function AutopickQueue({
@@ -43,7 +45,9 @@ export const AutopickQueue = memo(function AutopickQueue({
   isFreeform,
   curatedOptions = [],
   className,
-  onQueueChange
+  onQueueChange,
+  isMyTurn = false,
+  onPickSubmit
 }: AutopickQueueProps) {
   const [queue, setQueue] = useState<AutopickQueueItem[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -51,16 +55,19 @@ export const AutopickQueue = memo(function AutopickQueue({
   const [newItemText, setNewItemText] = useState('')
   const [selectedCuratedOptionText, setSelectedCuratedOptionText] = useState('')
   const [activeId, setActiveId] = useState<string | null>(null)
+  const [pendingSelectionId, setPendingSelectionId] = useState<string | null>(
+    null
+  )
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // dnd-kit sensors with better focus isolation
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // Higher threshold to avoid conflicts with clicks
-      },
+        distance: 8 // Higher threshold to avoid conflicts with clicks
+      }
     })
   )
-
 
   const availableCuratedOptions = curatedOptions.filter(
     option =>
@@ -102,7 +109,9 @@ export const AutopickQueue = memo(function AutopickQueue({
     const newItem: AutopickQueueItem = {
       id: crypto.randomUUID(),
       payload: isFreeform ? text : undefined,
-      curatedOptionId: isFreeform ? undefined : curatedOptions.find(opt => opt.optionText === text)?.id,
+      curatedOptionId: isFreeform
+        ? undefined
+        : curatedOptions.find(opt => opt.optionText === text)?.id,
       isUsed: false
     }
 
@@ -113,7 +122,12 @@ export const AutopickQueue = memo(function AutopickQueue({
     }
 
     // Check for duplicates in curated drafts
-    if (!isFreeform && queue.some(item => item.curatedOptionId === newItem.curatedOptionId && !item.isUsed)) {
+    if (
+      !isFreeform &&
+      queue.some(
+        item => item.curatedOptionId === newItem.curatedOptionId && !item.isUsed
+      )
+    ) {
       setError('This option is already in your queue')
       return
     }
@@ -141,7 +155,7 @@ export const AutopickQueue = memo(function AutopickQueue({
     if (over && active.id !== over.id) {
       const oldIndex = queue.findIndex(item => item.id === active.id)
       const newIndex = queue.findIndex(item => item.id === over.id)
-      
+
       if (oldIndex !== -1 && newIndex !== -1) {
         const newQueue = arrayMove(queue, oldIndex, newIndex)
         updateQueue(newQueue)
@@ -149,69 +163,150 @@ export const AutopickQueue = memo(function AutopickQueue({
     }
   }
 
-
   const getDisplayText = (item: AutopickQueueItem) => {
     if (item.payload) return item.payload
     if (item.curatedOptionId) {
-      return curatedOptions.find(opt => opt.id === item.curatedOptionId)?.optionText || 'Unknown option'
+      return (
+        curatedOptions.find(opt => opt.id === item.curatedOptionId)
+          ?.optionText || 'Unknown option'
+      )
     }
     return 'Unknown item'
   }
 
+  // Handle clicking plus icon to enter selection mode
+  const handleStartSelection = (item: AutopickQueueItem) => {
+    if (!isMyTurn || item.isUsed || isSubmitting) return
+    setPendingSelectionId(item.id)
+  }
+
+  // Handle confirming the selection
+  const handleConfirmSelection = async (item: AutopickQueueItem) => {
+    if (!onPickSubmit || isSubmitting) return
+
+    setIsSubmitting(true)
+    setError(null)
+
+    try {
+      const text = getDisplayText(item)
+      await onPickSubmit(text, item.curatedOptionId)
+
+      // Success - clear pending selection
+      setPendingSelectionId(null)
+    } catch (error) {
+      console.error('Pick submission failed:', error)
+      setError('Failed to submit pick. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Handle canceling selection
+  const handleCancelSelection = () => {
+    setPendingSelectionId(null)
+  }
+
   // Sortable item component with focus isolation
-  function SortableQueueItem({ item, position }: { item: AutopickQueueItem; position: number }) {
+  function SortableQueueItem({
+    item,
+    position
+  }: {
+    item: AutopickQueueItem
+    position: number
+  }) {
     const {
       attributes,
       listeners,
       setNodeRef,
       transform,
       transition,
-      isDragging,
-    } = useSortable({ 
+      isDragging
+    } = useSortable({
       id: item.id,
       disabled: item.isUsed
     })
 
     const style = {
       transform: CSS.Transform.toString(transform),
-      transition,
+      transition
     }
+
+    const isSelectable = isMyTurn && !item.isUsed && onPickSubmit
+    const isPending = pendingSelectionId === item.id
 
     return (
       <div
         ref={setNodeRef}
         style={style}
-        {...(!item.isUsed ? listeners : {})}
-        tabIndex={undefined}  // Explicitly remove tabIndex to prevent focus issues
-        role={undefined}      // Remove role to prevent accessibility conflicts
+        {...(!item.isUsed && !isPending ? listeners : {})}
+        tabIndex={undefined} // Explicitly remove tabIndex to prevent focus issues
+        role={undefined} // Remove role to prevent accessibility conflicts
         className={cn(
-          'group relative bg-card border-2 border-border rounded-lg',
-          'flex items-center gap-3 p-3 transition-all duration-200',
+          'group relative border-2 rounded-lg transition-all duration-300',
+          'flex items-center gap-3 p-3',
           'select-none touch-none',
           isDragging && 'opacity-60 scale-102 z-50 shadow-lg rotate-1',
-          !item.isUsed && [
-            'cursor-grab active:cursor-grabbing',
-            'hover:border-primary/50 hover:shadow-sm',
-            'hover:bg-accent/30 hover:scale-[1.02]'
+          isPending && [
+            'bg-green-50 border-green-200 shadow-md shadow-green-100 scale-[1.02]'
           ],
-          item.isUsed && 'opacity-50 bg-muted cursor-default'
+          !isPending &&
+            !item.isUsed && [
+              'bg-card border-border',
+              'hover:border-primary/30 hover:shadow-sm hover:bg-accent/20'
+            ],
+          !isPending && item.isUsed && ['opacity-50 bg-muted border-border/50']
         )}
       >
-        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/15 flex items-center justify-center text-xs font-bold text-primary">
-          {position}
-        </div>
+        {/* Circle with number or plus - transforms on hover when selectable */}
+        <button
+          onClick={e => {
+            e.stopPropagation()
+            if (isPending) return
+            if (isSelectable) handleStartSelection(item)
+          }}
+          disabled={!isSelectable || isPending}
+          className={cn(
+            'relative flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300',
+            isPending &&
+              'bg-green-500/20 text-green-600 border border-green-500/40',
+            !isPending &&
+              !isSelectable &&
+              'bg-primary/15 text-primary cursor-default',
+            !isPending &&
+              isSelectable && [
+                'bg-primary/20 text-primary border border-primary/30',
+                'hover:bg-primary/30 hover:scale-110 cursor-pointer'
+              ]
+          )}
+        >
+          {isPending ? (
+            <Check className="w-3.5 h-3.5" />
+          ) : isSelectable ? (
+            <>
+              {/* Number - fades out on hover */}
+              <span className="absolute inset-0 flex items-center justify-center transition-opacity duration-300 group-hover:opacity-0">
+                {position}
+              </span>
+              {/* Plus - fades in on hover */}
+              <Plus className="absolute inset-0 w-3.5 h-3.5 m-auto opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:scale-110" />
+            </>
+          ) : (
+            position
+          )}
+        </button>
 
+        {/* Text content */}
         <div className="flex-1 min-w-0">
           <div
             className={cn(
-              'text-sm font-medium',
-              item.isUsed
-                ? 'line-through text-muted-foreground'
-                : 'text-foreground'
+              'text-sm font-medium transition-colors',
+              isPending && 'text-green-700',
+              !isPending && item.isUsed && 'line-through text-muted-foreground',
+              !isPending && !item.isUsed && 'text-foreground'
             )}
           >
             {getDisplayText(item)}
-            {item.isUsed && (
+            {!isPending && item.isUsed && (
               <span className="text-xs text-muted-foreground ml-2 font-normal">
                 Used
               </span>
@@ -219,27 +314,64 @@ export const AutopickQueue = memo(function AutopickQueue({
           </div>
         </div>
 
-        {!item.isUsed && (
-          <>
-            <div className="opacity-50 group-hover:opacity-70 transition-opacity">
-              <GripVertical className="w-4 h-4 text-muted-foreground" />
-            </div>
-            
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                removeFromQueue(item.id)
-              }}
-              className="opacity-40 group-hover:opacity-100 transition-opacity duration-150 text-muted-foreground hover:text-destructive p-1 rounded"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          </>
-        )}
+        {/* Actions */}
+        <div className="flex items-center gap-1">
+          {isPending ? (
+            // Confirm state actions
+            <>
+              <button
+                onClick={() => handleConfirmSelection(item)}
+                disabled={isSubmitting}
+                className={cn(
+                  'px-2.5 py-1 text-xs font-medium rounded-md transition-colors',
+                  'bg-green-600 text-white hover:bg-green-700',
+                  'disabled:opacity-50 disabled:cursor-not-allowed'
+                )}
+              >
+                {isSubmitting ? '...' : 'Draft'}
+              </button>
+              <button
+                onClick={handleCancelSelection}
+                disabled={isSubmitting}
+                className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </>
+          ) : (
+            // Normal state actions
+            <>
+              {/* Drag handle */}
+              {!item.isUsed && (
+                <div
+                  {...listeners}
+                  className={cn(
+                    'p-1 cursor-grab active:cursor-grabbing transition-opacity',
+                    'opacity-40 group-hover:opacity-70'
+                  )}
+                >
+                  <GripVertical className="w-4 h-4 text-muted-foreground" />
+                </div>
+              )}
+
+              {/* Delete button */}
+              {!item.isUsed && (
+                <button
+                  onClick={e => {
+                    e.stopPropagation()
+                    removeFromQueue(item.id)
+                  }}
+                  className="p-1 text-muted-foreground hover:text-destructive transition-colors opacity-40 group-hover:opacity-100"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </>
+          )}
+        </div>
       </div>
     )
   }
-
 
   const availableSlots = queue.filter(item => !item.isUsed).length
 
@@ -270,23 +402,31 @@ export const AutopickQueue = memo(function AutopickQueue({
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <SortableContext 
-              items={queue.map(item => item.id)} 
+            <SortableContext
+              items={queue.map(item => item.id)}
               strategy={verticalListSortingStrategy}
             >
               {queue.map((item, index) => (
-                <SortableQueueItem key={item.id} item={item} position={index + 1} />
+                <SortableQueueItem
+                  key={item.id}
+                  item={item}
+                  position={index + 1}
+                />
               ))}
             </SortableContext>
-            
+
             <DragOverlay>
               {activeId ? (
                 <div className="opacity-90 rotate-2 scale-105">
                   {(() => {
-                    const draggedItem = queue.find(item => item.id === activeId)!
-                    const draggedIndex = queue.findIndex(item => item.id === activeId)
+                    const draggedItem = queue.find(
+                      item => item.id === activeId
+                    )!
+                    const draggedIndex = queue.findIndex(
+                      item => item.id === activeId
+                    )
                     return (
-                      <SortableQueueItem 
+                      <SortableQueueItem
                         item={draggedItem}
                         position={draggedIndex + 1}
                       />

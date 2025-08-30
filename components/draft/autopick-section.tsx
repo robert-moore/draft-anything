@@ -10,6 +10,8 @@ interface AutopickSectionProps {
   draftId: string
   isFreeform: boolean
   curatedOptions: Array<{ id: number; optionText: string; isUsed: boolean }>
+  isMyTurn?: boolean
+  onPickSubmit?: (text: string, curatedOptionId?: number) => Promise<void>
 }
 
 function createGuestFetch() {
@@ -34,7 +36,9 @@ function createGuestFetch() {
 export const AutopickSection = memo(function AutopickSection({
   draftId,
   isFreeform,
-  curatedOptions
+  curatedOptions,
+  isMyTurn = false,
+  onPickSubmit
 }: AutopickSectionProps) {
   const [saveState, setSaveState] = useState<'saved' | 'dirty' | 'saving'>(
     'saved'
@@ -103,6 +107,8 @@ export const AutopickSection = memo(function AutopickSection({
         isFreeform={isFreeform}
         curatedOptions={curatedOptions}
         onQueueChange={handleQueueChange}
+        isMyTurn={isMyTurn}
+        onPickSubmit={onPickSubmit}
       />
     </BrutalSection>
   )

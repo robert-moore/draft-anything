@@ -1465,6 +1465,48 @@ export default function DraftPage() {
     }
   }
 
+  const handleAutopickSubmit = async (text: string, curatedOptionId?: number) => {
+    if (!draft) return
+
+    try {
+      setJustSubmittedPick(true)
+
+      // For autopick submissions, we already have the text and curatedOptionId
+      let payload = text.trim()
+      
+      // For curated options, clear payload since we're using curatedOptionId
+      if (!draft.isFreeform && curatedOptionId) {
+        payload = ''
+      }
+
+      const guestFetch = createGuestFetch()
+      const response = await guestFetch(`/api/drafts/${draftId}/pick`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          payload,
+          curatedOptionId
+        })
+      })
+
+      if (!response.ok) throw new Error('Failed to make pick')
+
+      const newPick = await response.json()
+      
+      // Clear the input and similar pick warning after successful pick
+      setCurrentPick('')
+      setSimilarPick(null)
+
+      // Reset challenge flag since a new pick was made
+      setChallengeResolvedAfterLastPick(false)
+    } catch (err) {
+      setJustSubmittedPick(false)
+      throw new Error(
+        (err instanceof Error ? err.message : 'Failed to make pick')
+      )
+    }
+  }
+
   const handleChallenge = async () => {
     try {
       const guestFetch = createGuestFetch()
@@ -3101,6 +3143,8 @@ export default function DraftPage() {
               draftId={draftId}
               isFreeform={draft.isFreeform}
               curatedOptions={curatedOptions}
+              isMyTurn={isMyTurn}
+              onPickSubmit={handleAutopickSubmit}
             />
           )}
 
