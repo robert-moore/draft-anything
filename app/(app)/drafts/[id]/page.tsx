@@ -1,6 +1,8 @@
 'use client'
 
 import { AutoPickMonitor } from '@/components/draft/auto-pick-monitor'
+import { AutopickSection } from '@/components/draft/autopick-section'
+import { AutopickSuggestions } from '@/components/draft/autopick-suggestions'
 import { DraftMetadata } from '@/components/draft/draft-metadata'
 import { DraftPickGrid } from '@/components/draft/draft-pick-grid'
 import { DraftTimer } from '@/components/draft/draft-timer'
@@ -2153,6 +2155,14 @@ export default function DraftPage() {
                         {/* Hide input if timer expired */}
                         {!isTimerExpired && (
                           <div>
+                            <AutopickSuggestions
+                              draftId={draftId}
+                              isMyTurn={isMyTurn}
+                              isFreeform={draft.isFreeform}
+                              curatedOptions={curatedOptions}
+                              onSuggestionSelect={setCurrentPick}
+                              currentPick={currentPick}
+                            />
                             {draft.isFreeform ? (
                               <BrutalInput
                                 placeholder="Enter your pick..."
@@ -3085,8 +3095,17 @@ export default function DraftPage() {
             </BrutalSection>
           )}
 
+          {/* Autopick Controls - Only show when draft is active and user is joined */}
+          {draft.draftState === 'active' && isJoined && (
+            <AutopickSection
+              draftId={draftId}
+              isFreeform={draft.isFreeform}
+              curatedOptions={curatedOptions}
+            />
+          )}
+
           {/* Actions */}
-          <BrutalSection contentClassName="p-4">
+          <BrutalSection title="Actions" contentClassName="p-4">
             <BrutalButton
               variant="default"
               onClick={handleShareDraft}

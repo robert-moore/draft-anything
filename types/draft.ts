@@ -28,6 +28,7 @@ export interface Participant {
   name: string
   position: number | null
   isReady: boolean
+  autopickEnabled?: boolean
   createdAt: string
 }
 
@@ -38,5 +39,17 @@ export interface DraftPick {
   payload: string
   createdAt: string
   wasAutoPick?: boolean
+  wasSkipped?: boolean
   timeTakenSeconds?: string
 }
+
+export interface AutopickQueueItem {
+  id: number
+  position: number
+  payload: string | null
+  curatedOptionId: number | null
+  isUsed: boolean
+  createdAt: string
+  curatedOptionText?: string | null
+}
+
