@@ -1,6 +1,7 @@
 'use client'
 
 import { BrutalButton } from '@/components/ui/brutal-button'
+import { createGuestFetch } from '@/lib/guest-utils'
 import { cn } from '@/lib/utils'
 import { Bot, BotOff } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
@@ -11,24 +12,6 @@ interface AutopickToggleProps {
   onToggle?: (enabled: boolean) => void
 }
 
-function createGuestFetch() {
-  return async (url: string, options: RequestInit = {}) => {
-    const GUEST_CLIENT_ID_KEY = 'draft-guest-client-id'
-    let clientId = localStorage.getItem(GUEST_CLIENT_ID_KEY)
-    if (!clientId) {
-      clientId = crypto.randomUUID()
-      localStorage.setItem(GUEST_CLIENT_ID_KEY, clientId)
-    }
-
-    return fetch(url, {
-      ...options,
-      headers: {
-        ...options.headers,
-        ...(clientId ? { 'x-client-id': clientId } : {})
-      }
-    })
-  }
-}
 
 export function AutopickToggle({
   draftId,

@@ -1,5 +1,6 @@
 'use client'
 
+import { createGuestFetch } from '@/lib/guest-utils'
 import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { BrutalSection } from '../ui/brutal-section'
 import { AutopickQueue } from './autopick-queue'
@@ -12,33 +13,17 @@ interface AutopickSectionProps {
   curatedOptions: Array<{ id: number; optionText: string; isUsed: boolean }>
   isMyTurn?: boolean
   onPickSubmit?: (text: string, curatedOptionId?: number) => Promise<void>
+  recentPicks?: Array<{ payload: string }>
 }
 
-function createGuestFetch() {
-  return async (url: string, options: RequestInit = {}) => {
-    const GUEST_CLIENT_ID_KEY = 'draft-guest-client-id'
-    let clientId = localStorage.getItem(GUEST_CLIENT_ID_KEY)
-    if (!clientId) {
-      clientId = crypto.randomUUID()
-      localStorage.setItem(GUEST_CLIENT_ID_KEY, clientId)
-    }
-
-    return fetch(url, {
-      ...options,
-      headers: {
-        ...options.headers,
-        ...(clientId ? { 'x-client-id': clientId } : {})
-      }
-    })
-  }
-}
 
 export const AutopickSection = memo(function AutopickSection({
   draftId,
   isFreeform,
   curatedOptions,
   isMyTurn = false,
-  onPickSubmit
+  onPickSubmit,
+  recentPicks = []
 }: AutopickSectionProps) {
   const [saveState, setSaveState] = useState<'saved' | 'dirty' | 'saving'>(
     'saved'
@@ -109,6 +94,7 @@ export const AutopickSection = memo(function AutopickSection({
         onQueueChange={handleQueueChange}
         isMyTurn={isMyTurn}
         onPickSubmit={onPickSubmit}
+        recentPicks={recentPicks}
       />
     </BrutalSection>
   )

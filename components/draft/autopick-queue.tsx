@@ -38,6 +38,7 @@ interface AutopickQueueProps {
   onQueueChange?: (queue: AutopickQueueItem[]) => void
   isMyTurn?: boolean
   onPickSubmit?: (text: string, curatedOptionId?: number) => Promise<void>
+  recentPicks?: Array<{ payload: string }> // Recent picks to auto-remove from queue
 }
 
 export const AutopickQueue = memo(function AutopickQueue({
@@ -47,7 +48,8 @@ export const AutopickQueue = memo(function AutopickQueue({
   className,
   onQueueChange,
   isMyTurn = false,
-  onPickSubmit
+  onPickSubmit,
+  recentPicks = []
 }: AutopickQueueProps) {
   const [queue, setQueue] = useState<AutopickQueueItem[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -59,6 +61,38 @@ export const AutopickQueue = memo(function AutopickQueue({
     null
   )
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Normalize text for comparison (remove whitespace, lowercase)
+  const normalizeText = (text: string) => {
+    return text.toLowerCase().replace(/\s+/g, '').trim()
+  }
+
+  // Remove items from queue that match any of the recent picks
+  const cleanQueueBasedOnPicks = useCallback(() => {
+    if (!recentPicks.length) return
+    
+    const normalizedPicks = recentPicks.map(pick => normalizeText(pick.payload))
+    
+    setQueue(prev => {
+      const filtered = prev.filter(item => {
+        const itemText = getDisplayText(item)
+        const normalizedItem = normalizeText(itemText)
+        return !normalizedPicks.includes(normalizedItem)
+      })
+      
+      // Only update if items were actually removed
+      if (filtered.length !== prev.length) {
+        onQueueChange?.(filtered)
+        return filtered
+      }
+      return prev
+    })
+  }, [recentPicks, onQueueChange])
+
+  // Auto-clean queue when picks change
+  useEffect(() => {
+    cleanQueueBasedOnPicks()
+  }, [cleanQueueBasedOnPicks])
 
   // dnd-kit sensors with better focus isolation
   const sensors = useSensors(
@@ -99,10 +133,10 @@ export const AutopickQueue = memo(function AutopickQueue({
     onQueueChange?.(newQueue)
   }
 
-  const addToQueue = () => {
+  const addToQueue = (optionText?: string) => {
     const text = isFreeform
       ? newItemText.trim()
-      : selectedCuratedOptionText.trim()
+      : (optionText || selectedCuratedOptionText).trim()
     if (!text) return
 
     // Create new item optimistically
@@ -191,7 +225,14 @@ export const AutopickQueue = memo(function AutopickQueue({
       const text = getDisplayText(item)
       await onPickSubmit(text, item.curatedOptionId)
 
-      // Success - clear pending selection
+      // Success - immediately remove this item from queue since we know it was drafted
+      setQueue(prev => {
+        const filtered = prev.filter(queueItem => queueItem.id !== item.id)
+        onQueueChange?.(filtered)
+        return filtered
+      })
+      
+      // Clear pending selection
       setPendingSelectionId(null)
     } catch (error) {
       console.error('Pick submission failed:', error)
@@ -475,7 +516,7 @@ export const AutopickQueue = memo(function AutopickQueue({
                     onValueChange={value => {
                       setSelectedCuratedOptionText(value)
                       if (value) {
-                        setTimeout(addToQueue, 100)
+                        addToQueue(value)
                       }
                     }}
                     placeholder="Choose option..."

@@ -9,6 +9,7 @@ interface AutoPickMonitorProps {
   secondsPerRound: number
   isMyTurn: boolean
   currentPickNumber: number
+  autopickEnabled?: boolean
 }
 
 export function AutoPickMonitor({
@@ -16,9 +17,9 @@ export function AutoPickMonitor({
   turnStartedAt,
   secondsPerRound,
   isMyTurn,
-  currentPickNumber
+  currentPickNumber,
+  autopickEnabled
 }: AutoPickMonitorProps) {
-  const isDevelopment = process.env.NODE_ENV === 'development'
   const { isExpired, secondsLeft } = useDraftTimer({
     turnStartedAt,
     secondsPerRound
@@ -38,10 +39,38 @@ export function AutoPickMonitor({
     }
   }, [turnStartedAt])
 
+  // Immediate autopick when it's user's turn and autopick is enabled
   useEffect(() => {
-    if (isDevelopment) {
-      return
-    }
+    if (!isMyTurn || !autopickEnabled || hasTriggered) return
+
+    // Small delay to ensure turn state is properly set
+    const immediateAutopickTimeout = setTimeout(() => {
+      setHasTriggered(true)
+
+      const attemptAutoPick = async () => {
+        try {
+          const response = await fetch(`/api/drafts/${draftId}/check-auto-pick`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          })
+
+          if (!response.ok) {
+            setHasTriggered(false)
+          }
+        } catch (error) {
+          console.error('Autopick error:', error)
+          setHasTriggered(false)
+        }
+      }
+
+      attemptAutoPick()
+    }, 1000)
+
+    return () => clearTimeout(immediateAutopickTimeout)
+  }, [isMyTurn, autopickEnabled, hasTriggered, draftId])
+
+  useEffect(() => {
+    // Removed development mode check - autopick should work in all environments
 
     if (secondsPerRound === 0) {
       return

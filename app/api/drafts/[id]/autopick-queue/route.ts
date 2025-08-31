@@ -8,7 +8,7 @@ import { getCurrentUserOrGuest } from '@/lib/api/guest-helpers'
 import { parseJsonRequest } from '@/lib/api/validation'
 import { db } from '@/lib/db'
 import { getUtcNow } from '@/lib/time-utils'
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -97,7 +97,7 @@ export async function GET(
           .where(
             and(
               eq(draftCuratedOptionsInDa.draftId, draft.id),
-              sql`${draftCuratedOptionsInDa.id} = ANY(${curatedIds})`
+              inArray(draftCuratedOptionsInDa.id, curatedIds)
             )
           )
         

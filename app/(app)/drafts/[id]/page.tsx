@@ -136,6 +136,7 @@ export default function DraftPage() {
     }>
   >([])
   const [showLoading, setShowLoading] = useState(true)
+  const [autopickEnabled, setAutopickEnabled] = useState<boolean | null>(null)
   const [hasRecentSuccessfulChallenge, setHasRecentSuccessfulChallenge] =
     useState(false)
   const [challengeResolvedAfterLastPick, setChallengeResolvedAfterLastPick] =
@@ -442,6 +443,11 @@ export default function DraftPage() {
         !!data.hasPreviousPickAlreadyBeenChallenged
       )
 
+      // Load autopick settings if user is joined
+      if (isUserJoined) {
+        await loadAutopickSettings()
+      }
+
       // Ensure loading animation completes before hiding loading state
       setTimeout(() => {
         setIsLoading(false)
@@ -486,6 +492,23 @@ export default function DraftPage() {
       }
     } catch (err) {
       console.error('Failed to load vote counts:', err)
+    }
+  }
+
+  const loadAutopickSettings = async () => {
+    try {
+      const guestFetch = createGuestFetch()
+      const response = await guestFetch(`/api/drafts/${draftId}/autopick-settings`)
+      if (response.ok) {
+        const data = await response.json()
+        setAutopickEnabled(data.enabled)
+      } else {
+        // If we get 401 or 403, user is not authenticated/participant, disable autopick
+        setAutopickEnabled(false)
+      }
+    } catch (err) {
+      console.error('Failed to load autopick settings:', err)
+      setAutopickEnabled(false)
     }
   }
 
@@ -3145,6 +3168,7 @@ export default function DraftPage() {
               curatedOptions={curatedOptions}
               isMyTurn={isMyTurn}
               onPickSubmit={handleAutopickSubmit}
+              recentPicks={picks}
             />
           )}
 
@@ -3191,6 +3215,7 @@ export default function DraftPage() {
           secondsPerRound={parseInt(draft.secPerRound)}
           isMyTurn={isMyTurn}
           currentPickNumber={picks.length + 1}
+          autopickEnabled={autopickEnabled || false}
         />
       )}
     </div>

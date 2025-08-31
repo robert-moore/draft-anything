@@ -12,6 +12,11 @@ export async function POST(
     if (!guidResult.success) return guidResult.error
     const { draftGuid } = guidResult
 
+    // IMPORTANT: No authentication check here!
+    // This endpoint needs to work even when the player who should
+    // autopick is not connected. Other viewers trigger the autopick
+    // on their behalf when the timer expires.
+
     // Use the shared auto-pick logic
     await performAutoPickForDraft(draftGuid)
 
