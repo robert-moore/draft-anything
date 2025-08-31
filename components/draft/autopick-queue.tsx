@@ -82,7 +82,8 @@ export const AutopickQueue = memo(function AutopickQueue({
       
       // Only update if items were actually removed
       if (filtered.length !== prev.length) {
-        onQueueChange?.(filtered)
+        // Schedule the parent notification after render
+        setTimeout(() => onQueueChange?.(filtered), 0)
         return filtered
       }
       return prev
@@ -228,7 +229,8 @@ export const AutopickQueue = memo(function AutopickQueue({
       // Success - immediately remove this item from queue since we know it was drafted
       setQueue(prev => {
         const filtered = prev.filter(queueItem => queueItem.id !== item.id)
-        onQueueChange?.(filtered)
+        // Schedule the parent notification after render
+        setTimeout(() => onQueueChange?.(filtered), 0)
         return filtered
       })
       

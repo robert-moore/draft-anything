@@ -26,9 +26,18 @@ export function AutoPickMonitor({
   })
   const [hasTriggered, setHasTriggered] = useState(false)
   const lastTurnStartedAtRef = useRef(turnStartedAt)
+  const lastPickNumberRef = useRef(currentPickNumber)
   const turnStartTimeRef = useRef<number | null>(null)
 
+  // Reset hasTriggered when pick number changes (handles consecutive turns)
+  useEffect(() => {
+    if (currentPickNumber !== lastPickNumberRef.current) {
+      setHasTriggered(false)
+      lastPickNumberRef.current = currentPickNumber
+    }
+  }, [currentPickNumber])
 
+  // Update turn timing when turnStartedAt changes
   useEffect(() => {
     if (turnStartedAt !== lastTurnStartedAtRef.current) {
       setHasTriggered(false)

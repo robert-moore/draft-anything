@@ -1,5 +1,5 @@
 import { parseDraftGuid } from '@/lib/api/draft-guid-helpers'
-import { performAutoPickForDraft } from '@/lib/auto-pick-logic'
+import { performAutopick } from '@/lib/auto-pick-logic'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(
@@ -17,8 +17,8 @@ export async function POST(
     // autopick is not connected. Other viewers trigger the autopick
     // on their behalf when the timer expires.
 
-    // Use the shared auto-pick logic
-    await performAutoPickForDraft(draftGuid)
+    // Use the clean autopick logic
+    await performAutopick(draftGuid)
 
     return NextResponse.json(
       { message: 'Auto-pick check completed' },
