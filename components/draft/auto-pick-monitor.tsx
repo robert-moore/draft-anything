@@ -52,30 +52,32 @@ export function AutoPickMonitor({
   useEffect(() => {
     if (!isMyTurn || !autopickEnabled || hasTriggered) return
 
-    // Small delay to ensure turn state is properly set
-    const immediateAutopickTimeout = setTimeout(() => {
-      setHasTriggered(true)
+    const attemptAutoPick = async () => {
+      try {
+        const response = await fetch(`/api/drafts/${draftId}/check-auto-pick`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        })
 
-      const attemptAutoPick = async () => {
-        try {
-          const response = await fetch(`/api/drafts/${draftId}/check-auto-pick`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-          })
-
-          if (!response.ok) {
-            setHasTriggered(false)
-          }
-        } catch (error) {
-          console.error('Autopick error:', error)
+        if (!response.ok) {
           setHasTriggered(false)
         }
+      } catch (error) {
+        console.error('Autopick error:', error)
+        setHasTriggered(false)
       }
+    }
 
+    // Fire immediately
+    setHasTriggered(true)
+    attemptAutoPick()
+
+    // Then fire again after 10 seconds to handle consecutive turns (snake draft)
+    const followupAutopickTimeout = setTimeout(() => {
       attemptAutoPick()
-    }, 1000)
+    }, 10000)
 
-    return () => clearTimeout(immediateAutopickTimeout)
+    return () => clearTimeout(followupAutopickTimeout)
   }, [isMyTurn, autopickEnabled, hasTriggered, draftId])
 
   useEffect(() => {

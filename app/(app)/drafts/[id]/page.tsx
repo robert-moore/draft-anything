@@ -1,5 +1,6 @@
 'use client'
 
+import { AdminAutopickButton } from '@/components/draft/admin-autopick-button'
 import { AutoPickMonitor } from '@/components/draft/auto-pick-monitor'
 import { AutopickSection } from '@/components/draft/autopick-section'
 import { AutopickSuggestions } from '@/components/draft/autopick-suggestions'
@@ -2343,6 +2344,22 @@ export default function DraftPage() {
                                 )?.name || 'next player'
                               } to pick...`}
                         </p>
+                        
+                        {/* Admin Autopick Button - shows for draft admin when someone else is on clock */}
+                        {currentUser?.id === draft.adminUserId && !isTimerExpired && (
+                          <div className="mt-4 flex justify-center">
+                            <AdminAutopickButton
+                              draftId={draftId}
+                              currentPlayerName={
+                                participants.find(p => p.position === draft.currentPositionOnClock)?.name || 'Player'
+                              }
+                              isAdmin={true}
+                              isMyTurn={false}
+                              draftState={draft.draftState}
+                            />
+                          </div>
+                        )}
+                        
                         <div className="mt-6 flex justify-center">
                           <DraftTimer
                             turnStartedAt={draft.turnStartedAt}

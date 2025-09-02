@@ -20,7 +20,7 @@ import { and, eq } from 'drizzle-orm'
 const recentAutoPicks = new Map<string, number>()
 
 // Clean autopick function - handles both immediate and safety net cases
-export async function performAutopick(draftGuid: string) {
+export async function performAutopick(draftGuid: string, isAdminInitiated = false) {
   try {
     // Validate and fetch draft
     const draftResult = await validateAndFetchDraftByGuid(draftGuid)
@@ -42,8 +42,8 @@ export async function performAutopick(draftGuid: string) {
     
     if (!currentPlayer || !currentPlayer.userId) return
 
-    // Determine if autopick should run
-    if (!shouldPerformAutopick(draft, currentPlayer)) return
+    // Admin can always force autopick, otherwise check if conditions are met
+    if (!isAdminInitiated && !shouldPerformAutopick(draft, currentPlayer)) return
 
     const rateLimitKey = `${draftGuid}-${currentPlayer.userId}`
     const now = Date.now()
