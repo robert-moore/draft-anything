@@ -25,7 +25,12 @@ const EMOJIS = [
   '😈', // smiling devil
   '🥶', // cold face (icy take)
   '😤', // triumph face (try hard)
-  '🎯' // bullseye (nailed it)
+  '🎯', // target
+  '🏆', // trophy
+  '😍', // heart eyes
+  '😭', // bawling
+  '🤢', // green face
+  '👑' // crown
 ]
 
 export function EmojiReactPopover({
@@ -49,7 +54,7 @@ export function EmojiReactPopover({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-auto p-3 grid grid-cols-4 grid-rows-3 gap-2 mr-2 sm:mr-0"
+        className="w-auto p-3 grid grid-cols-5 grid-rows-3 gap-2 mr-2 sm:mr-0"
       >
         {EMOJIS.map(emoji => {
           const isActive = currentUserReactions.includes(emoji)
