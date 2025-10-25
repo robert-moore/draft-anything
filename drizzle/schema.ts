@@ -2,8 +2,10 @@ import {
   boolean,
   foreignKey,
   integer,
+  jsonb,
   numeric,
   pgSchema,
+  primaryKey,
   serial,
   smallint,
   text,
@@ -74,6 +76,7 @@ export const draftUsersInDa = da.table(
     position: smallint(),
     isReady: boolean('is_ready').notNull(),
     isGuest: boolean('is_guest').notNull().default(false),
+    autopickEnabled: boolean('autopick_enabled').notNull().default(false),
     createdAt: timestamp('created_at', { mode: 'string' }).notNull()
   },
   table => [
@@ -96,6 +99,7 @@ export const draftSelectionsInDa = da.table(
     payload: text(), // Can be null for curated options
     curatedOptionId: integer('curated_option_id'), // Reference to curated option
     wasAutoPick: boolean('was_auto_pick').default(false),
+    wasSkipped: boolean('was_skipped').default(false),
     timeTakenSeconds: numeric('time_taken_seconds')
   },
   table => [
@@ -171,6 +175,26 @@ export const draftReactionsInDa = da.table(
         draftSelectionsInDa.pickNumber
       ],
       name: 'draft_reactions_selection_fkey'
+    })
+  ]
+)
+
+
+export const draftAutopickQueuesInDa = da.table(
+  'draft_autopick_queues',
+  {
+    draftId: integer('draft_id').notNull(),
+    userId: uuid('user_id').notNull(),
+    queue: jsonb().notNull().default([]),
+    createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow().notNull()
+  },
+  table => [
+    primaryKey({ columns: [table.draftId, table.userId] }),
+    foreignKey({
+      columns: [table.draftId],
+      foreignColumns: [draftsInDa.id],
+      name: 'draft_autopick_queues_draft_id_fkey'
     })
   ]
 )

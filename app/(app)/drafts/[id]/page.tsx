@@ -1,6 +1,9 @@
 'use client'
 
+import { AdminAutopickButton } from '@/components/draft/admin-autopick-button'
 import { AutoPickMonitor } from '@/components/draft/auto-pick-monitor'
+import { AutopickSection } from '@/components/draft/autopick-section'
+import { AutopickSuggestions } from '@/components/draft/autopick-suggestions'
 import { DraftMetadata } from '@/components/draft/draft-metadata'
 import { DraftPickGrid } from '@/components/draft/draft-pick-grid'
 import { DraftTimer } from '@/components/draft/draft-timer'
@@ -134,6 +137,7 @@ export default function DraftPage() {
     }>
   >([])
   const [showLoading, setShowLoading] = useState(true)
+  const [autopickEnabled, setAutopickEnabled] = useState<boolean | null>(null)
   const [hasRecentSuccessfulChallenge, setHasRecentSuccessfulChallenge] =
     useState(false)
   const [challengeResolvedAfterLastPick, setChallengeResolvedAfterLastPick] =
@@ -440,6 +444,11 @@ export default function DraftPage() {
         !!data.hasPreviousPickAlreadyBeenChallenged
       )
 
+      // Load autopick settings if user is joined
+      if (isUserJoined) {
+        await loadAutopickSettings()
+      }
+
       // Ensure loading animation completes before hiding loading state
       setTimeout(() => {
         setIsLoading(false)
@@ -484,6 +493,23 @@ export default function DraftPage() {
       }
     } catch (err) {
       console.error('Failed to load vote counts:', err)
+    }
+  }
+
+  const loadAutopickSettings = async () => {
+    try {
+      const guestFetch = createGuestFetch()
+      const response = await guestFetch(`/api/drafts/${draftId}/autopick-settings`)
+      if (response.ok) {
+        const data = await response.json()
+        setAutopickEnabled(data.enabled)
+      } else {
+        // If we get 401 or 403, user is not authenticated/participant, disable autopick
+        setAutopickEnabled(false)
+      }
+    } catch (err) {
+      console.error('Failed to load autopick settings:', err)
+      setAutopickEnabled(false)
     }
   }
 
@@ -1463,6 +1489,48 @@ export default function DraftPage() {
     }
   }
 
+  const handleAutopickSubmit = async (text: string, curatedOptionId?: number) => {
+    if (!draft) return
+
+    try {
+      setJustSubmittedPick(true)
+
+      // For autopick submissions, we already have the text and curatedOptionId
+      let payload = text.trim()
+      
+      // For curated options, clear payload since we're using curatedOptionId
+      if (!draft.isFreeform && curatedOptionId) {
+        payload = ''
+      }
+
+      const guestFetch = createGuestFetch()
+      const response = await guestFetch(`/api/drafts/${draftId}/pick`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          payload,
+          curatedOptionId
+        })
+      })
+
+      if (!response.ok) throw new Error('Failed to make pick')
+
+      const newPick = await response.json()
+      
+      // Clear the input and similar pick warning after successful pick
+      setCurrentPick('')
+      setSimilarPick(null)
+
+      // Reset challenge flag since a new pick was made
+      setChallengeResolvedAfterLastPick(false)
+    } catch (err) {
+      setJustSubmittedPick(false)
+      throw new Error(
+        (err instanceof Error ? err.message : 'Failed to make pick')
+      )
+    }
+  }
+
   const handleChallenge = async () => {
     try {
       const guestFetch = createGuestFetch()
@@ -2153,6 +2221,14 @@ export default function DraftPage() {
                         {/* Hide input if timer expired */}
                         {!isTimerExpired && (
                           <div>
+                            <AutopickSuggestions
+                              draftId={draftId}
+                              isMyTurn={isMyTurn}
+                              isFreeform={draft.isFreeform}
+                              curatedOptions={curatedOptions}
+                              onSuggestionSelect={setCurrentPick}
+                              currentPick={currentPick}
+                            />
                             {draft.isFreeform ? (
                               <BrutalInput
                                 placeholder="Enter your pick..."
@@ -2268,6 +2344,22 @@ export default function DraftPage() {
                                 )?.name || 'next player'
                               } to pick...`}
                         </p>
+                        
+                        {/* Admin Autopick Button - shows for draft admin when someone else is on clock */}
+                        {currentUser?.id === draft.adminUserId && !isTimerExpired && (
+                          <div className="mt-4 flex justify-center">
+                            <AdminAutopickButton
+                              draftId={draftId}
+                              currentPlayerName={
+                                participants.find(p => p.position === draft.currentPositionOnClock)?.name || 'Player'
+                              }
+                              isAdmin={true}
+                              isMyTurn={false}
+                              draftState={draft.draftState}
+                            />
+                          </div>
+                        )}
+                        
                         <div className="mt-6 flex justify-center">
                           <DraftTimer
                             turnStartedAt={draft.turnStartedAt}
@@ -3085,8 +3177,20 @@ export default function DraftPage() {
             </BrutalSection>
           )}
 
+          {/* Autopick Controls - Only show when draft is active and user is joined */}
+          {draft.draftState === 'active' && isJoined && (
+            <AutopickSection
+              draftId={draftId}
+              isFreeform={draft.isFreeform}
+              curatedOptions={curatedOptions}
+              isMyTurn={isMyTurn}
+              onPickSubmit={handleAutopickSubmit}
+              recentPicks={picks}
+            />
+          )}
+
           {/* Actions */}
-          <BrutalSection contentClassName="p-4">
+          <BrutalSection title="Actions" contentClassName="p-4">
             <BrutalButton
               variant="default"
               onClick={handleShareDraft}
@@ -3128,6 +3232,7 @@ export default function DraftPage() {
           secondsPerRound={parseInt(draft.secPerRound)}
           isMyTurn={isMyTurn}
           currentPickNumber={picks.length + 1}
+          autopickEnabled={autopickEnabled || false}
         />
       )}
     </div>

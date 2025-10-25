@@ -1,40 +1,33 @@
 import {
+  draftAutopickQueuesInDa,
   draftCuratedOptionsInDa,
   draftSelectionsInDa,
   draftUsersInDa
 } from '@/drizzle/schema'
 import {
+  calculateNextDrafter,
   getCurrentPickNumberByGuid,
+  getParticipantCountByGuid,
   getUsedPayloadsByGuid,
+  updateDraftAfterPickByGuid,
   validateAndFetchDraftByGuid
 } from '@/lib/api/draft-helpers'
 import { db } from '@/lib/db'
 import { getElapsedSeconds } from '@/lib/time-utils'
-import { getAppUrl } from '@/lib/utils/get-app-url'
 import { and, eq } from 'drizzle-orm'
 
 // Simple rate limiting for auto-picks
 const recentAutoPicks = new Map<string, number>()
 
-export async function performAutoPickForDraft(draftGuid: string) {
+// Clean autopick function - handles both immediate and safety net cases
+export async function performAutopick(draftGuid: string, isAdminInitiated = false) {
   try {
     // Validate and fetch draft
     const draftResult = await validateAndFetchDraftByGuid(draftGuid)
-    if (!draftResult.success) {
-      console.warn(
-        '[AUTO-PICK] Failed to validate draft',
-        draftGuid,
-        draftResult.error
-      )
-      return
-    }
+    if (!draftResult.success) return
     const { draft } = draftResult
 
     if (draft.draftState !== 'active') return
-    const secPerRound = parseInt(draft.secPerRound)
-    if (secPerRound === 0 || !draft.turnStartedAt || draft.timerPaused) return
-    const elapsedSeconds = getElapsedSeconds(draft.turnStartedAt)
-    if (elapsedSeconds < secPerRound) return
     if (!draft.currentPositionOnClock) return
 
     const [currentPlayer] = await db
@@ -46,7 +39,11 @@ export async function performAutoPickForDraft(draftGuid: string) {
           eq(draftUsersInDa.position, draft.currentPositionOnClock)
         )
       )
+    
     if (!currentPlayer || !currentPlayer.userId) return
+
+    // Admin can always force autopick, otherwise check if conditions are met
+    if (!isAdminInitiated && !shouldPerformAutopick(draft, currentPlayer)) return
 
     const rateLimitKey = `${draftGuid}-${currentPlayer.userId}`
     const now = Date.now()
@@ -65,12 +62,144 @@ export async function performAutoPickForDraft(draftGuid: string) {
       )
     if (existingPick.length > 0) return
 
-    const usedPayloads = await getUsedPayloadsByGuid(draftGuid)
-    let autoPickPayload: string
-    let curatedOptionId: number | null = null
+    // Get pick selection (try queue first, then fallback)
+    const pickSelection = await getPickSelection(draft, currentPlayer.userId, draftGuid)
+    if (!pickSelection) return
+    
+    const { payload: autoPickPayload, curatedOptionId } = pickSelection
+
+    // Create the pick using shared logic
+    const { createPick } = await import('./pick-logic')
+    const pickResult = await createPick({
+      draft: {
+        id: draft.id,
+        guid: draftGuid,
+        currentPositionOnClock: draft.currentPositionOnClock,
+        numRounds: draft.numRounds,
+        isFreeform: draft.isFreeform
+      },
+      userId: currentPlayer.userId,
+      pickNumber: currentPickNumber,
+      payload: draft.isFreeform ? autoPickPayload : null,
+      curatedOptionId: !draft.isFreeform ? curatedOptionId : null,
+      wasAutoPick: true,
+      skipTurnValidation: true // Autopick already verified the turn
+    })
+
+    if (!pickResult.success) {
+      console.warn('[AUTO-PICK] Failed to create pick', {
+        draftGuid,
+        currentPickNumber,
+        userId: currentPlayer.userId,
+        error: pickResult.error
+      })
+      return
+    }
+
+    // Update draft state for next player
+    const numParticipants = await getParticipantCountByGuid(draftGuid)
+    const { nextPosition, isDraftCompleted } = calculateNextDrafter(
+      currentPickNumber,
+      numParticipants,
+      draft.numRounds
+    )
+
+    await updateDraftAfterPickByGuid(
+      draftGuid,
+      nextPosition,
+      isDraftCompleted,
+      true
+    )
+
+
+    recentAutoPicks.set(rateLimitKey, now)
+    for (const [key, timestamp] of recentAutoPicks.entries()) {
+      if (now - timestamp > 10000) {
+        recentAutoPicks.delete(key)
+      }
+    }
+  } catch (error: any) {
+    console.error('[AUTO-PICK] Error', error)
+  }
+}
+
+// Determine if autopick should run based on current draft state
+function shouldPerformAutopick(draft: any, currentPlayer: any): boolean {
+  const secPerRound = parseInt(draft.secPerRound)
+  
+  // Case 1: User has autopick enabled - always run immediately
+  if (currentPlayer.autopickEnabled) return true
+  
+  // Case 2: Safety net for timed drafts - run if timer expired
+  if (secPerRound > 0 && draft.turnStartedAt && !draft.timerPaused) {
+    const elapsedSeconds = getElapsedSeconds(draft.turnStartedAt)
+    return elapsedSeconds >= secPerRound
+  }
+  
+  // Case 3: No autopick needed
+  return false
+}
+
+// Get the appropriate pick selection - try queue first, then fallback
+async function getPickSelection(
+  draft: any, 
+  userId: string, 
+  draftGuid: string
+): Promise<{ payload: string; curatedOptionId: number | null } | null> {
+  // Try to get item from user's autopick queue first
+  const [queueResult] = await db
+    .select({ queue: draftAutopickQueuesInDa.queue })
+    .from(draftAutopickQueuesInDa)
+    .where(
+      and(
+        eq(draftAutopickQueuesInDa.draftId, draft.id),
+        eq(draftAutopickQueuesInDa.userId, userId)
+      )
+    )
+    .limit(1)
+
+  const queue = (queueResult?.queue as any[]) || []
+  const availableQueueItems = queue.filter(item => !item.isUsed)
+
+  if (availableQueueItems.length > 0) {
+    // Use first item from queue
+    const queueItem = availableQueueItems[0]
     if (draft.isFreeform) {
-      autoPickPayload = generateAutoPick(usedPayloads)
+      return {
+        payload: queueItem.payload || 'Auto Pick',
+        curatedOptionId: null
+      }
     } else {
+      // For curated drafts, get the option text
+      if (queueItem.curatedOptionId) {
+        const [option] = await db
+          .select({ optionText: draftCuratedOptionsInDa.optionText })
+          .from(draftCuratedOptionsInDa)
+          .where(eq(draftCuratedOptionsInDa.id, queueItem.curatedOptionId))
+        
+        if (option) {
+          return {
+            payload: option.optionText,
+            curatedOptionId: queueItem.curatedOptionId
+          }
+        }
+      }
+      // Fallback if curated option not found
+      return {
+        payload: queueItem.payload || 'Auto Pick',
+        curatedOptionId: null
+      }
+    }
+  } else {
+    // No queue items - fallback logic
+    if (draft.isFreeform) {
+      const usedPayloads = await getUsedPayloadsByGuid(draftGuid)
+      return {
+        payload: generateAutoPick(usedPayloads),
+        curatedOptionId: null
+      }
+    } else {
+      // Curated draft - pick random available option
       const availableOptions = await db
         .select({
           id: draftCuratedOptionsInDa.id,
@@ -83,54 +212,17 @@ export async function performAutoPickForDraft(draftGuid: string) {
             eq(draftCuratedOptionsInDa.isUsed, false)
           )
         )
-      if (availableOptions.length === 0) return
+      
+      if (availableOptions.length === 0) return null
+      
       const randomIndex = Math.floor(Math.random() * availableOptions.length)
       const selectedOption = availableOptions[randomIndex]
-      autoPickPayload = selectedOption.optionText
-      curatedOptionId = selectedOption.id
-    }
-
-    // --- Instead of direct DB insert, call the pick API route ---
-    const appUrl = getAppUrl()
-    const pickUrl = `${appUrl}/api/drafts/${draftGuid}/pick`
-    const secret = process.env.INTERNAL_AUTOPICK_SECRET
-    if (!secret) {
-      console.error('[AUTO-PICK] INTERNAL_AUTOPICK_SECRET is not set')
-      return
-    }
-
-    const res = await fetch(pickUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-internal-autopick-secret': secret
-      },
-      body: JSON.stringify({
-        payload: draft.isFreeform ? autoPickPayload : undefined,
-        curatedOptionId: !draft.isFreeform ? curatedOptionId : undefined,
-        wasAutoPick: true,
-        userId: currentPlayer.userId // for internal use
-      })
-    })
-    if (res.status !== 201) {
-      const errorText = await res.text()
-      console.warn('[AUTO-PICK] Pick API non-201', {
-        draftGuid,
-        currentPickNumber,
-        userId: currentPlayer.userId,
-        status: res.status,
-        errorText
-      })
-      return
-    }
-    recentAutoPicks.set(rateLimitKey, now)
-    for (const [key, timestamp] of recentAutoPicks.entries()) {
-      if (now - timestamp > 10000) {
-        recentAutoPicks.delete(key)
+      
+      return {
+        payload: selectedOption.optionText,
+        curatedOptionId: selectedOption.id
       }
     }
-  } catch (error: any) {
-    console.error('[AUTO-PICK] Error', error)
   }
 }
 
