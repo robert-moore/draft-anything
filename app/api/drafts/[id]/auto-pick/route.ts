@@ -69,6 +69,16 @@ export async function POST(
       )
     }
 
+    // Safety check: Don't auto-pick if timer was just reset (likely from previous auto-pick)
+    // This prevents the next player from being immediately auto-picked due to race conditions
+    // We can safely check for 10 seconds since the minimum timer duration is 30 seconds
+    if (elapsedSeconds < 10) {
+      return NextResponse.json(
+        { error: 'Timer was just reset, please wait a moment' },
+        { status: 400 }
+      )
+    }
+
     // Get current player on the clock
     if (!draft.currentPositionOnClock) {
       return NextResponse.json(

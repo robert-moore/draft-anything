@@ -213,7 +213,7 @@ export async function GET(
       curatedOptions,
       latestResolvedChallenge: latestChallenge || null,
       hasPreviousPickAlreadyBeenChallenged,
-      reactions // <-- add reactions to response
+      reactions
     })
   } catch (error) {
     console.error('Error fetching draft:', error)
