@@ -3104,7 +3104,7 @@ export default function DraftPage() {
           >
             <ChatComponent
               draftId={String(draft.guid)}
-              currentUser={currentUser.id}
+              currentUser={currentUser?.id || getGuestClientId() || null}
             />
           </BrutalSection>
         </aside>

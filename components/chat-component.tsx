@@ -10,7 +10,7 @@ export default function ChatComponent({
   currentUser
 }: {
   draftId: string
-  currentUser: string
+  currentUser: string | null
 }) {
   const [messages, setMessages] = useState<any[]>([])
   const [newMessage, setNewMessage] = useState('')
