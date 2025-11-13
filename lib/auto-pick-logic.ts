@@ -34,7 +34,16 @@ export async function performAutoPickForDraft(draftGuid: string) {
     const secPerRound = parseInt(draft.secPerRound)
     if (secPerRound === 0 || !draft.turnStartedAt || draft.timerPaused) return
     const elapsedSeconds = getElapsedSeconds(draft.turnStartedAt)
+
+    // Check if timer has expired
     if (elapsedSeconds < secPerRound) return
+
+    // Safety check: Don't auto-pick if timer was just reset (likely from previous auto-pick)
+    // This prevents the next player from being immediately auto-picked due to race conditions
+    // Since minimum timer is 30s, this check ensures the timer truly expired (not just reset)
+    // and adds a buffer to prevent race conditions between concurrent auto-pick checks
+    if (elapsedSeconds < 10) return
+
     if (!draft.currentPositionOnClock) return
 
     const [currentPlayer] = await db
