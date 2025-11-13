@@ -1,5 +1,6 @@
 'use client'
 
+import ChatComponent from '@/components/chat-component'
 import { AutoPickMonitor } from '@/components/draft/auto-pick-monitor'
 import { DraftMetadata } from '@/components/draft/draft-metadata'
 import { DraftPickGrid } from '@/components/draft/draft-pick-grid'
@@ -3094,6 +3095,17 @@ export default function DraftPage() {
             >
               Invite Friends
             </BrutalButton>
+          </BrutalSection>
+          {/* CHAT COMPONENT */}
+          <BrutalSection
+            variant="bordered"
+            className="text-center m-2"
+            background="diagonal"
+          >
+            <ChatComponent
+              draftId={String(draft.guid)}
+              currentUser={currentUser.id}
+            />
           </BrutalSection>
         </aside>
       </div>

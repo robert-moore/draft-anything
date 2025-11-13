@@ -1,4 +1,5 @@
 import {
+  bigserial,
   boolean,
   foreignKey,
   integer,
@@ -171,6 +172,31 @@ export const draftReactionsInDa = da.table(
         draftSelectionsInDa.pickNumber
       ],
       name: 'draft_reactions_selection_fkey'
+    })
+  ]
+)
+
+export const draftMessagesInDa = da.table(
+  'draft_messages',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey().notNull(),
+    draftId: integer('draft_id').notNull(),
+    userId: uuid('user_id').notNull(),
+    messageContent: text('message_content').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull()
+  },
+  table => [
+    foreignKey({
+      columns: [table.draftId],
+      foreignColumns: [draftsInDa.id],
+      name: 'draft_messages__draft_fkey'
+    }),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [profilesInDa.id],
+      name: 'draft_messages_user_fkey'
     })
   ]
 )

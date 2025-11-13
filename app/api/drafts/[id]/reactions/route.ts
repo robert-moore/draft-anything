@@ -1,11 +1,13 @@
 import {
+  draftMessagesInDa,
   draftReactionsInDa,
   draftUsersInDa,
   draftsInDa
 } from '@/drizzle/schema'
+import { getDraftByGuid } from '@/lib/api/draft-guid-helpers'
 import { getCurrentUserOrGuest } from '@/lib/api/guest-helpers'
 import { db } from '@/lib/db'
-import { and, eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
 
 // Helper: get draft by guid and return integer id
@@ -93,6 +95,7 @@ export async function POST(
   return NextResponse.json({ success: true })
 }
 
+//SEND MESSAGES
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -114,4 +117,31 @@ export async function GET(
     .from(draftReactionsInDa)
     .where(eq(draftReactionsInDa.draftId, draftId))
   return NextResponse.json({ reactions })
+}
+
+//GET MESSAGES
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id: guid } = await params
+
+  //get draft ID
+  const draftId = await getDraftByGuid(guid)
+  if (!draftId)
+    return NextResponse.json({ error: 'Draft not found' }, { status: 404 })
+
+  //get all messages from draft
+  const messages = await db
+    .select({
+      id: draftMessagesInDa.id,
+      userId: draftMessagesInDa.userId,
+      messageContent: draftMessagesInDa.messageContent,
+      createdAt: draftMessagesInDa.createdAt
+    })
+    .from(draftMessagesInDa)
+    .where(eq(draftMessagesInDa.draftId, draftId.id))
+    .orderBy(desc(draftMessagesInDa.createdAt))
+
+  return NextResponse.json({ messages })
 }
