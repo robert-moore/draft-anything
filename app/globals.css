@@ -128,6 +128,24 @@
   opacity: 0.1;
 }
 
+.dark .diagonal-lines {
+  background-image: linear-gradient(
+      45deg,
+      transparent 48%,
+      #fff 48%,
+      #fff 52%,
+      transparent 52%
+    ),
+    linear-gradient(
+      -45deg,
+      transparent 48%,
+      #fff 48%,
+      #fff 52%,
+      transparent 52%
+    );
+  opacity: 0.1;
+}
+
 .brutal-border {
   border: 3px solid #000;
 }

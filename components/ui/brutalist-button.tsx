@@ -14,7 +14,7 @@ const BrutalistButton = forwardRef<HTMLButtonElement, BrutalistButtonProps>(
     const getVariantStyles = () => {
       switch (variant) {
         case 'primary':
-          return 'bg-primary text-primary-foreground border-2 border-primary hover:bg-primary/90 shadow-[3px_3px_0px_0px_hsl(var(--border))] hover:shadow-[1px_1px_0px_0px_hsl(var(--border))] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[3px] active:translate-y-[3px]'
+          return 'bg-[color-mix(in_srgb,hsl(var(--primary))_80%,black)] text-primary-foreground border-2 border-primary hover:bg-[color-mix(in_srgb,hsl(var(--primary))_75%,black)] shadow-[3px_3px_0px_0px_hsl(var(--border))] hover:shadow-[1px_1px_0px_0px_hsl(var(--border))] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[3px] active:translate-y-[3px]'
         case 'secondary':
           return 'bg-background text-foreground border-2 border-border hover:bg-accent hover:text-accent-foreground shadow-[3px_3px_0px_0px_hsl(var(--border))] hover:shadow-[1px_1px_0px_0px_hsl(var(--border))] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none active:translate-x-[3px] active:translate-y-[3px]'
         case 'terminal':

@@ -3184,6 +3184,7 @@ export default function DraftPage() {
               draftId={draftId}
               currentUser={currentUser?.id || getGuestClientId() || null}
               messages={messages}
+              picks={picks}
               userIdToName={userIdToName}
               onSendMessage={handleSendMessage}
             />

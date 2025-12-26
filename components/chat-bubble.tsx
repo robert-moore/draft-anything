@@ -16,9 +16,9 @@ const ChatBubble = ({ message, username, isOwnMessage }: ChatBubbleProps) => {
     >
       <div
         className={cn(
-          'max-w-52 rounded-xl p-2',
+          'max-w-52 rounded-xl px-2 py-1.5',
           isOwnMessage
-            ? 'bg-blue-500 text-white text-left'
+            ? 'bg-[color-mix(in_srgb,hsl(var(--primary))_80%,black)] text-primary-foreground text-left'
             : 'bg-gray-200 text-gray-900 text-left'
         )}
       >
