@@ -1,59 +1,51 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import ChatBubble from './chat-bubble'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 
+interface ChatMessage {
+  id: number
+  messageContent: string
+  userId: string
+  createdAt?: string
+}
+
 export default function ChatComponent({
   draftId,
-  currentUser
+  currentUser,
+  messages,
+  userIdToName,
+  onSendMessage
 }: {
   draftId: string
   currentUser: string | null
+  messages: ChatMessage[]
+  userIdToName: Record<string, string>
+  onSendMessage: (messageContent: string) => Promise<void>
 }) {
-  const [messages, setMessages] = useState<any[]>([])
   const [newMessage, setNewMessage] = useState('')
 
-  // Fetch all messages for this draft
-  useEffect(() => {
-    async function loadMessages() {
-      const res = await fetch(`/api/drafts/${draftId}/messages`)
-      const data = await res.json()
-      setMessages(data.messages || [])
-    }
-    console.log(currentUser)
-  }, [draftId])
-
-  // Handle sending a new message
   async function handleSendMessage(e: React.FormEvent) {
     e.preventDefault()
     if (!newMessage.trim()) return
 
-    await fetch(`/api/drafts/${draftId}/messages`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messageContent: newMessage })
-    })
-
-    // reload messages after sending
-    const res = await fetch(`/api/drafts/${draftId}/messages`)
-    const data = await res.json()
-    setMessages(data.messages || [])
+    await onSendMessage(newMessage)
     setNewMessage('')
   }
 
   return (
     <div className="flex flex-col my-2 space-y-2 h-[35rem]">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto space-y-1 p-3 bg-gray-50 rounded-md h-80 border">
+      <div className="flex-1 overflow-y-auto space-y-1 p-3 bg-transparent rounded-md h-80">
         {messages.map(message => {
           const isOwnMessage = message.userId === currentUser
           return (
             <ChatBubble
               key={message.id}
               message={message.messageContent}
-              username={message.draftUsername}
+              username={userIdToName[message.userId] || 'Unknown'}
               isOwnMessage={isOwnMessage}
             />
           )

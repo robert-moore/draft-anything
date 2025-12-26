@@ -157,6 +157,16 @@ export default function DraftPage() {
   }
   const [reactions, setReactions] = useState<Reaction[]>([])
 
+  type Message = {
+    id: number
+    draftId: number
+    userId: string
+    messageContent: string
+    createdAt?: string
+  }
+
+  const [messages, setMessages] = useState<Message[]>([])
+
   const participantsRef = useRef<Participant[]>([])
   const prevPicksLength = useRef<null | number>(null)
   const hasLoadedInitially = useRef(false)
@@ -254,6 +264,7 @@ export default function DraftPage() {
             setIsAdmin(data.isAdmin || false)
             setCuratedOptions(data.curatedOptions || [])
             setReactions(data.reactions || [])
+            setMessages(data.messages || [])
             setJustSubmittedPick(false)
             setIsLoading(false)
             setShowLoading(false)
@@ -276,6 +287,8 @@ export default function DraftPage() {
       setIsAdmin(data.isAdmin || false)
       setCuratedOptions(data.curatedOptions || [])
       setReactions(data.reactions || [])
+      setMessages(data.messages || [])
+
       setJustSubmittedPick(false)
 
       // Immediately check if timer is expired ---
@@ -878,6 +891,42 @@ export default function DraftPage() {
         )
         .subscribe()
 
+      const draftMessagesSub = supabase
+        .channel(`draft-messages-$[draftId]`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'da',
+            table: 'draft_messages',
+            filter: `draft_iq=eq${draft.id}`
+          },
+          payload => {
+            setMessages(prev => {
+              const withoutOptimistic = prev.filter(message => {
+                const isOptimistic = message.id > 1000000000000
+                if (!isOptimistic) return true
+
+                return !(
+                  message.messageContent === payload.new.message_content &&
+                  message.userId === payload.new.user_id
+                )
+              })
+              return [
+                ...withoutOptimistic,
+                {
+                  id: payload.new.id,
+                  draftId: payload.new.draft_id,
+                  userId: payload.new.user_id,
+                  messageContent: payload.new.message_content,
+                  createdAt: payload.new.created_at
+                }
+              ]
+            })
+          }
+        )
+        .subscribe()
+
       // Clean up on unmount
       return () => {
         supabase.removeChannel(draftUsersSub)
@@ -886,6 +935,7 @@ export default function DraftPage() {
         supabase.removeChannel(challengeSub)
         supabase.removeChannel(challengeVotesSub)
         supabase.removeChannel(draftReactionsSub)
+        supabase.removeChannel(draftMessagesSub)
         subscriptionsSetUpRef.current = false
       }
     }, 250)
@@ -1794,6 +1844,34 @@ export default function DraftPage() {
 
   // Build a userId => userName map from participants
   const userIdToName = Object.fromEntries(participants.map(p => [p.id, p.name]))
+
+  async function handleSendMessage(messageContent: string) {
+    if (!messageContent.trim()) return
+
+    const tempId = Date.now()
+    const optimisticMessage = {
+      id: tempId,
+      draftId: draft!.id,
+      userId: currentUser?.id || getGuestClientId(),
+      messageContent: messageContent.trim(),
+      createdAt: new Date().toISOString()
+    }
+
+    //show in UI
+    setMessages(prev => [...prev, optimisticMessage])
+
+    try {
+      const guestFetch = createGuestFetch()
+      await guestFetch(`/api/drafts/${draftId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageContent: messageContent.trim() })
+      })
+    } catch (error) {
+      setMessages(prev => prev.filter(message => message.id !== tempId))
+      setError('Failed to send message')
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -3096,15 +3174,18 @@ export default function DraftPage() {
               Invite Friends
             </BrutalButton>
           </BrutalSection>
-          {/* CHAT COMPONENT */}
+          {/* CHAT  */}
           <BrutalSection
             variant="bordered"
             className="text-center m-2"
             background="diagonal"
           >
             <ChatComponent
-              draftId={String(draft.guid)}
+              draftId={draftId}
               currentUser={currentUser?.id || getGuestClientId() || null}
+              messages={messages}
+              userIdToName={userIdToName}
+              onSendMessage={handleSendMessage}
             />
           </BrutalSection>
         </aside>
