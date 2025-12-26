@@ -16,13 +16,18 @@ const ChatBubble = ({ message, username, isOwnMessage }: ChatBubbleProps) => {
     >
       <div
         className={cn(
-          'max-w-52 rounded-xl px-2 py-1.5',
+          'max-w-52 rounded-none px-3 py-1.5',
           isOwnMessage
-            ? 'bg-[color-mix(in_srgb,hsl(var(--primary))_80%,black)] text-primary-foreground text-left'
-            : 'bg-gray-200 text-gray-900 text-left'
+            ? 'bg-primary/20 text-foreground text-left'
+            : 'bg-muted text-foreground text-left'
         )}
       >
-        <div className={cn('font-bold text-xs', isOwnMessage ? 'hidden' : '')}>
+        <div
+          className={cn(
+            'font-bold text-xs pt-0.5',
+            isOwnMessage ? 'hidden' : ''
+          )}
+        >
           {username}
         </div>
         <div>{message}</div>

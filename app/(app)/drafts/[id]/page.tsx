@@ -902,27 +902,16 @@ export default function DraftPage() {
             filter: `draft_id=eq.${draft.id}`
           },
           payload => {
-            setMessages(prev => {
-              const withoutOptimistic = prev.filter(message => {
-                const isOptimistic = message.id > 1000000000000
-                if (!isOptimistic) return true
-
-                return !(
-                  message.messageContent === payload.new.message_content &&
-                  message.userId === payload.new.user_id
-                )
-              })
-              return [
-                ...withoutOptimistic,
-                {
-                  id: payload.new.id,
-                  draftId: payload.new.draft_id,
-                  userId: payload.new.user_id,
-                  messageContent: payload.new.message_content,
-                  createdAt: payload.new.created_at
-                }
-              ]
-            })
+            setMessages(prev => [
+              ...prev,
+              {
+                id: payload.new.id,
+                draftId: payload.new.draft_id,
+                userId: payload.new.user_id,
+                messageContent: payload.new.message_content,
+                createdAt: payload.new.created_at
+              }
+            ])
           }
         )
         .subscribe()
@@ -1848,18 +1837,6 @@ export default function DraftPage() {
   async function handleSendMessage(messageContent: string) {
     if (!messageContent.trim()) return
 
-    const tempId = Date.now()
-    const optimisticMessage = {
-      id: tempId,
-      draftId: draft!.id,
-      userId: currentUser?.id || getGuestClientId(),
-      messageContent: messageContent.trim(),
-      createdAt: new Date().toISOString()
-    }
-
-    //show in UI
-    setMessages(prev => [...prev, optimisticMessage])
-
     try {
       const guestFetch = createGuestFetch()
       await guestFetch(`/api/drafts/${draftId}/messages`, {
@@ -1868,20 +1845,15 @@ export default function DraftPage() {
         body: JSON.stringify({ messageContent: messageContent.trim() })
       })
     } catch (error) {
-      setMessages(prev => prev.filter(message => message.id !== tempId))
       setError('Failed to send message')
     }
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div
-        className={`max-w-7xl mx-auto flex ${
-          isMyTurn && draft?.draftState === 'active' ? 'pb-32' : 'pb-8'
-        }`}
-      >
+    <div className="h-screen bg-background overflow-hidden pb-8">
+      <div className="max-w-7xl mx-auto flex h-full">
         {/* Main Content */}
-        <main className="flex-1 px-6 pt-6 bg-background relative">
+        <main className="flex-1 px-6 pt-6 bg-background relative overflow-y-auto">
           {/* State Indicator - Top Right */}
           <div className="absolute right-0 top-0 mt-2 mr-2 z-20 flex items-center gap-2">
             {
@@ -3073,121 +3045,124 @@ export default function DraftPage() {
         </main>
 
         {/* Sidebar */}
-        <aside className="hidden lg:block w-80 border-l-2 border-border bg-card">
-          {/* Players - Only show when draft is not active */}
-          {draft.draftState !== 'active' && (
-            <BrutalSection
-              title={
-                draft.draftState === 'setting_up'
-                  ? `PLAYERS: ${participants.length}/${draft.maxDrafters}`
-                  : 'Players'
-              }
-              contentClassName="p-4"
-            >
-              {participants.length === 0 ? (
-                <div className="text-muted-foreground text-sm">
-                  Waiting for players...
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {participants.map((participant, index) => (
-                    <div
-                      key={participant.id}
-                      className="flex items-center gap-2"
-                    >
-                      <span className="font-medium text-sm flex-1 truncate text-foreground">
-                        {participant.name}
-                      </span>
-                      {isAdmin &&
-                        draft.draftState === 'setting_up' &&
-                        participant.id !== currentUser?.id &&
-                        participant.id !== getGuestClientId() && (
-                          <button
-                            onClick={() => handleKickUser(participant.id)}
-                            className="text-xs bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900 dark:hover:bg-red-800 dark:text-red-100 px-2 py-1 font-medium rounded transition-colors"
-                            title="Kick player"
-                          >
-                            Kick
-                          </button>
-                        )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </BrutalSection>
-          )}
-
-          {/* Turn Order */}
-          {draft.draftState === 'active' && (
-            <BrutalSection title="Order" contentClassName="p-4">
-              {isOrderFinalized ? (
-                <div className="space-y-1">
-                  {[...participants]
-                    .sort((a, b) => a.position! - b.position!)
-                    .map((participant, index) => {
-                      const isCurrentTurn =
-                        participant.position === draft.currentPositionOnClock
-                      return (
-                        <div
-                          key={participant.id}
-                          className={`px-3 py-2 text-sm font-medium flex items-center justify-between ${
-                            isCurrentTurn
-                              ? 'bg-accent text-accent-foreground'
-                              : 'text-muted-foreground'
-                          }`}
-                        >
-                          <span>
-                            {participant.position}. {participant.name}
-                          </span>
-                          {isCurrentTurn && (
-                            <span className="font-bold">NOW</span>
+        <aside className="hidden lg:block w-80 border-l-2 border-border bg-card h-full flex flex-col overflow-hidden">
+          {/* Fixed sections - Members, Order, Actions */}
+          <div className="flex-shrink-0">
+            {/* Players - Only show when draft is not active */}
+            {draft.draftState !== 'active' && (
+              <BrutalSection
+                title={
+                  draft.draftState === 'setting_up'
+                    ? `PLAYERS: ${participants.length}/${draft.maxDrafters}`
+                    : 'Players'
+                }
+                contentClassName="p-4"
+              >
+                {participants.length === 0 ? (
+                  <div className="text-muted-foreground text-sm">
+                    Waiting for players...
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {participants.map((participant, index) => (
+                      <div
+                        key={participant.id}
+                        className="flex items-center gap-2"
+                      >
+                        <span className="font-medium text-sm flex-1 truncate text-foreground">
+                          {participant.name}
+                        </span>
+                        {isAdmin &&
+                          draft.draftState === 'setting_up' &&
+                          participant.id !== currentUser?.id &&
+                          participant.id !== getGuestClientId() && (
+                            <button
+                              onClick={() => handleKickUser(participant.id)}
+                              className="text-xs bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900 dark:hover:bg-red-800 dark:text-red-100 px-2 py-1 font-medium rounded transition-colors"
+                              title="Kick player"
+                            >
+                              Kick
+                            </button>
                           )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </BrutalSection>
+            )}
+
+            {/* Turn Order */}
+            {draft.draftState === 'active' && (
+              <BrutalSection title="Order" contentClassName="p-4">
+                {isOrderFinalized ? (
+                  <div className="space-y-1">
+                    {[...participants]
+                      .sort((a, b) => a.position! - b.position!)
+                      .map((participant, index) => {
+                        const isCurrentTurn =
+                          participant.position === draft.currentPositionOnClock
+                        return (
+                          <div
+                            key={participant.id}
+                            className={`px-3 py-2 text-sm font-medium flex items-center justify-between ${
+                              isCurrentTurn
+                                ? 'bg-accent text-accent-foreground'
+                                : 'text-muted-foreground'
+                            }`}
+                          >
+                            <span>
+                              {participant.position}. {participant.name}
+                            </span>
+                            {isCurrentTurn && (
+                              <span className="font-bold">NOW</span>
+                            )}
+                          </div>
+                        )
+                      })}
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {Array.from({ length: participants.length }).map(
+                      (_, index) => (
+                        <div
+                          key={index}
+                          className="px-3 py-2 text-sm font-medium flex items-center justify-between text-muted-foreground"
+                        >
+                          <span className="animate-pulse bg-muted h-4 w-16 rounded"></span>
+                          <span className="animate-pulse bg-muted h-4 w-8 rounded"></span>
                         </div>
                       )
-                    })}
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  {Array.from({ length: participants.length }).map(
-                    (_, index) => (
-                      <div
-                        key={index}
-                        className="px-3 py-2 text-sm font-medium flex items-center justify-between text-muted-foreground"
-                      >
-                        <span className="animate-pulse bg-muted h-4 w-16 rounded"></span>
-                        <span className="animate-pulse bg-muted h-4 w-8 rounded"></span>
-                      </div>
-                    )
-                  )}
-                </div>
-              )}
-            </BrutalSection>
-          )}
+                    )}
+                  </div>
+                )}
+              </BrutalSection>
+            )}
 
-          {/* Actions */}
-          <BrutalSection contentClassName="p-4">
-            <BrutalButton
-              variant="default"
-              onClick={handleShareDraft}
-              className="w-full"
-            >
-              Invite Friends
-            </BrutalButton>
-          </BrutalSection>
-          {/* CHAT  */}
-          <BrutalSection
-            variant="bordered"
-            className="text-center m-2"
-            background="diagonal"
-          >
-            <ChatComponent
-              draftId={draftId}
-              currentUser={currentUser?.id || getGuestClientId() || null}
-              messages={messages}
-              picks={picks}
-              userIdToName={userIdToName}
-              onSendMessage={handleSendMessage}
-            />
+            {/* Actions */}
+            {draft?.draftState === 'setting_up' && (
+              <BrutalSection contentClassName="p-4">
+                <BrutalButton
+                  variant="default"
+                  onClick={handleShareDraft}
+                  className="w-full"
+                >
+                  Invite Friends
+                </BrutalButton>
+              </BrutalSection>
+            )}
+          </div>
+          {/* CHAT - Scrollable section */}
+          <BrutalSection title="Chat" contentClassName="p-0">
+            <div className="m-2">
+              <ChatComponent
+                draftId={draftId}
+                currentUser={currentUser?.id || getGuestClientId() || null}
+                messages={messages}
+                picks={picks}
+                userIdToName={userIdToName}
+                onSendMessage={handleSendMessage}
+              />
+            </div>
           </BrutalSection>
         </aside>
       </div>
