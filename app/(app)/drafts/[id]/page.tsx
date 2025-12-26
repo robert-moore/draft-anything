@@ -892,14 +892,14 @@ export default function DraftPage() {
         .subscribe()
 
       const draftMessagesSub = supabase
-        .channel(`draft-messages-$[draftId]`)
+        .channel(`draft-messages-${draftId}`)
         .on(
           'postgres_changes',
           {
             event: 'INSERT',
             schema: 'da',
             table: 'draft_messages',
-            filter: `draft_iq=eq${draft.id}`
+            filter: `draft_id=eq.${draft.id}`
           },
           payload => {
             setMessages(prev => {
