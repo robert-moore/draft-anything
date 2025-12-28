@@ -18,8 +18,9 @@ async function getDraftIdFromGuid(guid: string) {
   return draft?.id || null
 }
 
-//check if user is participant in the draft
+//check if user is participant in the draft (or is the admin)
 async function isParticipant(draftId: number, userId: string) {
+  // Check if user is in draft_users table
   const participant = await db
     .select()
     .from(draftUsersInDa)
@@ -31,7 +32,18 @@ async function isParticipant(draftId: number, userId: string) {
     )
     .limit(1)
 
-  return participant.length > 0
+  if (participant.length > 0) {
+    return true
+  }
+
+  // Also allow if user is the admin who created the draft (for guest admins)
+  const [draft] = await db
+    .select({ adminUserId: draftsInDa.adminUserId })
+    .from(draftsInDa)
+    .where(eq(draftsInDa.id, draftId))
+    .limit(1)
+
+  return draft?.adminUserId === userId
 }
 
 //send messages
@@ -57,7 +69,7 @@ export async function POST(
   if (!userOrGuest)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  //make sure user is a participant
+  //make sure user is a participant (or is the admin)
   const allowed = await isParticipant(draftId, userOrGuest.id)
   if (!allowed)
     return NextResponse.json({ error: 'Not a participant' }, { status: 403 })

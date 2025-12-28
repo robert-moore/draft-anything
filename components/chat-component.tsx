@@ -26,7 +26,8 @@ export default function ChatComponent({
   messages,
   picks,
   userIdToName,
-  onSendMessage
+  onSendMessage,
+  isJoined = false
 }: {
   draftId: string
   currentUser: string | null
@@ -34,6 +35,7 @@ export default function ChatComponent({
   picks?: DraftPick[]
   userIdToName: Record<string, string>
   onSendMessage: (messageContent: string) => Promise<void>
+  isJoined?: boolean
 }) {
   const [newMessage, setNewMessage] = useState('')
   const [showTopGradient, setShowTopGradient] = useState(false)
@@ -226,26 +228,28 @@ export default function ChatComponent({
         )}
       </div>
 
-      {/* Input box */}
-      <form
-        onSubmit={handleSendMessage}
-        className="flex items-center gap-2 pt-2 px-2 pb-4"
-      >
-        <Input
-          type="text"
-          placeholder="Message..."
-          value={newMessage}
-          onChange={e => setNewMessage(e.target.value)}
-          className="flex-1 border border-gray-400 rounded-md"
-        />
-        <Button
-          type="submit"
-          size="icon"
-          className="h-9 w-9 rounded-md bg-card text-primary hover:bg-card/80 flex-shrink-0 border border-border/20"
+      {/* Input box - only show if user is joined */}
+      {isJoined && (
+        <form
+          onSubmit={handleSendMessage}
+          className="flex items-center gap-2 pt-2 px-2 pb-4"
         >
-          <Send className="h-4 w-4" />
-        </Button>
-      </form>
+          <Input
+            type="text"
+            placeholder="Message..."
+            value={newMessage}
+            onChange={e => setNewMessage(e.target.value)}
+            className="flex-1 border border-gray-400 rounded-md"
+          />
+          <Button
+            type="submit"
+            size="icon"
+            className="h-9 w-9 rounded-md bg-card text-primary hover:bg-card/80 flex-shrink-0 border border-border/20"
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </form>
+      )}
     </div>
   )
 }

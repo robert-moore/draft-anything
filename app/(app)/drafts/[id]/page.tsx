@@ -3161,6 +3161,7 @@ export default function DraftPage() {
                 picks={picks}
                 userIdToName={userIdToName}
                 onSendMessage={handleSendMessage}
+                isJoined={isJoined}
               />
             </div>
           </BrutalSection>
