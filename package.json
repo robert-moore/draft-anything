@@ -60,7 +60,7 @@
     "katex": "^0.16.10",
     "lucide-react": "^0.507.0",
     "mermaid": "^11.7.0",
-    "next": "^15.2.3",
+    "next": "15.2.8",
     "next-themes": "^0.3.0",
     "node-html-parser": "^6.1.13",
     "postgres": "^3.4.5",
