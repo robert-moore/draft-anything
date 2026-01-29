@@ -8,7 +8,7 @@ type PickMessageProps = {
 const PickMessage = ({ username, pickText }: PickMessageProps) => {
   return (
     <div className={cn('flex w-full justify-center py-1')}>
-      <div className="text-xs text-muted-foreground italic">
+      <div className="text-xs text-muted-foreground italic text-center">
         <span className="font-medium">{username}</span> picked{' '}
         <span className="font-medium">{pickText}</span>
       </div>
