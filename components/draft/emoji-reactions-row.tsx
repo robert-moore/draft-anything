@@ -235,7 +235,7 @@ export function EmojiReactionsRow({
               )}
             </div>
           </TooltipTrigger>
-          <TooltipContent side="top">
+          <TooltipContent side="top" align="end">
             <div className="text-xs mt-2">
               {(() => {
                 // Put the current user's emoji first if present
@@ -273,8 +273,7 @@ export function EmojiReactionsRow({
           className="absolute z-[9999] bg-card p-3 rounded-lg shadow-lg border border-border max-w-sm w-full max-h-[60vh] overflow-y-auto"
           style={{
             bottom: '100%',
-            left: '50%',
-            transform: 'translateX(-50%)',
+            right: 0,
             marginBottom: '8px'
           }}
           onClick={e => e.stopPropagation()}

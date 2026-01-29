@@ -1849,11 +1849,18 @@ export default function DraftPage() {
     }
   }
 
+  const showOnTheClockBanner =
+    isMyTurn && draft?.draftState === 'active'
+
   return (
     <div className="h-screen bg-background overflow-hidden pb-8">
       <div className="max-w-7xl mx-auto flex h-full">
-        {/* Main Content */}
-        <main className="flex-1 px-6 pt-6 bg-background relative overflow-y-auto">
+        {/* Main Content - pb-20 when banner visible so draft list isn't obscured */}
+        <main
+          className={`flex-1 px-6 pt-6 bg-background relative overflow-y-auto ${
+            showOnTheClockBanner ? 'pb-24' : ''
+          }`}
+        >
           {/* State Indicator - Top Right */}
           <div className="absolute right-0 top-0 mt-2 mr-2 z-20 flex items-center gap-2">
             {
@@ -3169,7 +3176,7 @@ export default function DraftPage() {
       </div>
 
       {/* Sticky "You're on the clock" footer */}
-      {isMyTurn && draft?.draftState === 'active' && (
+      {showOnTheClockBanner && (
         <div className="fixed bottom-0 left-0 right-0 bg-card border-t-2 border-border z-50 h-20 flex items-center">
           <div className="max-w-7xl mx-auto flex items-center justify-between w-full px-6">
             <div className="flex items-center gap-3">
