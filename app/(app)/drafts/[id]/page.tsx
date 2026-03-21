@@ -12,13 +12,28 @@ import { BrutalInput } from '@/components/ui/brutal-input'
 import { BrutalListItem } from '@/components/ui/brutal-list-item'
 import { BrutalSection } from '@/components/ui/brutal-section'
 import { CuratedOptionsDropdown } from '@/components/ui/curated-options-dropdown'
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle
+} from '@/components/ui/drawer'
 import { GeometricBackground } from '@/components/ui/geometric-background'
 import { createClient } from '@/lib/supabase/client'
+import { parseTimestamp } from '@/lib/utils/timestamp'
+import { cn } from '@/lib/utils'
 import type { Draft, DraftPick, Participant } from '@/types/draft'
 import { differenceInSeconds, parseISO } from 'date-fns'
-import { AlertCircle, ArrowDown, ArrowUp, Clock, Share } from 'lucide-react'
+import {
+  AlertCircle,
+  ArrowDown,
+  ArrowUp,
+  Clock,
+  MessageCircle,
+  Share
+} from 'lucide-react'
 import { useParams } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 // Guest management utilities
 const GUEST_CLIENT_ID_KEY = 'draft-guest-client-id'
@@ -166,6 +181,30 @@ export default function DraftPage() {
   }
 
   const [messages, setMessages] = useState<Message[]>([])
+
+  const [mobileChatOpen, setMobileChatOpen] = useState(false)
+  const [mobileChatReadAtMs, setMobileChatReadAtMs] = useState(
+    () => Date.now()
+  )
+
+  const latestChatActivityMs = useMemo(() => {
+    let max = 0
+    for (const m of messages) {
+      const t = parseTimestamp(m.createdAt)
+      if (t < Number.MAX_SAFE_INTEGER) max = Math.max(max, t)
+    }
+    for (const p of picks) {
+      const t = parseTimestamp(p.createdAt)
+      if (t < Number.MAX_SAFE_INTEGER) max = Math.max(max, t)
+    }
+    return max
+  }, [messages, picks])
+
+  useEffect(() => {
+    if (mobileChatOpen) {
+      setMobileChatReadAtMs(latestChatActivityMs)
+    }
+  }, [mobileChatOpen, latestChatActivityMs, messages, picks])
 
   const participantsRef = useRef<Participant[]>([])
   const prevPicksLength = useRef<null | number>(null)
@@ -1852,6 +1891,9 @@ export default function DraftPage() {
   const showOnTheClockBanner =
     isMyTurn && draft?.draftState === 'active'
 
+  const hasUnreadMobileChat =
+    !mobileChatOpen && latestChatActivityMs > mobileChatReadAtMs
+
   return (
     <div className="h-screen bg-background overflow-hidden pb-8">
       <div className="max-w-7xl mx-auto flex h-full">
@@ -3207,6 +3249,57 @@ export default function DraftPage() {
           currentPickNumber={picks.length + 1}
         />
       )}
+
+      {/* Mobile chat — same UI as desktop sidebar; FAB only on small screens */}
+      <Drawer
+        open={mobileChatOpen}
+        onOpenChange={open => {
+          setMobileChatOpen(open)
+          if (open) {
+            setMobileChatReadAtMs(latestChatActivityMs)
+          }
+        }}
+      >
+        <DrawerContent
+          showHandle={false}
+          className="max-h-[90vh] flex flex-col bg-card border-0 p-0 gap-0 rounded-t-[10px]"
+        >
+          <DrawerHeader className="sr-only">
+            <DrawerTitle>Chat</DrawerTitle>
+          </DrawerHeader>
+          <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+            <BrutalSection title="Chat" contentClassName="p-0 flex-1 min-h-0">
+              <div className="m-2">
+                <ChatComponent
+                  draftId={draftId}
+                  currentUser={currentUser?.id || getGuestClientId() || null}
+                  messages={messages}
+                  picks={picks}
+                  userIdToName={userIdToName}
+                  onSendMessage={handleSendMessage}
+                  isJoined={isJoined}
+                />
+              </div>
+            </BrutalSection>
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      <button
+        type="button"
+        aria-label={hasUnreadMobileChat ? 'Open chat (new messages)' : 'Open chat'}
+        onClick={() => setMobileChatOpen(true)}
+        className={cn(
+          'fixed right-4 z-40 lg:hidden flex items-center justify-center h-14 w-14 rounded-full border-2 border-border bg-primary text-primary-foreground shadow-lg transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+          showOnTheClockBanner
+            ? 'bottom-[calc(5rem+0.75rem)]'
+            : 'bottom-[max(1.25rem,calc(env(safe-area-inset-bottom,0px)+0.5rem))]',
+          hasUnreadMobileChat &&
+            'ring-2 ring-primary shadow-[0_0_22px_hsl(var(--primary)/0.55)] subtle-pulse'
+        )}
+      >
+        <MessageCircle className="h-7 w-7" aria-hidden />
+      </button>
     </div>
   )
 }
