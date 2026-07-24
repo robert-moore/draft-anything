@@ -12,7 +12,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuthRedirect } from '@/lib/hooks/use-auth-redirect'
 import { createClient } from '@/lib/supabase/client'
-import { getAppUrl } from '@/lib/utils/get-app-url'
 import { cn } from '@/lib/utils/index'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -36,9 +35,10 @@ export function ForgotPasswordForm({
     setError(null)
 
     try {
+      const origin = window.location.origin
       // The url which will be included in the email. This URL needs to be configured in your redirect URLs in the Supabase dashboard at https://supabase.com/dashboard/project/_/auth/url-configuration
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${getAppUrl()}/auth/update-password`
+        redirectTo: `${origin}/auth/update-password`
       })
       if (error) throw error
       setSuccess(true)

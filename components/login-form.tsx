@@ -4,10 +4,9 @@ import { BrutalButton } from '@/components/ui/brutal-button'
 import { BrutalInput } from '@/components/ui/brutal-input'
 import { useAuthRedirect } from '@/lib/hooks/use-auth-redirect'
 import { createClient } from '@/lib/supabase/client'
-import { getAppUrl } from '@/lib/utils/get-app-url'
 import { cn } from '@/lib/utils/index'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import { BrandLogo } from './brand'
 
@@ -19,7 +18,6 @@ export function LoginForm({
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isEmailSent, setIsEmailSent] = useState(false)
-  const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirectTo') || '/join'
 
@@ -33,10 +31,11 @@ export function LoginForm({
     setError(null)
 
     try {
+      const origin = window.location.origin
       const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
-          emailRedirectTo: `${getAppUrl()}/auth/callback?next=${encodeURIComponent(
+          emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(
             redirectTo
           )}`
         }
