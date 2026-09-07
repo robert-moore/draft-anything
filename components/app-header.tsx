@@ -43,8 +43,13 @@ export function AppHeader() {
   const [isLoading, setIsLoading] = useState(true)
   const [profileData, setProfileData] = useState<UserProfileData | null>(null)
   const [isProfileLoading, setIsProfileLoading] = useState(false)
+  const [isGuest, setIsGuest] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
+
+  useEffect(() => {
+    setIsGuest(!!localStorage.getItem('draft-guest-client-id'))
+  }, [])
 
   useEffect(() => {
     const supabase = createClient()
@@ -182,11 +187,6 @@ export function AppHeader() {
       </header>
     )
   }
-
-  // Check if user is a guest (has guest client ID in localStorage)
-  const isGuest =
-    typeof window !== 'undefined' &&
-    !!localStorage.getItem('draft-guest-client-id')
 
   if (!user && !isGuest) {
     return (

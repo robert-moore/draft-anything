@@ -31,17 +31,11 @@ export async function GET(
       return NextResponse.json({ error: 'Draft not found' }, { status: 404 })
     }
 
-    // Heal missed cron work (expired turn, challenge window, stale lobby)
-    // so a returning client sees the state the minute jobs would have written.
-    try {
-      const changed = await reconcileDraftByGuid(draftGuid)
-      if (changed) {
-        const refreshed = await getDraftByGuid(draftGuid)
-        if (refreshed) draft = refreshed
-      }
-    } catch (error) {
+    // Heal missed cron work, but never block this GET on a draft lock.
+    // Awaiting it was timing out the page with 500s during live auctions.
+    void reconcileDraftByGuid(draftGuid).catch(error => {
       console.error('Draft reconcile on GET failed:', error)
-    }
+    })
 
     // Check authentication (user or guest) - but allow viewing even if not joined
     const userOrGuest = await getCurrentUserOrGuest(draft.id, request)

@@ -228,9 +228,6 @@ export default function DraftPage() {
   const prevPicksLength = useRef<null | number>(null)
   const hasLoadedInitially = useRef(false)
 
-  // Track if subscriptions are already set up to prevent duplicate subscriptions
-  const subscriptionsSetUpRef = useRef(false)
-
   // Function to check for similar picks
   const checkSimilarPick = (input: string) => {
     if (!input.trim()) {
@@ -568,17 +565,25 @@ export default function DraftPage() {
 
   useEffect(() => {
     const draftId = params.id as string
-    if (!draftId) return
+    if (!draftId || !draft?.id) return
 
-    const timeout = setTimeout(() => {
-      // Only set up subscriptions if we have the draft data with numeric ID
-      if (!draft?.id) return
+    const channelNames = [
+      `draft-users-${draftId}`,
+      `draft-selections-${draftId}`,
+      `draft-state-${draftId}`,
+      `draft-auction-bids-${draftId}`,
+      `draft-challenges-${draftId}`,
+      `draft-challenge-votes-${draftId}`,
+      `draft-reactions-${draftId}`,
+      `draft-messages-${draftId}`
+    ]
+    for (const channel of supabase.getChannels()) {
+      if (channelNames.some(name => channel.topic.includes(name))) {
+        supabase.removeChannel(channel)
+      }
+    }
 
-      // Prevent duplicate subscriptions
-      if (subscriptionsSetUpRef.current) return
-      subscriptionsSetUpRef.current = true
-
-      let reloadTimer: ReturnType<typeof setTimeout> | undefined
+    let reloadTimer: ReturnType<typeof setTimeout> | undefined
       const queueReload = () => {
         window.clearTimeout(reloadTimer)
         reloadTimer = setTimeout(() => {
@@ -1067,11 +1072,7 @@ export default function DraftPage() {
         supabase.removeChannel(challengeVotesSub)
         supabase.removeChannel(draftReactionsSub)
         supabase.removeChannel(draftMessagesSub)
-        subscriptionsSetUpRef.current = false
       }
-    }, 250)
-
-    return () => clearTimeout(timeout)
   }, [draftId, draft?.id])
 
   // Load draft data and check if already joined

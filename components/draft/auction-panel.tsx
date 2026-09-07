@@ -173,7 +173,7 @@ export function AuctionPanel({
                 <div className="mt-6 grid grid-cols-3 gap-3 text-center">
                   <div className="border-2 border-border bg-background px-2 py-3">
                     <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                      Your budget
+                      <span className="hidden lg:inline">Your </span>budget
                     </p>
                     <p className="text-2xl font-black font-mono text-foreground mt-1">
                       ${me.remainingBudget ?? 0}
@@ -181,7 +181,7 @@ export function AuctionPanel({
                   </div>
                   <div className="border-2 border-border bg-background px-2 py-3">
                     <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                      Your roster
+                      <span className="hidden lg:inline">Your </span>roster
                     </p>
                     <p className="text-2xl font-black font-mono text-foreground mt-1">
                       {myPickCount}/{draft.numRounds}
@@ -207,10 +207,19 @@ export function AuctionPanel({
                     value={nomination}
                     onChange={e => setNomination(e.target.value)}
                     onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        void handleNominate()
+                      if (e.key !== 'Enter') return
+                      e.preventDefault()
+                      if (
+                        isSubmitting ||
+                        !nomination.trim() ||
+                        openingBid === null ||
+                        openingBid < MIN_BID ||
+                        openingBid > myMaxBid ||
+                        similarPick
+                      ) {
+                        return
                       }
+                      void handleNominate()
                     }}
                     variant="boxed"
                     className="w-full bg-card text-foreground text-lg py-3"
