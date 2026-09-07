@@ -16,7 +16,6 @@ import {
 } from '@/lib/auction'
 import { db } from '@/lib/db'
 import { getElapsedSeconds, getUtcNow } from '@/lib/time-utils'
-import { clearJoinCode } from '@/lib/utils/join-code'
 import { and, count, eq, sql } from 'drizzle-orm'
 
 type DraftRow = typeof draftsInDa.$inferSelect
@@ -158,11 +157,10 @@ async function completeAuction(tx: Tx, draftId: number): Promise<void> {
       auctionHighBid: null,
       auctionHighBidderId: null,
       auctionNominatorId: null,
-      auctionPassedUserIds: []
+      auctionPassedUserIds: [],
+      joinCode: null
     })
     .where(eq(draftsInDa.id, draftId))
-
-  await clearJoinCode(draftId)
 }
 
 function passedSet(ids: string[] | null | undefined) {
