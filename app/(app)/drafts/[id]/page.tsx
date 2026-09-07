@@ -783,7 +783,12 @@ export default function DraftPage() {
                   payload.new.auction_nominated_option_id,
                 auctionHighBid: payload.new.auction_high_bid,
                 auctionHighBidderId: payload.new.auction_high_bidder_id,
-                auctionNominatorId: payload.new.auction_nominator_id
+                auctionNominatorId: payload.new.auction_nominator_id,
+                auctionPassedUserIds: Array.isArray(
+                  payload.new.auction_passed_user_ids
+                )
+                  ? payload.new.auction_passed_user_ids
+                  : prev.auctionPassedUserIds
               }
             })
 

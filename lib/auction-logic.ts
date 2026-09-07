@@ -140,7 +140,8 @@ async function beginNominating(
       auctionNominatedOptionId: null,
       auctionHighBid: null,
       auctionHighBidderId: null,
-      auctionNominatorId: null
+      auctionNominatorId: null,
+      auctionPassedUserIds: []
     })
     .where(eq(draftsInDa.id, draft.id))
 }
@@ -156,11 +157,16 @@ async function completeAuction(tx: Tx, draftId: number): Promise<void> {
       auctionNominatedOptionId: null,
       auctionHighBid: null,
       auctionHighBidderId: null,
-      auctionNominatorId: null
+      auctionNominatorId: null,
+      auctionPassedUserIds: []
     })
     .where(eq(draftsInDa.id, draftId))
 
   await clearJoinCode(draftId)
+}
+
+function passedSet(ids: string[] | null | undefined) {
+  return new Set(ids ?? [])
 }
 
 export function anyoneElseCanRaise(args: {
@@ -172,12 +178,15 @@ export function anyoneElseCanRaise(args: {
     remainingBudget: number | null
   }>
   pickCounts: Record<string, number>
+  passedUserIds?: string[] | null
 }): boolean {
   const minNext = args.highBid + MIN_BID
+  const passed = passedSet(args.passedUserIds)
   for (const participant of args.participants) {
     if (!participant.userId || participant.userId === args.highBidderId) {
       continue
     }
+    if (passed.has(participant.userId)) continue
     const spots = rosterSpotsLeft(
       args.numRounds,
       args.pickCounts[participant.userId] ?? 0
@@ -328,6 +337,7 @@ export async function placeOpeningBid(
       auctionHighBid: args.openingBid,
       auctionHighBidderId: args.userId,
       auctionNominatorId: args.userId,
+      auctionPassedUserIds: [],
       turnStartedAt: getUtcNow()
     })
     .where(eq(draftsInDa.id, draft.id))
@@ -340,7 +350,8 @@ export async function placeOpeningBid(
     auctionNominatedOptionId: args.curatedOptionId,
     auctionHighBid: args.openingBid,
     auctionHighBidderId: args.userId,
-    auctionNominatorId: args.userId
+    auctionNominatorId: args.userId,
+    auctionPassedUserIds: []
   }
 
   const participants = await getParticipants(tx, draft.id)
@@ -351,7 +362,8 @@ export async function placeOpeningBid(
       highBidderId: args.userId,
       numRounds: draft.numRounds,
       participants,
-      pickCounts
+      pickCounts,
+      passedUserIds: []
     })
   ) {
     await awardCurrentLot(tx, updated)
@@ -489,6 +501,9 @@ export async function bidOnAuction(args: {
     if (args.userId === draft.auctionHighBidderId) {
       return { error: 'You already have the high bid', status: 400 }
     }
+    if ((draft.auctionPassedUserIds ?? []).includes(args.userId)) {
+      return { error: 'You passed on this nomination', status: 400 }
+    }
 
     const pickCount = await getPickCountForUser(tx, draft.id, args.userId)
     const spots = rosterSpotsLeft(draft.numRounds, pickCount)
@@ -540,7 +555,87 @@ export async function bidOnAuction(args: {
         highBidderId: args.userId,
         numRounds: draft.numRounds,
         participants,
-        pickCounts
+        pickCounts,
+        passedUserIds: draft.auctionPassedUserIds
+      })
+    ) {
+      await awardCurrentLot(tx, updated)
+    }
+
+    return {}
+  })
+}
+
+export async function passOnAuction(args: {
+  draftId: number
+  userId: string
+}): Promise<{ error?: string; status?: number }> {
+  return db.transaction(async tx => {
+    const draft = await lockDraft(tx, args.draftId)
+    if (!draft) return { error: 'Draft not found', status: 404 }
+    if (!draft.isAuction) return { error: 'Not an auction draft', status: 400 }
+    if (draft.draftState !== 'active' || draft.auctionPhase !== 'bidding') {
+      return { error: 'There is nothing on the block', status: 400 }
+    }
+    if (draft.auctionHighBid === null || !draft.auctionHighBidderId) {
+      return { error: 'There is nothing on the block', status: 400 }
+    }
+    if (args.userId === draft.auctionHighBidderId) {
+      return { error: 'You already have the high bid', status: 400 }
+    }
+
+    const [bidder] = await tx
+      .select()
+      .from(draftUsersInDa)
+      .where(
+        and(
+          eq(draftUsersInDa.draftId, draft.id),
+          eq(draftUsersInDa.userId, args.userId)
+        )
+      )
+      .limit(1)
+
+    if (!bidder) {
+      return { error: 'You are not a participant in this draft', status: 403 }
+    }
+
+    const pickCount = await getPickCountForUser(tx, draft.id, args.userId)
+    const spots = rosterSpotsLeft(draft.numRounds, pickCount)
+    const maxBid = maxBidForPlayer(bidder.remainingBudget ?? 0, spots)
+    const minNext = draft.auctionHighBid + MIN_BID
+    if (spots <= 0 || maxBid < minNext) {
+      return { error: "You can't raise this bid", status: 400 }
+    }
+
+    const alreadyPassed = (draft.auctionPassedUserIds ?? []).includes(
+      args.userId
+    )
+    const passedUserIds = alreadyPassed
+      ? (draft.auctionPassedUserIds ?? [])
+      : [...(draft.auctionPassedUserIds ?? []), args.userId]
+
+    if (!alreadyPassed) {
+      await tx
+        .update(draftsInDa)
+        .set({ auctionPassedUserIds: passedUserIds })
+        .where(eq(draftsInDa.id, draft.id))
+    }
+
+    const participants = await getParticipants(tx, draft.id)
+    const pickCounts = await getPickCounts(tx, draft.id)
+    const updated: DraftRow = {
+      ...draft,
+      auctionPassedUserIds: passedUserIds
+    }
+
+    if (
+      !anyoneElseCanRaise({
+        highBid: draft.auctionHighBid,
+        highBidderId: draft.auctionHighBidderId,
+        numRounds: draft.numRounds,
+        participants,
+        pickCounts,
+        passedUserIds
       })
     ) {
       await awardCurrentLot(tx, updated)

@@ -30,6 +30,9 @@ ALTER TABLE da.drafts
 ALTER TABLE da.drafts
   ADD COLUMN IF NOT EXISTS auction_nominator_id UUID;
 
+ALTER TABLE da.drafts
+  ADD COLUMN IF NOT EXISTS auction_passed_user_ids UUID[] NOT NULL DEFAULT '{}';
+
 ALTER TABLE da.draft_users
   ADD COLUMN IF NOT EXISTS remaining_budget INTEGER;
 

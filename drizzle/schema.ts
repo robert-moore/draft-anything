@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import {
   bigserial,
   boolean,
@@ -54,7 +55,11 @@ export const draftsInDa = da.table('drafts', {
   auctionNominatedOptionId: integer('auction_nominated_option_id'),
   auctionHighBid: integer('auction_high_bid'),
   auctionHighBidderId: uuid('auction_high_bidder_id'),
-  auctionNominatorId: uuid('auction_nominator_id')
+  auctionNominatorId: uuid('auction_nominator_id'),
+  auctionPassedUserIds: uuid('auction_passed_user_ids')
+    .array()
+    .notNull()
+    .default(sql`'{}'::uuid[]`)
 })
 
 export const draftCuratedOptionsInDa = da.table(

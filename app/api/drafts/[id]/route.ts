@@ -257,7 +257,8 @@ export async function GET(
           draft.auctionPhase === 'bidding'
             ? draft.auctionPhase
             : null,
-        auctionLotNumber: draft.auctionLotNumber ?? 0
+        auctionLotNumber: draft.auctionLotNumber ?? 0,
+        auctionPassedUserIds: draft.auctionPassedUserIds ?? []
       },
       participants: participantsQuery,
       picks: picks.sort((a, b) => a.pickNumber - b.pickNumber),

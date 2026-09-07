@@ -23,6 +23,9 @@ export function AuctionBudgetList({
       {[...participants]
         .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
         .map(participant => {
+          const isPassed = (draft.auctionPassedUserIds ?? []).includes(
+            participant.id
+          )
           const isHighlighted =
             draft.auctionPhase === 'bidding'
               ? participant.id === draft.auctionHighBidderId
@@ -55,6 +58,11 @@ export function AuctionBudgetList({
                     {draft.auctionPhase === 'bidding' ? 'BID' : 'NOW'}
                   </span>
                 )}
+                {!isHighlighted &&
+                  isPassed &&
+                  draft.auctionPhase === 'bidding' && (
+                    <span className="font-bold shrink-0">PASS</span>
+                  )}
               </div>
               <div className="flex items-baseline justify-between gap-2 mt-1 font-mono text-xs">
                 <span>

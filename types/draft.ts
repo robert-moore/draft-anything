@@ -30,6 +30,7 @@ export interface Draft {
   auctionHighBid: number | null
   auctionHighBidderId: string | null
   auctionNominatorId: string | null
+  auctionPassedUserIds: string[]
 }
 
 export interface Participant {

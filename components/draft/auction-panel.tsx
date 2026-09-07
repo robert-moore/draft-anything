@@ -56,6 +56,8 @@ export function AuctionPanel({
     'an item'
 
   const minNextBid = (draft.auctionHighBid ?? 0) + MIN_BID
+  const passedUserIds = draft.auctionPassedUserIds ?? []
+  const iPassed = !!currentUserId && passedUserIds.includes(currentUserId)
 
   useEffect(() => {
     setBidAmount(minNextBid)
@@ -84,7 +86,12 @@ export function AuctionPanel({
     !!currentUserId &&
     mySpotsLeft > 0 &&
     currentUserId !== draft.auctionHighBidderId &&
-    myMaxBid >= minNextBid
+    myMaxBid >= minNextBid &&
+    !iPassed
+
+  const handlePass = async () => {
+    await submit(`/api/drafts/${draftGuid}/pass`, {})
+  }
 
   const submit = async (url: string, body: unknown) => {
     setIsSubmitting(true)
@@ -281,7 +288,20 @@ export function AuctionPanel({
                         ? 'Bidding...'
                         : `Bid $${bidAmount ?? minNextBid}`}
                     </BrutalButton>
+                    <BrutalButton
+                      onClick={() => void handlePass()}
+                      variant="default"
+                      className="w-full"
+                      size="lg"
+                      disabled={isSubmitting}
+                    >
+                      Don&apos;t bid
+                    </BrutalButton>
                   </>
+                ) : iPassed ? (
+                  <p className="text-center text-sm text-muted-foreground">
+                    You passed on this nomination.
+                  </p>
                 ) : currentUserId === draft.auctionHighBidderId ? (
                   <p className="text-center text-sm text-muted-foreground">
                     You have the high bid. Waiting on others...
