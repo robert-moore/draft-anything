@@ -1,12 +1,9 @@
-import {
-  draftReactionsInDa,
-  draftUsersInDa,
-  draftsInDa
-} from '@/drizzle/schema'
+import { draftReactionsInDa, draftsInDa } from '@/drizzle/schema'
 import { getCurrentUserOrGuest } from '@/lib/api/guest-helpers'
 import { db } from '@/lib/db'
-import { and, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
+import { validate as validateUUID } from 'uuid'
 
 // Helper: get draft by guid and return integer id
 async function getDraftIdFromGuid(guid: string) {
@@ -18,19 +15,16 @@ async function getDraftIdFromGuid(guid: string) {
   return draft?.id || null
 }
 
-// Helper: check if user is a participant in the draft
-async function isParticipant(draftId: number, userId: string) {
-  const participant = await db
-    .select()
-    .from(draftUsersInDa)
-    .where(
-      and(
-        eq(draftUsersInDa.draftId, draftId),
-        eq(draftUsersInDa.userId, userId)
-      )
-    )
-    .limit(1)
-  return participant.length > 0
+async function getReactor(draftId: number, req: NextRequest) {
+  const userOrGuest = await getCurrentUserOrGuest(draftId, req)
+  if (userOrGuest) return userOrGuest
+
+  const clientId = req.headers.get('x-client-id')
+  if (clientId && validateUUID(clientId)) {
+    return { type: 'guest' as const, id: clientId }
+  }
+
+  return null
 }
 
 export async function POST(
@@ -42,17 +36,14 @@ export async function POST(
   if (!draftId)
     return NextResponse.json({ error: 'Draft not found' }, { status: 404 })
 
-  // Try authenticated user or guest
-  const userOrGuest = await getCurrentUserOrGuest(draftId, req)
-  if (!userOrGuest) {
+  const reactor = await getReactor(draftId, req)
+  if (!reactor) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   const { pickNumber, emoji } = await req.json()
   if (!pickNumber)
     return NextResponse.json({ error: 'Missing pickNumber' }, { status: 400 })
-  if (!(await isParticipant(draftId, userOrGuest.id)))
-    return NextResponse.json({ error: 'Not a participant' }, { status: 403 })
   // If emoji is null or empty, set emoji to null (soft delete)
   if (emoji === null || emoji === '') {
     await db
@@ -60,7 +51,7 @@ export async function POST(
       .values({
         draftId,
         pickNumber,
-        userId: userOrGuest.id,
+        userId: reactor.id,
         emoji: null
       })
       .onConflictDoUpdate({
@@ -79,7 +70,7 @@ export async function POST(
     .values({
       draftId,
       pickNumber,
-      userId: userOrGuest.id,
+      userId: reactor.id,
       emoji
     })
     .onConflictDoUpdate({

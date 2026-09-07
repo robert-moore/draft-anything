@@ -11,8 +11,9 @@ import {
   RadioGroupSegmented,
   RadioGroupSegmentedItem
 } from '@/components/ui/radio-group-segmented'
+import { DEFAULT_BUDGET, MAX_BUDGET, MIN_BUDGET } from '@/lib/auction'
 import { createClient } from '@/lib/supabase/client'
-import { Edit, Infinity, List, Timer } from 'lucide-react'
+import { ArrowLeftRight, Edit, Gavel, Infinity, List, Timer } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
@@ -25,6 +26,10 @@ export default function NewDraftPage() {
   const [timerMode, setTimerMode] = useState<'timed' | 'untimed'>('timed')
   const [selectionType, setSelectionType] = useState<'freeform' | 'curated'>(
     'freeform'
+  )
+  const [draftMode, setDraftMode] = useState<'snake' | 'auction'>('snake')
+  const [startingBudget, setStartingBudget] = useState<number | null>(
+    DEFAULT_BUDGET
   )
   const [curatedOptions, setCuratedOptions] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -131,17 +136,38 @@ export default function NewDraftPage() {
       return
     }
 
+    if (draftMode === 'auction') {
+      if (startingBudget === null || startingBudget < MIN_BUDGET) {
+        setError(`Starting budget must be at least ${MIN_BUDGET}`)
+        setIsLoading(false)
+        return
+      }
+      if (timerMode === 'untimed' || secPerRound === null || secPerRound < 30) {
+        setError('Auction drafts must be timed')
+        setIsLoading(false)
+        return
+      }
+    }
+
     try {
       const requestBody = {
         name,
         adminName: adminName.trim(),
         maxDrafters,
-        secPerRound: timerMode === 'untimed' ? 0 : secPerRound || 0,
+        secPerRound:
+          draftMode === 'auction'
+            ? secPerRound || 60
+            : timerMode === 'untimed'
+              ? 0
+              : secPerRound || 0,
         numRounds,
         isFreeform: selectionType === 'freeform',
+        isAuction: draftMode === 'auction',
+        startingBudget:
+          draftMode === 'auction' ? startingBudget : undefined,
         curatedOptions:
           selectionType === 'curated' ? curatedOptions : undefined,
-        timerMode
+        timerMode: draftMode === 'auction' ? 'timed' : timerMode
       }
 
       let response: Response
@@ -298,8 +324,9 @@ export default function NewDraftPage() {
               )}
 
               <div className="text-base text-muted-foreground mb-6">
-                This is a snake draft - the order will be randomized when the
-                draft starts.
+                {draftMode === 'auction'
+                  ? 'Auction draft — everyone gets the same budget. Nominate items and bid until rosters are full.'
+                  : 'Snake draft — the order will be randomized when the draft starts.'}
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -345,6 +372,29 @@ export default function NewDraftPage() {
 
                 {/* Draft Configuration */}
                 <div className="space-y-8">
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">
+                      Draft Type
+                    </h3>
+                    <RadioGroupSegmented
+                      value={draftMode}
+                      onValueChange={value => {
+                        const mode = value as 'snake' | 'auction'
+                        setDraftMode(mode)
+                        if (mode === 'auction') {
+                          setTimerMode('timed')
+                        }
+                      }}
+                    >
+                      <RadioGroupSegmentedItem value="snake" icon={ArrowLeftRight}>
+                        Snake
+                      </RadioGroupSegmentedItem>
+                      <RadioGroupSegmentedItem value="auction" icon={Gavel}>
+                        Auction
+                      </RadioGroupSegmentedItem>
+                    </RadioGroupSegmented>
+                  </div>
+
                   {/* Draft Structure */}
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-6">
@@ -359,7 +409,9 @@ export default function NewDraftPage() {
                       />
                       <NumberInput
                         id="numRounds"
-                        label="Rounds"
+                        label={
+                          draftMode === 'auction' ? 'Roster spots' : 'Rounds'
+                        }
                         value={numRounds}
                         onChange={setNumRounds}
                         min={1}
@@ -367,6 +419,17 @@ export default function NewDraftPage() {
                         required={true}
                       />
                     </div>
+                    {draftMode === 'auction' && (
+                      <NumberInput
+                        id="startingBudget"
+                        label="Starting budget"
+                        value={startingBudget}
+                        onChange={setStartingBudget}
+                        min={MIN_BUDGET}
+                        max={MAX_BUDGET}
+                        required={true}
+                      />
+                    )}
                   </div>
 
                   {/* Selection Type */}
@@ -493,10 +556,13 @@ export default function NewDraftPage() {
                     </h3>
                     <div className="space-y-3">
                       <RadioGroupSegmented
-                        value={timerMode}
-                        onValueChange={value =>
-                          setTimerMode(value as 'timed' | 'untimed')
+                        value={
+                          draftMode === 'auction' ? 'timed' : timerMode
                         }
+                        onValueChange={value => {
+                          if (draftMode === 'auction') return
+                          setTimerMode(value as 'timed' | 'untimed')
+                        }}
                       >
                         <RadioGroupSegmentedItem value="timed" icon={Timer}>
                           Timed
@@ -504,12 +570,13 @@ export default function NewDraftPage() {
                         <RadioGroupSegmentedItem
                           value="untimed"
                           icon={Infinity}
+                          disabled={draftMode === 'auction'}
                         >
                           Untimed
                         </RadioGroupSegmentedItem>
                       </RadioGroupSegmented>
 
-                      {timerMode === 'untimed' ? (
+                      {timerMode === 'untimed' && draftMode !== 'auction' ? (
                         <div className="border-2 border-border p-6 text-center">
                           <Infinity className="w-8 h-8 mx-auto mb-2 text-foreground" />
                           <p className="text-sm font-medium text-foreground">
@@ -524,7 +591,11 @@ export default function NewDraftPage() {
                           <div className="pt-2">
                             <NumberInput
                               id="secPerRound"
-                              label="Seconds per pick"
+                              label={
+                                draftMode === 'auction'
+                                  ? 'Seconds to nominate / bid'
+                                  : 'Seconds per pick'
+                              }
                               value={secPerRound}
                               onChange={setSecPerRound}
                               min={30}
@@ -533,9 +604,11 @@ export default function NewDraftPage() {
                             />
                           </div>
                           <p className="text-xs text-muted-foreground">
-                            {selectionType === 'curated'
-                              ? 'A random option will be selected when time expires'
-                              : 'Auto-pick activates when time expires'}
+                            {draftMode === 'auction'
+                              ? 'Nomination clock. Bidding timer resets on every new bid.'
+                              : selectionType === 'curated'
+                                ? 'A random option will be selected when time expires'
+                                : 'Auto-pick activates when time expires'}
                           </p>
                         </div>
                       )}
@@ -572,7 +645,10 @@ export default function NewDraftPage() {
                       curatedOptions
                         .split('\n')
                         .filter(line => line.trim())
-                        .some(line => line.length > 200))
+                        .some(line => line.length > 200)) ||
+                    (draftMode === 'auction' &&
+                      (startingBudget === null ||
+                        startingBudget < MIN_BUDGET))
                   }
                 >
                   {isLoading ? 'Creating...' : 'Create Draft'}

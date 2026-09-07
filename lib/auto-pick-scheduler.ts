@@ -77,7 +77,8 @@ class AutoPickScheduler {
           secPerRound: draftsInDa.secPerRound,
           turnStartedAt: draftsInDa.turnStartedAt,
           currentPositionOnClock: draftsInDa.currentPositionOnClock,
-          isFreeform: draftsInDa.isFreeform
+          isFreeform: draftsInDa.isFreeform,
+          isAuction: draftsInDa.isAuction
         })
         .from(draftsInDa)
         .where(
@@ -101,8 +102,14 @@ class AutoPickScheduler {
 
         // Check if timer has expired (with 1 second buffer)
         if (elapsedSeconds >= secPerRound + 1) {
-          // Trigger auto-pick for this draft
-          await this.performAutoPick(draft)
+          if (draft.isAuction) {
+            const { resolveExpiredAuction } = await import(
+              '@/lib/auction-logic'
+            )
+            await resolveExpiredAuction(draft.guid)
+          } else {
+            await this.performAutoPick(draft)
+          }
 
           // Add a delay between auto-picks to prevent connection overload
           await new Promise(resolve => setTimeout(resolve, 200))

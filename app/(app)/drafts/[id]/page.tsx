@@ -2,6 +2,9 @@
 
 import ChatComponent from '@/components/chat-component'
 import { AutoPickMonitor } from '@/components/draft/auto-pick-monitor'
+import { AuctionBudgetList } from '@/components/draft/auction-budget-list'
+import { AuctionMonitor } from '@/components/draft/auction-monitor'
+import { AuctionPanel } from '@/components/draft/auction-panel'
 import { DraftMetadata } from '@/components/draft/draft-metadata'
 import { DraftPickGrid } from '@/components/draft/draft-pick-grid'
 import { DraftTimer } from '@/components/draft/draft-timer'
@@ -580,13 +583,37 @@ export default function DraftPage() {
               name: newUser.draft_username,
               isReady: newUser.is_ready,
               position: newUser.position,
-              createdAt: newUser.created_at
+              createdAt: newUser.created_at,
+              remainingBudget: newUser.remaining_budget
             }
 
             setParticipants(prev => {
               if (prev.some(p => p.id === newParticipant.id)) return prev
               return [...prev, newParticipant]
             })
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'da',
+            table: 'draft_users',
+            filter: `draft_id=eq.${draft.id}`
+          },
+          payload => {
+            const updated = payload.new
+            setParticipants(prev =>
+              prev.map(p =>
+                p.id === updated.user_id
+                  ? {
+                      ...p,
+                      position: updated.position,
+                      remainingBudget: updated.remaining_budget
+                    }
+                  : p
+              )
+            )
           }
         )
         .on(
@@ -676,7 +703,8 @@ export default function DraftPage() {
                     participantsRef.current.find(p => p.id === newPick.user_id)
                       ?.name ?? 'Unknown',
                   payload: pickPayload,
-                  createdAt: newPick.created_at
+                  createdAt: newPick.created_at,
+                  auctionPrice: newPick.auction_price
                 }
               ]
             })
@@ -744,7 +772,18 @@ export default function DraftPage() {
                 timerPaused: payload.new.timer_paused ?? false,
                 numRounds: Number.isNaN(newNumRounds)
                   ? prev.numRounds
-                  : newNumRounds
+                  : newNumRounds,
+                isAuction: payload.new.is_auction ?? prev.isAuction,
+                startingBudget: payload.new.starting_budget,
+                auctionPhase: payload.new.auction_phase,
+                auctionLotNumber:
+                  payload.new.auction_lot_number ?? prev.auctionLotNumber,
+                auctionNominatedPayload: payload.new.auction_nominated_payload,
+                auctionNominatedOptionId:
+                  payload.new.auction_nominated_option_id,
+                auctionHighBid: payload.new.auction_high_bid,
+                auctionHighBidderId: payload.new.auction_high_bidder_id,
+                auctionNominatorId: payload.new.auction_nominator_id
               }
             })
 
@@ -1834,23 +1873,23 @@ export default function DraftPage() {
   function getPickReactions(pickNumber: number) {
     return reactions.filter(r => r.pickNumber === pickNumber)
   }
-  // Helper to get current user's reactions for a pick
+  const actorId = currentUser?.id || getGuestClientId() || ''
+
   function getCurrentUserReactions(pickNumber: number) {
     return reactions
-      .filter(r => r.pickNumber === pickNumber && r.userId === currentUser?.id)
+      .filter(r => r.pickNumber === pickNumber && r.userId === actorId)
       .map(r => r.emoji)
   }
-  // Helper to check if user can react
-  const canReact = isJoined
+
   // Handler to add/remove reaction
   async function handleReact(
     pickNumber: number,
     emoji: string,
     isActive: boolean
   ) {
-    // Get current user ID (authenticated user or guest)
-    const currentUserId = currentUser?.id || getGuestClientId()
-    const currentUserName = currentUser?.name || 'Guest'
+    const currentUserId = actorId || getGuestClientId()
+    const currentUserName =
+      participants.find(p => p.id === currentUserId)?.name || 'Spectator'
 
     // Optimistically update reactions state
     setReactions(prev => {
@@ -1906,7 +1945,9 @@ export default function DraftPage() {
   }
 
   const showOnTheClockBanner =
-    isMyTurn && draft?.draftState === 'active'
+    isMyTurn &&
+    draft?.draftState === 'active' &&
+    (!draft.isAuction || draft.auctionPhase === 'nominating')
 
   const hasUnreadMobileChat =
     !mobileChatOpen && latestChatActivityMs > mobileChatReadAtMs
@@ -1987,11 +2028,29 @@ export default function DraftPage() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-foreground">ROUNDS</span>
+                    <span className="font-bold text-foreground">
+                      {draft.isAuction ? 'TYPE' : 'ROUNDS'}
+                    </span>
                     <span className="font-mono text-foreground">
-                      {draft.numRounds}
+                      {draft.isAuction ? 'AUCTION' : draft.numRounds}
                     </span>
                   </div>
+                  {draft.isAuction ? (
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-foreground">BUDGET</span>
+                      <span className="font-mono text-foreground">
+                        ${draft.startingBudget ?? 0}
+                      </span>
+                    </div>
+                  ) : null}
+                  {draft.isAuction ? (
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-foreground">ROSTER</span>
+                      <span className="font-mono text-foreground">
+                        {draft.numRounds}
+                      </span>
+                    </div>
+                  ) : null}
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-foreground">TIMER</span>
                     <span className="font-mono text-foreground">
@@ -2005,16 +2064,39 @@ export default function DraftPage() {
             ) : draft.draftState !== 'completed' &&
               draft.draftState !== 'challenge_window' &&
               draft.draftState !== 'challenge' ? (
-              <DraftMetadata
-                players={{
-                  current: participants.length,
-                  max: draft.maxDrafters,
-                  isMax: true
-                }}
-                timer={parseInt(draft.secPerRound)}
-                round={{ current: currentRound, total: draft.numRounds }}
-                pick={{ current: pickInRound, perRound: participants.length }}
-              />
+              draft.isAuction ? (
+                <div className="flex flex-wrap items-center gap-x-8 gap-y-2 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-foreground">PLAYERS</span>
+                    <span className="font-mono text-foreground">
+                      {participants.length}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-foreground">TIMER</span>
+                    <span className="font-mono text-foreground">
+                      {parseInt(draft.secPerRound)}s
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-foreground">SOLD</span>
+                    <span className="font-mono text-foreground">
+                      {picks.length}/{participants.length * draft.numRounds}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <DraftMetadata
+                  players={{
+                    current: participants.length,
+                    max: draft.maxDrafters,
+                    isMax: true
+                  }}
+                  timer={parseInt(draft.secPerRound)}
+                  round={{ current: currentRound, total: draft.numRounds }}
+                  pick={{ current: pickInRound, perRound: participants.length }}
+                />
+              )
             ) : null}
           </div>
 
@@ -2031,6 +2113,12 @@ export default function DraftPage() {
                   <span className="text-foreground font-semibold">
                     {picks[picks.length - 1].clientName}
                   </span>
+                  {picks[picks.length - 1].auctionPrice != null && (
+                    <span className="text-foreground font-semibold">
+                      {' '}
+                      for ${picks[picks.length - 1].auctionPrice}
+                    </span>
+                  )}
                 </span>
               </div>
             </div>
@@ -2219,7 +2307,7 @@ export default function DraftPage() {
                   <p className="text-muted-foreground">
                     All {picks.length} picks have been made
                   </p>
-                  {isAdmin && (
+                  {isAdmin && !draft.isAuction && (
                     <ExtendDraftControls
                       draftGuid={draft.guid}
                       numRounds={draft.numRounds}
@@ -2239,8 +2327,24 @@ export default function DraftPage() {
             </div>
           )}
 
+          {/* Active Auction */}
+          {draft.draftState === 'active' &&
+            draft.isAuction &&
+            isOrderFinalized && (
+              <AuctionPanel
+                draft={draft}
+                draftGuid={draft.guid}
+                participants={participants}
+                picks={picks}
+                currentUserId={currentUser?.id || getGuestClientId() || null}
+                curatedOptions={curatedOptions}
+                onRefresh={loadDraft}
+              />
+            )}
+
           {/* Active Pick Input */}
           {draft.draftState === 'active' &&
+            !draft.isAuction &&
             isJoined &&
             isOrderFinalized &&
             (() => {
@@ -2376,6 +2480,7 @@ export default function DraftPage() {
 
           {/* Waiting for Other Players */}
           {draft.draftState === 'active' &&
+            !draft.isAuction &&
             !justSubmittedPick &&
             (!isJoined ||
               !currentUser ||
@@ -2428,6 +2533,7 @@ export default function DraftPage() {
 
           {/* Curated Options Preview - Show when not your turn but draft is active */}
           {draft.draftState === 'active' &&
+            !draft.isAuction &&
             !justSubmittedPick &&
             isJoined &&
             currentUser &&
@@ -2479,6 +2585,7 @@ export default function DraftPage() {
               isJoined &&
               currentUser &&
               draft.isFreeform &&
+              !draft.isAuction &&
               shouldShowChallengeButton() &&
               draft.draftState === 'active' &&
               picks.length > 0 &&
@@ -2806,7 +2913,7 @@ export default function DraftPage() {
                                         reactions={getPickReactions(
                                           pick.pickNumber
                                         )}
-                                        currentUserId={currentUser?.id}
+                                        currentUserId={actorId}
                                         onReact={(emoji, isActive) =>
                                           handleReact(
                                             pick.pickNumber,
@@ -2814,7 +2921,7 @@ export default function DraftPage() {
                                             isActive
                                           )
                                         }
-                                        canReact={canReact}
+                                        canReact
                                         currentUserReactions={getCurrentUserReactions(
                                           pick.pickNumber
                                         )}
@@ -2835,6 +2942,11 @@ export default function DraftPage() {
                                           {truncatePickPayload(
                                             pick.payload,
                                             pickTruncateLimit
+                                          )}
+                                          {pick.auctionPrice != null && (
+                                            <span className="ml-2 font-mono text-xs text-muted-foreground">
+                                              ${pick.auctionPrice}
+                                            </span>
                                           )}
                                         </div>
                                         <div className="text-xs text-muted-foreground">
@@ -2907,7 +3019,7 @@ export default function DraftPage() {
                                         reactions={getPickReactions(
                                           pick.pickNumber
                                         )}
-                                        currentUserId={currentUser?.id}
+                                        currentUserId={actorId}
                                         onReact={(emoji, isActive) =>
                                           handleReact(
                                             pick.pickNumber,
@@ -2915,7 +3027,7 @@ export default function DraftPage() {
                                             isActive
                                           )
                                         }
-                                        canReact={canReact}
+                                        canReact
                                         currentUserReactions={getCurrentUserReactions(
                                           pick.pickNumber
                                         )}
@@ -2980,7 +3092,7 @@ export default function DraftPage() {
                                       reactions={getPickReactions(
                                         pick.pickNumber
                                       )}
-                                      currentUserId={currentUser?.id}
+                                      currentUserId={actorId}
                                       onReact={(emoji, isActive) =>
                                         handleReact(
                                           pick.pickNumber,
@@ -2988,7 +3100,7 @@ export default function DraftPage() {
                                           isActive
                                         )
                                       }
-                                      canReact={canReact}
+                                      canReact
                                       currentUserReactions={getCurrentUserReactions(
                                         pick.pickNumber
                                       )}
@@ -3075,9 +3187,16 @@ export default function DraftPage() {
               <div className="lg:hidden mt-8">
                 <div className="text-center">
                   <h3 className="text-sm font-bold text-foreground mb-3">
-                    ORDER
+                    {draft.isAuction ? 'BUDGETS' : 'ORDER'}
                   </h3>
                   {isOrderFinalized ? (
+                    draft.isAuction ? (
+                      <AuctionBudgetList
+                        draft={draft}
+                        participants={participants}
+                        picks={picks}
+                      />
+                    ) : (
                     <div className="space-y-1">
                       {[...participants]
                         .sort((a, b) => a.position! - b.position!)
@@ -3104,6 +3223,7 @@ export default function DraftPage() {
                           )
                         })}
                     </div>
+                    )
                   ) : (
                     <div className="space-y-1">
                       {Array.from({ length: participants.length }).map(
@@ -3174,8 +3294,18 @@ export default function DraftPage() {
 
             {/* Turn Order */}
             {draft.draftState === 'active' && (
-              <BrutalSection title="Order" contentClassName="p-4">
+              <BrutalSection
+                title={draft.isAuction ? 'Budgets' : 'Order'}
+                contentClassName="p-4"
+              >
                 {isOrderFinalized ? (
+                  draft.isAuction ? (
+                    <AuctionBudgetList
+                      draft={draft}
+                      participants={participants}
+                      picks={picks}
+                    />
+                  ) : (
                   <div className="space-y-1">
                     {[...participants]
                       .sort((a, b) => a.position! - b.position!)
@@ -3191,7 +3321,7 @@ export default function DraftPage() {
                                 : 'text-muted-foreground'
                             }`}
                           >
-                            <span>
+                            <span className="truncate">
                               {participant.position}. {participant.name}
                             </span>
                             {isCurrentTurn && (
@@ -3201,6 +3331,7 @@ export default function DraftPage() {
                         )
                       })}
                   </div>
+                  )
                 ) : (
                   <div className="space-y-1">
                     {Array.from({ length: participants.length }).map(
@@ -3256,7 +3387,9 @@ export default function DraftPage() {
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
               <span className="font-bold text-foreground">
-                You're on the clock!
+                {draft.isAuction
+                  ? "You're nominating!"
+                  : "You're on the clock!"}
               </span>
             </div>
             <DraftTimer
@@ -3272,13 +3405,23 @@ export default function DraftPage() {
       )}
 
       {/* Auto-pick monitor */}
-      {draft?.draftState === 'active' && isJoined && currentUser && (
+      {draft?.draftState === 'active' &&
+        isJoined &&
+        currentUser &&
+        !draft.isAuction && (
         <AutoPickMonitor
           draftId={draftId}
           turnStartedAt={draft.turnStartedAt}
           secondsPerRound={parseInt(draft.secPerRound)}
           isMyTurn={isMyTurn}
           currentPickNumber={picks.length + 1}
+        />
+      )}
+      {draft?.draftState === 'active' && draft.isAuction && (
+        <AuctionMonitor
+          draftId={draftId}
+          turnStartedAt={draft.turnStartedAt}
+          secondsPerRound={parseInt(draft.secPerRound)}
         />
       )}
 

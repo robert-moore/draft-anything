@@ -45,7 +45,16 @@ export const draftsInDa = da.table('drafts', {
   timerPaused: boolean('timer_paused').default(false),
   isFreeform: boolean('is_freeform').notNull().default(true),
   joinCode: text('join_code'),
-  createdAt: timestamp('created_at', { mode: 'string' }).notNull()
+  createdAt: timestamp('created_at', { mode: 'string' }).notNull(),
+  isAuction: boolean('is_auction').notNull().default(false),
+  startingBudget: integer('starting_budget'),
+  auctionPhase: text('auction_phase'),
+  auctionLotNumber: smallint('auction_lot_number').notNull().default(0),
+  auctionNominatedPayload: text('auction_nominated_payload'),
+  auctionNominatedOptionId: integer('auction_nominated_option_id'),
+  auctionHighBid: integer('auction_high_bid'),
+  auctionHighBidderId: uuid('auction_high_bidder_id'),
+  auctionNominatorId: uuid('auction_nominator_id')
 })
 
 export const draftCuratedOptionsInDa = da.table(
@@ -75,7 +84,8 @@ export const draftUsersInDa = da.table(
     position: smallint(),
     isReady: boolean('is_ready').notNull(),
     isGuest: boolean('is_guest').notNull().default(false),
-    createdAt: timestamp('created_at', { mode: 'string' }).notNull()
+    createdAt: timestamp('created_at', { mode: 'string' }).notNull(),
+    remainingBudget: integer('remaining_budget')
   },
   table => [
     foreignKey({
@@ -97,7 +107,8 @@ export const draftSelectionsInDa = da.table(
     payload: text(), // Can be null for curated options
     curatedOptionId: integer('curated_option_id'), // Reference to curated option
     wasAutoPick: boolean('was_auto_pick').default(false),
-    timeTakenSeconds: numeric('time_taken_seconds')
+    timeTakenSeconds: numeric('time_taken_seconds'),
+    auctionPrice: integer('auction_price')
   },
   table => [
     foreignKey({
@@ -197,6 +208,27 @@ export const draftMessagesInDa = da.table(
       columns: [table.userId],
       foreignColumns: [profilesInDa.id],
       name: 'draft_messages_user_fkey'
+    })
+  ]
+)
+
+export const draftAuctionBidsInDa = da.table(
+  'draft_auction_bids',
+  {
+    id: serial().primaryKey().notNull(),
+    draftId: integer('draft_id').notNull(),
+    lotNumber: smallint('lot_number').notNull(),
+    userId: uuid('user_id').notNull(),
+    amount: integer('amount').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull()
+  },
+  table => [
+    foreignKey({
+      columns: [table.draftId],
+      foreignColumns: [draftsInDa.id],
+      name: 'draft_auction_bids_draft_id_fkey'
     })
   ]
 )

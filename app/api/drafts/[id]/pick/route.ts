@@ -58,6 +58,13 @@ export async function POST(
     if (!draftResult.success) return draftResult.error
     const { draft } = draftResult
 
+    if (draft.isAuction) {
+      return NextResponse.json(
+        { error: 'Use nominate and bid for auction drafts' },
+        { status: 400 }
+      )
+    }
+
     // --- Internal auto-pick support ---
     const secret = process.env.INTERNAL_AUTOPICK_SECRET
     const internalSecret = request.headers.get('x-internal-autopick-secret')

@@ -21,6 +21,15 @@ export interface Draft {
   isFreeform: boolean
   joinCode: string | null
   createdAt: string
+  isAuction: boolean
+  startingBudget: number | null
+  auctionPhase: 'nominating' | 'bidding' | null
+  auctionLotNumber: number
+  auctionNominatedPayload: string | null
+  auctionNominatedOptionId: number | null
+  auctionHighBid: number | null
+  auctionHighBidderId: string | null
+  auctionNominatorId: string | null
 }
 
 export interface Participant {
@@ -29,6 +38,7 @@ export interface Participant {
   position: number | null
   isReady: boolean
   createdAt: string
+  remainingBudget?: number | null
 }
 
 export interface DraftPick {
@@ -39,4 +49,5 @@ export interface DraftPick {
   createdAt: string
   wasAutoPick?: boolean
   timeTakenSeconds?: string
+  auctionPrice?: number | null
 }

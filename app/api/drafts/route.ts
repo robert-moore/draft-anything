@@ -3,6 +3,7 @@ import {
   draftUsersInDa,
   draftsInDa
 } from '@/drizzle/schema'
+import { MAX_BUDGET, MIN_BUDGET } from '@/lib/auction'
 import { parseJsonRequest } from '@/lib/api/validation'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
@@ -37,6 +38,8 @@ const createDraftSchema = z
     secPerRound: z.number().int(),
     numRounds: z.number().int().min(1).max(30),
     isFreeform: z.boolean().default(true),
+    isAuction: z.boolean().default(false),
+    startingBudget: z.number().int().optional(),
     curatedOptions: z.string().optional(),
     draftState: z
       .enum(['setting_up', 'active', 'completed', 'paused'])
@@ -48,6 +51,36 @@ const createDraftSchema = z
     // If timerMode is timed, secPerRound must be between 30 and 300
     // For backward compatibility, infer timerMode from secPerRound
     const isUntimed = data.timerMode === 'untimed' || data.secPerRound === 0
+    if (data.isAuction) {
+      if (isUntimed) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Auction drafts must be timed.'
+        })
+      } else if (
+        typeof data.secPerRound !== 'number' ||
+        data.secPerRound < 30 ||
+        data.secPerRound > 300
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            'Seconds per pick must be between 30 and 300 for timed drafts.'
+        })
+      }
+      if (
+        typeof data.startingBudget !== 'number' ||
+        data.startingBudget < MIN_BUDGET ||
+        data.startingBudget > MAX_BUDGET
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Starting budget must be between ${MIN_BUDGET} and ${MAX_BUDGET}.`
+        })
+      }
+      return
+    }
+
     if (isUntimed) {
       if (data.secPerRound !== 0) {
         ctx.addIssue({
@@ -104,6 +137,8 @@ export async function POST(req: NextRequest) {
       secPerRound,
       numRounds,
       isFreeform,
+      isAuction,
+      startingBudget,
       curatedOptions
     } = bodyResult.data
 
@@ -158,6 +193,8 @@ export async function POST(req: NextRequest) {
         secPerRound: secPerRound.toString(),
         numRounds,
         isFreeform,
+        isAuction: isAuction ?? false,
+        startingBudget: isAuction ? startingBudget : null,
         joinCode,
         createdAt: new Date().toISOString()
       })
@@ -210,6 +247,8 @@ export async function POST(req: NextRequest) {
         secPerRound: newDraft.secPerRound,
         numRounds: newDraft.numRounds,
         isFreeform: newDraft.isFreeform,
+        isAuction: newDraft.isAuction,
+        startingBudget: newDraft.startingBudget,
         createdAt: newDraft.createdAt
       }
     })

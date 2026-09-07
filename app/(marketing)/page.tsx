@@ -1,9 +1,8 @@
 import { ExamplesSection } from '@/components/marketing/examples-section'
 import { BrutalistButton } from '@/components/ui/brutalist-button'
 import { BrutalistCard } from '@/components/ui/brutalist-card'
-import { RhythmSpacer } from '@/components/ui/rhythm-spacer'
 import { VisualFocus } from '@/components/ui/visual-focus'
-import { Heart, Play, Trophy, Users, Zap } from 'lucide-react'
+import { Heart, Play, Users } from 'lucide-react'
 import Link from 'next/link'
 import { memo } from 'react'
 
@@ -74,33 +73,6 @@ const HeroSection = memo(() => (
           </div>
         </div>
       </VisualFocus>
-
-      <RhythmSpacer size="lg" />
-
-      {/* Trust indicators - Secondary visual weight */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-        <VisualFocus priority="tertiary" className="text-center py-8">
-          <Users className="w-8 h-8 text-primary mx-auto mb-3" />
-          <span className="font-semibold text-lg">Made for friends</span>
-          <p className="text-sm text-muted-foreground mt-1">
-            Bring people together
-          </p>
-        </VisualFocus>
-        <VisualFocus priority="tertiary" className="text-center py-8">
-          <Zap className="w-8 h-8 text-primary mx-auto mb-3" />
-          <span className="font-semibold text-lg">Super simple</span>
-          <p className="text-sm text-muted-foreground mt-1">
-            No learning curve
-          </p>
-        </VisualFocus>
-        <VisualFocus priority="tertiary" className="text-center py-8">
-          <Trophy className="w-8 h-8 text-primary mx-auto mb-3" />
-          <span className="font-semibold text-lg">Endless fun</span>
-          <p className="text-sm text-muted-foreground mt-1">
-            Hours of entertainment
-          </p>
-        </VisualFocus>
-      </div>
     </div>
   </section>
 ))

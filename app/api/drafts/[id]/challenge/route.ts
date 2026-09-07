@@ -34,6 +34,13 @@ export async function POST(
     }
     const user = { id: userOrGuest.id }
 
+    if (draft.isAuction) {
+      return NextResponse.json(
+        { error: 'Auction drafts do not support challenges' },
+        { status: 400 }
+      )
+    }
+
     if (
       draft.draftState !== 'active' &&
       draft.draftState !== 'challenge_window'

@@ -72,6 +72,13 @@ export async function POST(
       )
     }
 
+    if (draft.isAuction) {
+      return NextResponse.json(
+        { error: 'Auction drafts cannot be extended' },
+        { status: 400 }
+      )
+    }
+
     const bodyResult = await parseJsonRequest(request, extendDraftSchema)
     if (!bodyResult.success) return bodyResult.error
     const { extraRounds, additionalOptions } = bodyResult.data

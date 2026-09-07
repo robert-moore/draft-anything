@@ -1,4 +1,5 @@
 import {
+  draftAuctionBidsInDa,
   draftChallengesInDa,
   draftCuratedOptionsInDa,
   draftMessagesInDa,
@@ -59,7 +60,8 @@ export async function GET(
         position: draftUsersInDa.position,
         isReady: draftUsersInDa.isReady,
         isGuest: draftUsersInDa.isGuest,
-        createdAt: draftUsersInDa.createdAt
+        createdAt: draftUsersInDa.createdAt,
+        remainingBudget: draftUsersInDa.remainingBudget
       })
       .from(draftUsersInDa)
       .where(eq(draftUsersInDa.draftId, draft.id))
@@ -74,7 +76,8 @@ export async function GET(
         userName: draftUsersInDa.draftUsername,
         wasAutoPick: draftSelectionsInDa.wasAutoPick,
         timeTakenSeconds: draftSelectionsInDa.timeTakenSeconds,
-        curatedOptionId: draftSelectionsInDa.curatedOptionId
+        curatedOptionId: draftSelectionsInDa.curatedOptionId,
+        auctionPrice: draftSelectionsInDa.auctionPrice
       })
       .from(draftSelectionsInDa)
       .innerJoin(
@@ -170,7 +173,8 @@ export async function GET(
         clientId: pick.userId, // For backward compatibility
         clientName: pick.userName || 'Unknown',
         wasAutoPick: pick.wasAutoPick,
-        timeTakenSeconds: pick.timeTakenSeconds
+        timeTakenSeconds: pick.timeTakenSeconds,
+        auctionPrice: pick.auctionPrice
       }
     })
 
@@ -208,8 +212,40 @@ export async function GET(
       .from(draftMessagesInDa)
       .where(eq(draftMessagesInDa.draftId, draft.id))
 
+    let auctionBids: Array<{
+      userId: string
+      amount: number
+      lotNumber: number
+      createdAt: string
+    }> = []
+    if (draft.isAuction && (draft.auctionLotNumber ?? 0) > 0) {
+      auctionBids = await db
+        .select({
+          userId: draftAuctionBidsInDa.userId,
+          amount: draftAuctionBidsInDa.amount,
+          lotNumber: draftAuctionBidsInDa.lotNumber,
+          createdAt: draftAuctionBidsInDa.createdAt
+        })
+        .from(draftAuctionBidsInDa)
+        .where(
+          and(
+            eq(draftAuctionBidsInDa.draftId, draft.id),
+            eq(draftAuctionBidsInDa.lotNumber, draft.auctionLotNumber)
+          )
+        )
+    }
+
     return NextResponse.json({
-      draft,
+      draft: {
+        ...draft,
+        isAuction: draft.isAuction ?? false,
+        auctionPhase:
+          draft.auctionPhase === 'nominating' ||
+          draft.auctionPhase === 'bidding'
+            ? draft.auctionPhase
+            : null,
+        auctionLotNumber: draft.auctionLotNumber ?? 0
+      },
       participants: participantsQuery,
       picks: picks.sort((a, b) => a.pickNumber - b.pickNumber),
       currentUser: userOrGuest
@@ -220,7 +256,8 @@ export async function GET(
       latestResolvedChallenge: latestChallenge || null,
       hasPreviousPickAlreadyBeenChallenged,
       reactions,
-      messages
+      messages,
+      auctionBids
     })
   } catch (error) {
     console.error('Error fetching draft:', error)

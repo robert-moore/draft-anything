@@ -31,6 +31,7 @@ export async function performAutoPickForDraft(draftGuid: string) {
     const { draft } = draftResult
 
     if (draft.draftState !== 'active') return
+    if (draft.isAuction) return
     const secPerRound = parseInt(draft.secPerRound)
     if (secPerRound === 0 || !draft.turnStartedAt || draft.timerPaused) return
     const elapsedSeconds = getElapsedSeconds(draft.turnStartedAt)

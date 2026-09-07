@@ -87,15 +87,39 @@ export async function POST(
         )
     }
 
-    // Update draft state to active and initialize timer
-    const updates: any = {
-      draftState: 'active',
-      currentPositionOnClock: 1,
-      // Always set turnStartedAt to track elapsed time (for both timed and untimed drafts)
-      turnStartedAt: getUtcNow()
+    if (draft.isAuction && !draft.startingBudget) {
+      return NextResponse.json(
+        { error: 'Auction drafts need a starting budget' },
+        { status: 400 }
+      )
     }
 
-    await db.update(draftsInDa).set(updates).where(eq(draftsInDa.id, draft.id))
+    if (draft.isAuction) {
+      await db
+        .update(draftsInDa)
+        .set({
+          draftState: 'active',
+          currentPositionOnClock: 1,
+          turnStartedAt: getUtcNow(),
+          auctionPhase: 'nominating',
+          auctionLotNumber: 0
+        })
+        .where(eq(draftsInDa.id, draft.id))
+
+      await db
+        .update(draftUsersInDa)
+        .set({ remainingBudget: draft.startingBudget })
+        .where(eq(draftUsersInDa.draftId, draft.id))
+    } else {
+      await db
+        .update(draftsInDa)
+        .set({
+          draftState: 'active',
+          currentPositionOnClock: 1,
+          turnStartedAt: getUtcNow()
+        })
+        .where(eq(draftsInDa.id, draft.id))
+    }
 
     return NextResponse.json({
       message: 'Draft started successfully',

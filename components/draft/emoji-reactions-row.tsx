@@ -254,7 +254,7 @@ export function EmojiReactionsRow({
                       <span>
                         {users
                           .map(
-                            (u: Reaction) => userIdToName[u.userId] || 'Unknown'
+                            (u: Reaction) => userIdToName[u.userId] || 'Spectator'
                           )
                           .join(', ')}
                       </span>
@@ -300,7 +300,7 @@ export function EmojiReactionsRow({
                     <span className="flex-1 text-xs text-foreground">
                       {users
                         .map(
-                          (u: Reaction) => userIdToName[u.userId] || 'Unknown'
+                          (u: Reaction) => userIdToName[u.userId] || 'Spectator'
                         )
                         .join(', ')}
                     </span>
