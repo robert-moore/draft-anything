@@ -6,6 +6,7 @@ import { DraftMetadata } from '@/components/draft/draft-metadata'
 import { DraftPickGrid } from '@/components/draft/draft-pick-grid'
 import { DraftTimer } from '@/components/draft/draft-timer'
 import { EmojiReactionsRow } from '@/components/draft/emoji-reactions-row'
+import { ExtendDraftControls } from '@/components/draft/extend-draft-controls'
 import { ViewModeTabs } from '@/components/draft/view-mode-tabs'
 import { BrutalButton } from '@/components/ui/brutal-button'
 import { BrutalInput } from '@/components/ui/brutal-input'
@@ -207,6 +208,7 @@ export default function DraftPage() {
   }, [mobileChatOpen, latestChatActivityMs, messages, picks])
 
   const participantsRef = useRef<Participant[]>([])
+  const draftRef = useRef<Draft | null>(null)
   const prevPicksLength = useRef<null | number>(null)
   const hasLoadedInitially = useRef(false)
 
@@ -545,6 +547,10 @@ export default function DraftPage() {
   }, [participants])
 
   useEffect(() => {
+    draftRef.current = draft
+  }, [draft])
+
+  useEffect(() => {
     const draftId = params.id as string
     if (!draftId) return
 
@@ -726,6 +732,8 @@ export default function DraftPage() {
               setJustSubmittedPick(false)
             }
 
+            const newNumRounds = Number(payload.new.num_rounds)
+
             setDraft(prev => {
               if (!prev) return prev
               return {
@@ -733,12 +741,21 @@ export default function DraftPage() {
                 draftState: updatedState,
                 currentPositionOnClock: positionOnClock,
                 turnStartedAt: payload.new.turn_started_at,
-                timerPaused: payload.new.timer_paused ?? false
+                timerPaused: payload.new.timer_paused ?? false,
+                numRounds: Number.isNaN(newNumRounds)
+                  ? prev.numRounds
+                  : newNumRounds
               }
             })
 
             if (prevState === 'setting_up' && updatedState === 'active') {
               // Reload to get the randomized pick order
+              await loadDraft()
+            } else if (
+              draftRef.current?.draftState === 'completed' &&
+              updatedState === 'active'
+            ) {
+              // Admin extended a completed draft — reload rounds and options
               await loadDraft()
             }
 
@@ -2202,6 +2219,21 @@ export default function DraftPage() {
                   <p className="text-muted-foreground">
                     All {picks.length} picks have been made
                   </p>
+                  {isAdmin && (
+                    <ExtendDraftControls
+                      draftGuid={draft.guid}
+                      numRounds={draft.numRounds}
+                      isFreeform={draft.isFreeform}
+                      participantCount={participants.length}
+                      lastPickCreatedAt={
+                        picks[picks.length - 1]?.createdAt ?? null
+                      }
+                      unusedOptionCount={
+                        curatedOptions.filter(option => !option.isUsed).length
+                      }
+                      onExtended={loadDraft}
+                    />
+                  )}
                 </div>
               </div>
             </div>
