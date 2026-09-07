@@ -10,6 +10,7 @@ import {
 import { getDraftByGuid, parseDraftGuid } from '@/lib/api/draft-guid-helpers'
 import { getCurrentUserOrGuest } from '@/lib/api/guest-helpers'
 import { db } from '@/lib/db'
+import { reconcileDraftByGuid } from '@/lib/draft-reconcile'
 import { and, desc, eq } from 'drizzle-orm'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -24,10 +25,22 @@ export async function GET(
     const { draftGuid } = guidResult
 
     // Get draft details by GUID
-    const draft = await getDraftByGuid(draftGuid)
+    let draft = await getDraftByGuid(draftGuid)
 
     if (!draft) {
       return NextResponse.json({ error: 'Draft not found' }, { status: 404 })
+    }
+
+    // Heal missed cron work (expired turn, challenge window, stale lobby)
+    // so a returning client sees the state the minute jobs would have written.
+    try {
+      const changed = await reconcileDraftByGuid(draftGuid)
+      if (changed) {
+        const refreshed = await getDraftByGuid(draftGuid)
+        if (refreshed) draft = refreshed
+      }
+    } catch (error) {
+      console.error('Draft reconcile on GET failed:', error)
     }
 
     // Check authentication (user or guest) - but allow viewing even if not joined

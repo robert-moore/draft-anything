@@ -1,16 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/cron/auto-pick",
-      "schedule": "*/1 * * * *"
-    },
-    {
-      "path": "/api/cron/check-challenge-windows",
-      "schedule": "*/1 * * * *"
-    },
-    {
       "path": "/api/cron/cancel-old-drafts",
-      "schedule": "0 * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
