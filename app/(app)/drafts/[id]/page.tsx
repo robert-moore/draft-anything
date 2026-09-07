@@ -78,6 +78,19 @@ function createGuestFetch() {
 
 const supabase = createClient()
 
+function parseRealtimeUuidArray(value: unknown): string[] | null {
+  if (Array.isArray(value)) {
+    return value.filter((id): id is string => typeof id === 'string')
+  }
+  if (typeof value !== 'string') return null
+  const inner = value.replace(/^{/, '').replace(/}$/, '').trim()
+  if (!inner) return []
+  return inner
+    .split(',')
+    .map(part => part.trim().replace(/^"|"$/g, ''))
+    .filter(Boolean)
+}
+
 // Utility to truncate pick payload
 function truncatePickPayload(payload: string, maxLength: number) {
   if (payload.length > maxLength) {
@@ -565,6 +578,14 @@ export default function DraftPage() {
       if (subscriptionsSetUpRef.current) return
       subscriptionsSetUpRef.current = true
 
+      let reloadTimer: ReturnType<typeof setTimeout> | undefined
+      const queueReload = () => {
+        window.clearTimeout(reloadTimer)
+        reloadTimer = setTimeout(() => {
+          void loadDraft()
+        }, 75)
+      }
+
       const draftUsersSub = supabase
         .channel(`draft-users-${draftId}`)
         .on(
@@ -764,6 +785,9 @@ export default function DraftPage() {
 
             setDraft(prev => {
               if (!prev) return prev
+              const passedIds = parseRealtimeUuidArray(
+                payload.new.auction_passed_user_ids
+              )
               return {
                 ...prev,
                 draftState: updatedState,
@@ -784,13 +808,13 @@ export default function DraftPage() {
                 auctionHighBid: payload.new.auction_high_bid,
                 auctionHighBidderId: payload.new.auction_high_bidder_id,
                 auctionNominatorId: payload.new.auction_nominator_id,
-                auctionPassedUserIds: Array.isArray(
-                  payload.new.auction_passed_user_ids
-                )
-                  ? payload.new.auction_passed_user_ids
-                  : prev.auctionPassedUserIds
+                auctionPassedUserIds: passedIds ?? prev.auctionPassedUserIds
               }
             })
+
+            if (payload.new.is_auction) {
+              queueReload()
+            }
 
             if (prevState === 'setting_up' && updatedState === 'active') {
               // Reload to get the randomized pick order
@@ -828,6 +852,22 @@ export default function DraftPage() {
               // Left challenge window state, reset timer
               setChallengeWindowTimeLeft(null)
             }
+          }
+        )
+        .subscribe()
+
+      const auctionBidsSub = supabase
+        .channel(`draft-auction-bids-${draftId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'da',
+            table: 'draft_auction_bids',
+            filter: `draft_id=eq.${draft.id}`
+          },
+          () => {
+            queueReload()
           }
         )
         .subscribe()
@@ -1018,9 +1058,11 @@ export default function DraftPage() {
 
       // Clean up on unmount
       return () => {
+        window.clearTimeout(reloadTimer)
         supabase.removeChannel(draftUsersSub)
         supabase.removeChannel(draftSelectionsSub)
         supabase.removeChannel(draftStateSub)
+        supabase.removeChannel(auctionBidsSub)
         supabase.removeChannel(challengeSub)
         supabase.removeChannel(challengeVotesSub)
         supabase.removeChannel(draftReactionsSub)
@@ -1037,19 +1079,20 @@ export default function DraftPage() {
     loadDraft()
   }, [draftId])
 
-  // Poll draft data every 10 seconds, but stop if draft is complete
+  // Poll as a realtime backup. Auction lots change often, so poll faster.
   useEffect(() => {
     if (!draftId || draft?.draftState === 'completed') return
+    const pollMs =
+      draft?.isAuction && draft.draftState === 'active' ? 2000 : 10000
     const interval = setInterval(() => {
-      // If draft becomes complete, stop polling
       if (draft?.draftState === 'completed') {
         clearInterval(interval)
         return
       }
       loadDraft()
-    }, 10000) // 10 seconds
+    }, pollMs)
     return () => clearInterval(interval)
-  }, [draftId, draft?.draftState])
+  }, [draftId, draft?.draftState, draft?.isAuction])
 
   // Reload draft data when tab becomes visible (in case real-time updates were missed)
   useEffect(() => {

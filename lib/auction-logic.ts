@@ -615,6 +615,13 @@ export async function passOnAuction(args: {
       : [...(draft.auctionPassedUserIds ?? []), args.userId]
 
     if (!alreadyPassed) {
+      await tx.insert(draftAuctionBidsInDa).values({
+        draftId: draft.id,
+        lotNumber: draft.auctionLotNumber,
+        userId: args.userId,
+        amount: 0,
+        createdAt: getUtcNow()
+      })
       await tx
         .update(draftsInDa)
         .set({ auctionPassedUserIds: passedUserIds })
