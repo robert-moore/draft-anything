@@ -38,6 +38,11 @@ export function DraftPickGrid({
           </div>
           <div className="text-sm font-medium truncate text-foreground">
             {truncatePickPayload(pick.payload)}
+            {pick.auctionPrice != null && (
+              <span className="ml-1 font-mono text-xs text-muted-foreground">
+                ${pick.auctionPrice}
+              </span>
+            )}
           </div>
           <div className="text-xs text-muted-foreground truncate">
             {pick.clientName}

@@ -3120,6 +3120,18 @@ export default function DraftPage() {
                             <span className="text-xs text-muted-foreground">
                               {drafter.picks.length} pick
                               {drafter.picks.length !== 1 ? 's' : ''}
+                              {drafter.picks.some(
+                                p => p.auctionPrice != null
+                              ) && (
+                                <>
+                                  {' '}
+                                  · $
+                                  {drafter.picks.reduce(
+                                    (sum, p) => sum + (p.auctionPrice ?? 0),
+                                    0
+                                  )}
+                                </>
+                              )}
                             </span>
                           </div>
                           <div className="space-y-2">
@@ -3170,6 +3182,11 @@ export default function DraftPage() {
                                         {truncatePickPayload(
                                           pick.payload,
                                           pickTruncateLimit
+                                        )}
+                                        {pick.auctionPrice != null && (
+                                          <span className="ml-2 font-mono text-xs text-muted-foreground">
+                                            ${pick.auctionPrice}
+                                          </span>
                                         )}
                                       </div>
                                       <div className="text-xs text-muted-foreground">
