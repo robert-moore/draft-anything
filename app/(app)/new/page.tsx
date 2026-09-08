@@ -11,7 +11,7 @@ import {
   RadioGroupSegmented,
   RadioGroupSegmentedItem
 } from '@/components/ui/radio-group-segmented'
-import { DEFAULT_BUDGET, MAX_BUDGET, MIN_BUDGET } from '@/lib/auction'
+import { DEFAULT_BUDGET, MAX_BUDGET, MIN_BID, minBudgetForRoster } from '@/lib/auction'
 import { createClient } from '@/lib/supabase/client'
 import { ArrowLeftRight, Edit, Gavel, Infinity, List, Timer } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -37,6 +37,7 @@ export default function NewDraftPage() {
   const [user, setUser] = useState<any>(null)
   const [isLoadingUser, setIsLoadingUser] = useState(true)
   const [showGuestChoice, setShowGuestChoice] = useState(false)
+  const minAuctionBudget = minBudgetForRoster(numRounds ?? 1)
   const router = useRouter()
 
   // Guest management utilities
@@ -99,6 +100,13 @@ export default function NewDraftPage() {
     return () => subscription.unsubscribe()
   }, [])
 
+  useEffect(() => {
+    if (draftMode !== 'auction' || startingBudget === null) return
+    if (startingBudget < minAuctionBudget) {
+      setStartingBudget(minAuctionBudget)
+    }
+  }, [draftMode, minAuctionBudget, startingBudget])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -137,8 +145,10 @@ export default function NewDraftPage() {
     }
 
     if (draftMode === 'auction') {
-      if (startingBudget === null || startingBudget < MIN_BUDGET) {
-        setError(`Starting budget must be at least ${MIN_BUDGET}`)
+      if (startingBudget === null || startingBudget < minAuctionBudget) {
+        setError(
+          `Starting budget must be at least ${minAuctionBudget} so each roster spot can go for $${MIN_BID}`
+        )
         setIsLoading(false)
         return
       }
@@ -425,7 +435,7 @@ export default function NewDraftPage() {
                         label="Starting budget"
                         value={startingBudget}
                         onChange={setStartingBudget}
-                        min={MIN_BUDGET}
+                        min={minAuctionBudget}
                         max={MAX_BUDGET}
                         required={true}
                       />
@@ -648,7 +658,7 @@ export default function NewDraftPage() {
                         .some(line => line.length > 200)) ||
                     (draftMode === 'auction' &&
                       (startingBudget === null ||
-                        startingBudget < MIN_BUDGET))
+                        startingBudget < minAuctionBudget))
                   }
                 >
                   {isLoading ? 'Creating...' : 'Create Draft'}

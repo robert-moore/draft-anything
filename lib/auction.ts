@@ -6,6 +6,10 @@ export const MAX_NOMINATION_LENGTH = 300
 
 export type AuctionPhase = 'nominating' | 'bidding'
 
+export function minBudgetForRoster(numRounds: number): number {
+  return Math.max(MIN_BUDGET, numRounds * MIN_BID)
+}
+
 export function rosterSpotsLeft(
   numRounds: number,
   pickCount: number

@@ -3,7 +3,7 @@ import {
   draftUsersInDa,
   draftsInDa
 } from '@/drizzle/schema'
-import { MAX_BUDGET, MIN_BUDGET } from '@/lib/auction'
+import { MAX_BUDGET, MIN_BUDGET, MIN_BID, minBudgetForRoster } from '@/lib/auction'
 import { parseJsonRequest } from '@/lib/api/validation'
 import { getCurrentUser } from '@/lib/auth/get-current-user'
 import { db } from '@/lib/db'
@@ -77,6 +77,14 @@ const createDraftSchema = z
           code: z.ZodIssueCode.custom,
           message: `Starting budget must be between ${MIN_BUDGET} and ${MAX_BUDGET}.`
         })
+      } else {
+        const minBudget = minBudgetForRoster(data.numRounds)
+        if (data.startingBudget < minBudget) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Starting budget must be at least ${minBudget} so each of the ${data.numRounds} roster spots can go for $${MIN_BID}.`
+          })
+        }
       }
       return
     }
