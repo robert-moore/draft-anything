@@ -255,56 +255,6 @@ export async function skipNominator(
   await beginNominating(tx, draft, from)
 }
 
-export async function autoNominateRandomOption(
-  tx: Tx,
-  draft: DraftRow
-): Promise<{ nominated: boolean }> {
-  const unused = await tx
-    .select({
-      id: draftCuratedOptionsInDa.id,
-      optionText: draftCuratedOptionsInDa.optionText
-    })
-    .from(draftCuratedOptionsInDa)
-    .where(
-      and(
-        eq(draftCuratedOptionsInDa.draftId, draft.id),
-        eq(draftCuratedOptionsInDa.isUsed, false)
-      )
-    )
-
-  if (unused.length === 0) {
-    await completeAuction(tx, draft.id)
-    return { nominated: false }
-  }
-
-  const option = unused[Math.floor(Math.random() * unused.length)]
-  const nominator = (
-    await tx
-      .select({ userId: draftUsersInDa.userId })
-      .from(draftUsersInDa)
-      .where(
-        and(
-          eq(draftUsersInDa.draftId, draft.id),
-          eq(draftUsersInDa.position, draft.currentPositionOnClock ?? 1)
-        )
-      )
-      .limit(1)
-  )[0]
-
-  if (!nominator?.userId) {
-    await skipNominator(tx, draft)
-    return { nominated: false }
-  }
-
-  await placeOpeningBid(tx, draft, {
-    userId: nominator.userId,
-    openingBid: MIN_BID,
-    payload: option.optionText,
-    curatedOptionId: option.id
-  })
-  return { nominated: true }
-}
-
 export async function placeOpeningBid(
   tx: Tx,
   draft: DraftRow,
@@ -674,11 +624,7 @@ export async function resolveExpiredAuction(
     if (lockedElapsed < lockedSec) return false
 
     if (locked.auctionPhase === 'nominating') {
-      if (locked.isFreeform) {
-        await skipNominator(tx, locked)
-      } else {
-        await autoNominateRandomOption(tx, locked)
-      }
+      await skipNominator(tx, locked)
       return true
     }
 
