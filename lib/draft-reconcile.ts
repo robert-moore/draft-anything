@@ -28,7 +28,10 @@ async function cancelIfStale(draft: DraftRow): Promise<boolean> {
     return true
   }
 
-  if (draft.draftState === 'active' && draft.secPerRound === '0') {
+  if (
+    draft.draftState === 'active' &&
+    (draft.secPerRound === '0' || draft.isAuction)
+  ) {
     const [lastPick] = await db
       .select({ createdAt: draftSelectionsInDa.createdAt })
       .from(draftSelectionsInDa)

@@ -1,7 +1,7 @@
 import { draftSelectionsInDa, draftsInDa } from '@/drizzle/schema'
 import { db } from '@/lib/db'
 import { clearJoinCode } from '@/lib/utils/join-code'
-import { and, desc, eq, lt } from 'drizzle-orm'
+import { and, desc, eq, lt, or } from 'drizzle-orm'
 
 export async function GET() {
   try {
@@ -45,8 +45,9 @@ export async function GET() {
       }
     }
 
-    // Find untimed drafts that are active and haven't had a pick made in 24 hours
-    const untimedDrafts = await db
+    // Find active untimed snake drafts and auction drafts that
+    // haven't had a pick made in 24 hours
+    const inactiveDrafts = await db
       .select({
         id: draftsInDa.id,
         guid: draftsInDa.guid,
@@ -57,12 +58,15 @@ export async function GET() {
       .where(
         and(
           eq(draftsInDa.draftState, 'active'),
-          eq(draftsInDa.secPerRound, '0') // Untimed drafts
+          or(
+            eq(draftsInDa.secPerRound, '0'),
+            eq(draftsInDa.isAuction, true)
+          )
         )
       )
 
-    // Check each untimed draft for recent picks
-    for (const draft of untimedDrafts) {
+    // Check each draft for recent picks
+    for (const draft of inactiveDrafts) {
       try {
         // Get the most recent pick for this draft
         const lastPick = await db
@@ -102,7 +106,7 @@ export async function GET() {
           canceledCount++
         }
       } catch (error) {
-        console.error(`Failed to check untimed draft ${draft.guid}:`, error)
+        console.error(`Failed to check inactive draft ${draft.guid}:`, error)
       }
     }
 
