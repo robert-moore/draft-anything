@@ -2002,7 +2002,7 @@ export default function DraftPage() {
     !mobileChatOpen && latestChatActivityMs > mobileChatReadAtMs
 
   return (
-    <div className="h-screen bg-background overflow-hidden pb-8">
+    <div className="h-screen bg-background overflow-hidden">
       <div className="max-w-7xl mx-auto flex h-full">
         {/* Main Content - pb-20 when banner visible so draft list isn't obscured */}
         <main
@@ -3360,6 +3360,12 @@ export default function DraftPage() {
 
             {/* Turn Order */}
             {draft.draftState === 'active' && (
+              <div
+                className={cn(
+                  'overflow-y-auto',
+                  draft.isAuction && 'max-h-[min(320px,38vh)]'
+                )}
+              >
               <BrutalSection
                 title={draft.isAuction ? 'Budgets' : 'Order'}
                 contentClassName="p-4"
@@ -3414,6 +3420,7 @@ export default function DraftPage() {
                   </div>
                 )}
               </BrutalSection>
+              </div>
             )}
 
             {/* Actions */}
@@ -3429,20 +3436,27 @@ export default function DraftPage() {
               </BrutalSection>
             )}
           </div>
-          {/* CHAT - Scrollable section */}
-          <BrutalSection title="Chat" contentClassName="p-0">
-            <div className="m-2">
-              <ChatComponent
-                draftId={draftId}
-                currentUser={currentUser?.id || getGuestClientId() || null}
-                messages={messages}
-                picks={picks}
-                userIdToName={userIdToName}
-                onSendMessage={handleSendMessage}
-                isJoined={isJoined}
-              />
-            </div>
-          </BrutalSection>
+          {/* CHAT - fills remaining sidebar height */}
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+            <BrutalSection
+              title="Chat"
+              className="flex-1 min-h-0 flex flex-col overflow-hidden"
+              contentClassName="p-0 flex-1 min-h-0 flex flex-col overflow-hidden"
+            >
+              <div className="m-2 flex-1 min-h-0 flex flex-col">
+                <ChatComponent
+                  draftId={draftId}
+                  currentUser={currentUser?.id || getGuestClientId() || null}
+                  messages={messages}
+                  picks={picks}
+                  userIdToName={userIdToName}
+                  onSendMessage={handleSendMessage}
+                  isJoined={isJoined}
+                  fillHeight
+                />
+              </div>
+            </BrutalSection>
+          </div>
         </aside>
       </div>
 
@@ -3509,8 +3523,12 @@ export default function DraftPage() {
             <DrawerTitle>Chat</DrawerTitle>
           </DrawerHeader>
           <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
-            <BrutalSection title="Chat" contentClassName="p-0 flex-1 min-h-0">
-              <div className="m-2">
+            <BrutalSection
+              title="Chat"
+              className="flex-1 min-h-0 flex flex-col overflow-hidden"
+              contentClassName="p-0 flex-1 min-h-0 flex flex-col overflow-hidden"
+            >
+              <div className="m-2 flex-1 min-h-0 flex flex-col">
                 <ChatComponent
                   draftId={draftId}
                   currentUser={currentUser?.id || getGuestClientId() || null}
@@ -3519,6 +3537,7 @@ export default function DraftPage() {
                   userIdToName={userIdToName}
                   onSendMessage={handleSendMessage}
                   isJoined={isJoined}
+                  fillHeight
                 />
               </div>
             </BrutalSection>

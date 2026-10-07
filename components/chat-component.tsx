@@ -6,6 +6,7 @@ import { ArrowDown, Send } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import ChatBubble from './chat-bubble'
 import PickMessage from './pick-message'
+import { cn } from '@/lib/utils'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 
@@ -27,7 +28,8 @@ export default function ChatComponent({
   picks,
   userIdToName,
   onSendMessage,
-  isJoined = false
+  isJoined = false,
+  fillHeight = false
 }: {
   draftId: string
   currentUser: string | null
@@ -36,6 +38,8 @@ export default function ChatComponent({
   userIdToName: Record<string, string>
   onSendMessage: (messageContent: string) => Promise<void>
   isJoined?: boolean
+  /** Fill parent flex column (sidebar / drawer) instead of fixed message height */
+  fillHeight?: boolean
 }) {
   const [newMessage, setNewMessage] = useState('')
   const [showTopGradient, setShowTopGradient] = useState(false)
@@ -177,11 +181,19 @@ export default function ChatComponent({
   }
 
   return (
-    <div className="flex flex-col space-y-2">
+    <div
+      className={cn(
+        'flex flex-col',
+        fillHeight ? 'flex-1 min-h-0 h-full' : 'space-y-2'
+      )}
+    >
       {/* Messages */}
       <div
         ref={messagesContainerRef}
-        className="h-[500px] overflow-y-auto space-y-2 px-3 bg-transparent rounded-md relative"
+        className={cn(
+          'overflow-y-auto space-y-2 px-3 bg-transparent rounded-md relative',
+          fillHeight ? 'flex-1 min-h-0' : 'h-[500px]'
+        )}
       >
         {/* Faded gradient at the top - only show when scrolled */}
         {showTopGradient && (
@@ -232,7 +244,7 @@ export default function ChatComponent({
       {isJoined && (
         <form
           onSubmit={handleSendMessage}
-          className="flex items-center gap-2 pt-2 px-2 pb-4"
+          className="flex shrink-0 items-center gap-2 pt-2 px-2 pb-2"
         >
           <Input
             type="text"
