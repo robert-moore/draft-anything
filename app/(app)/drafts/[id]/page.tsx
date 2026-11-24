@@ -2004,10 +2004,10 @@ export default function DraftPage() {
   return (
     <div className="h-screen bg-background overflow-hidden">
       <div className="max-w-7xl mx-auto flex h-full">
-        {/* Main Content - pb-20 when banner visible so draft list isn't obscured */}
+        {/* Extra bottom padding when the on-the-clock banner covers the list */}
         <main
           className={`flex-1 px-6 pt-6 bg-background relative overflow-y-auto ${
-            showOnTheClockBanner ? 'pb-24' : ''
+            showOnTheClockBanner ? 'pb-24' : 'pb-8'
           }`}
         >
           {/* State Indicator - Top Right */}
