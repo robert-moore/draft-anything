@@ -3312,7 +3312,7 @@ export default function DraftPage() {
         </main>
 
         {/* Sidebar */}
-        <aside className="hidden lg:block w-80 border-l-2 border-border bg-card h-full flex flex-col overflow-hidden">
+        <aside className="hidden lg:flex w-80 border-l-2 border-border bg-card h-full flex-col overflow-hidden">
           {/* Fixed sections - Members, Order, Actions */}
           <div className="flex-shrink-0">
             {/* Players - Only show when draft is not active */}
